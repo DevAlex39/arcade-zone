@@ -34,8 +34,8 @@
         <!-- RIGHT: settings + players -->
         <div class="lobby-right">
 
-          <!-- Paramètres (hôte seulement) -->
-          <div class="card lobby-settings" v-if="isHost">
+          <!-- Paramètres Motus (hôte seulement) -->
+          <div class="card lobby-settings" v-if="isHost && room.game_id === 'motus-multi'">
             <h3 class="settings-title">Paramètres</h3>
             <div class="setting-row">
               <label>Vies de départ</label>

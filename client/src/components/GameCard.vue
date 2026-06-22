@@ -4,9 +4,12 @@
     <div class="card-top">
       <span class="card-icon">{{ game.icon }}</span>
       <div class="card-badges">
-        <span class="badge" :class="game.has_multiplayer ? 'badge-rose' : 'badge-cyan'">
-          {{ game.has_multiplayer ? 'Multi' : 'Solo' }}
-        </span>
+        <span v-if="game.solo_url && !game.has_multiplayer" class="badge badge-cyan">Solo</span>
+        <span v-else-if="!game.solo_url && game.has_multiplayer" class="badge badge-rose">Multi</span>
+        <template v-else>
+          <span class="badge badge-cyan">Solo</span>
+          <span class="badge badge-rose">Multi</span>
+        </template>
         <span class="badge badge-violet" v-if="game.max_players > 1">
           {{ game.min_players === game.max_players ? game.min_players : `${game.min_players}–${game.max_players}` }} joueurs
         </span>
@@ -21,16 +24,31 @@
       <template v-if="!game.has_multiplayer">
         <button class="btn btn-primary btn-sm" @click="$emit('play', game)">Jouer →</button>
       </template>
+
       <!-- Multi only (pas de solo_url) -->
       <template v-else-if="!game.solo_url">
-        <button class="btn btn-primary btn-sm" @click="$emit('create', game)">Créer une salle</button>
-        <button class="btn btn-secondary btn-sm" @click="$emit('join', game)">Rejoindre</button>
+        <div class="actions-multi">
+          <button class="btn btn-primary btn-sm" @click="$emit('create', game)">Créer une salle</button>
+          <button class="btn btn-secondary btn-sm" @click="$emit('join', game)">Rejoindre</button>
+        </div>
       </template>
+
       <!-- Solo + Multi -->
       <template v-else>
-        <button class="btn btn-ghost btn-sm" @click="$emit('play', game)">Solo</button>
-        <button class="btn btn-primary btn-sm" @click="$emit('create', game)">Créer</button>
-        <button class="btn btn-secondary btn-sm" @click="$emit('join', game)">Rejoindre</button>
+        <div class="actions-split">
+          <div class="actions-solo">
+            <span class="action-label">SOLO</span>
+            <button class="btn btn-secondary btn-sm" @click="$emit('play', game)">Jouer seul →</button>
+          </div>
+          <div class="actions-divider" />
+          <div class="actions-multi-group">
+            <span class="action-label action-label-rose">MULTI</span>
+            <div class="actions-multi">
+              <button class="btn btn-primary btn-sm" @click="$emit('create', game)">Créer</button>
+              <button class="btn btn-ghost btn-sm" @click="$emit('join', game)">Rejoindre</button>
+            </div>
+          </div>
+        </div>
       </template>
     </div>
   </div>
@@ -67,5 +85,28 @@ defineEmits(['play', 'create', 'join']);
 .card-badges { display: flex; flex-direction: column; align-items: flex-end; gap: .25rem; }
 .card-name { font-family: var(--font-title); font-size: 1.1rem; font-weight: 800; }
 .card-desc { font-size: .82rem; color: var(--text-2); line-height: 1.5; flex: 1; }
-.card-actions { display: flex; gap: .5rem; margin-top: .25rem; }
+
+/* Actions */
+.card-actions { margin-top: .25rem; }
+
+.actions-multi { display: flex; gap: .5rem; }
+
+/* Solo + Multi split */
+.actions-split {
+  display: flex; flex-direction: column; gap: .5rem;
+  background: var(--bg-3); border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  padding: .6rem .75rem;
+}
+.actions-divider {
+  height: 1px; background: var(--border); margin: 0 -.75rem;
+}
+.actions-solo, .actions-multi-group {
+  display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+}
+.action-label {
+  font-size: .65rem; font-weight: 800; letter-spacing: .1em;
+  color: var(--cyan); text-transform: uppercase; white-space: nowrap;
+}
+.action-label-rose { color: var(--rose); }
 </style>

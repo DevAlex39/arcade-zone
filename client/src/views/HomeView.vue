@@ -42,7 +42,17 @@
     <!-- GAMES GRID -->
     <section class="games-section">
       <div class="section-inner">
-        <h2 class="section-title">Les jeux</h2>
+        <div class="section-header">
+          <h2 class="section-title">Les jeux</h2>
+          <div class="filter-tabs">
+            <button
+              v-for="f in filters" :key="f.value"
+              class="filter-tab"
+              :class="{ active: activeFilter === f.value }"
+              @click="activeFilter = f.value"
+            >{{ f.label }}</button>
+          </div>
+        </div>
 
         <div v-if="platform.games.length === 0" class="loading-row">
           <span class="spin">⟳</span> Chargement…
@@ -50,7 +60,7 @@
 
         <div class="games-grid">
           <GameCard
-            v-for="g in activeGames"
+            v-for="g in filteredGames"
             :key="g.id"
             :game="g"
             @play="handlePlay"
@@ -58,6 +68,10 @@
             @join="(game) => requireIdentity(game, 'join')"
           />
         </div>
+
+        <p v-if="filteredGames.length === 0 && platform.games.length > 0" class="no-results">
+          Aucun jeu dans cette catégorie.
+        </p>
       </div>
     </section>
 
@@ -119,6 +133,13 @@ const joinCode      = ref('');
 const joinModalGame = ref(null);
 const joinCodeModal = ref('');
 const guestInput    = ref(null);
+const activeFilter  = ref('all');
+
+const filters = [
+  { value: 'all',   label: 'Tout' },
+  { value: 'solo',  label: 'Solo' },
+  { value: 'multi', label: 'Multi' },
+];
 
 // Pending action après saisie du pseudo invité
 const pendingAction = ref(null); // { type: 'create'|'join', game }
@@ -126,6 +147,14 @@ const pendingAction = ref(null); // { type: 'create'|'join', game }
 const guestModal = ref({ open: false, name: '', error: '' });
 
 const activeGames = computed(() => platform.games.filter(g => g.is_active));
+
+const filteredGames = computed(() => {
+  return activeGames.value.filter(g => {
+    if (activeFilter.value === 'solo')  return g.solo_url;
+    if (activeFilter.value === 'multi') return g.has_multiplayer;
+    return true;
+  });
+});
 
 function handlePlay(game) {
   router.push(`/game/${game.id}`);
@@ -244,6 +273,19 @@ function handleJoinModal() {
   gap: 1.25rem;
 }
 .loading-row { color: var(--text-2); display: flex; align-items: center; gap: .5rem; padding: 2rem 0; }
+.no-results  { color: var(--text-3); text-align: center; padding: 3rem 0; font-size: .9rem; }
+
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: .75rem; }
+.section-title  { margin-bottom: 0; }
+
+.filter-tabs { display: flex; gap: .25rem; background: var(--bg-3); border-radius: var(--radius-sm); padding: .2rem; border: 1px solid var(--border); }
+.filter-tab  {
+  padding: .35rem .9rem; border-radius: 6px; border: none; background: transparent;
+  color: var(--text-2); font-size: .8rem; font-weight: 700; cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.filter-tab:hover  { color: var(--text); }
+.filter-tab.active { background: var(--cyan); color: var(--bg); }
 
 .text-error { color: #f87171; font-size: .82rem; }
 </style>

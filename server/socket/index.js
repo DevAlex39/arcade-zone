@@ -52,7 +52,21 @@ function initSocket(io) {
     // ─── Hôte initialise la room en mémoire ────────────────────────
     socket.on('init_room', (data) => {
       const { code, gameId, settings, maxPlayers } = data;
-      if (rooms.has(code)) return socket.emit('room_update', sanitizeRoom(rooms.get(code)));
+
+      if (rooms.has(code)) {
+        // Room existante : rejoindre le canal socket et ajouter le joueur si absent
+        const room = rooms.get(code);
+        socket.join(code);
+        socket.currentRoom = code;
+        const existing = room.players.find(p => p.id === user.id);
+        if (existing) {
+          existing.socketId = socket.id; // reconnexion
+        } else {
+          room.players.push({ id: user.id, username: user.username, socketId: socket.id, ready: false });
+        }
+        io.to(code).emit('room_update', sanitizeRoom(room));
+        return;
+      }
 
       const room = {
         code, gameId,
