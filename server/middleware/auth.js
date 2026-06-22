@@ -18,4 +18,13 @@ function requireAdmin(req, res, next) {
   });
 }
 
-module.exports = { requireAuth, requireAdmin };
+// Middleware optionnel : si token présent on l'authentifie, sinon on continue
+function optionalAuth(req, res, next) {
+  const header = req.headers.authorization;
+  if (header?.startsWith('Bearer ')) {
+    try { req.user = jwt.verify(header.slice(7), process.env.JWT_SECRET); } catch {}
+  }
+  next();
+}
+
+module.exports = { requireAuth, requireAdmin, optionalAuth };

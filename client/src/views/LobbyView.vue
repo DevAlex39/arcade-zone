@@ -119,7 +119,11 @@ const copied   = ref(false);
 const settings = ref({ livesMax: 20, maxAttempts: 6, syncWords: true, comboEnabled: true });
 let   socket   = null;
 
-const isHost   = computed(() => room.value?.host_id === auth.user?.id);
+const isHost   = computed(() => {
+  if (!room.value || !auth.user) return false;
+  if (auth.user.isGuest) return room.value.host_name === auth.user.username;
+  return room.value.host_id === auth.user.id;
+});
 const canStart = computed(() => (room.value?.players?.length || 0) >= (room.value?.min_players || 2));
 
 async function loadRoom() {
@@ -135,7 +139,7 @@ async function loadRoom() {
 }
 
 function connectSocket() {
-  socket = io('/', { auth: { token: auth.token } });
+  socket = io('/', { auth: { token: auth.token, username: auth.user?.username } });
 
   socket.emit('init_room', {
     code:       room.value.code,

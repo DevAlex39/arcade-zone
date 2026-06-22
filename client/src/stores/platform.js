@@ -17,8 +17,10 @@ export const usePlatformStore = defineStore('platform', () => {
     setTimeout(() => { toast.value = null; }, duration);
   }
 
-  async function createRoom(gameId, settings = {}) {
-    const { data } = await axios.post('/api/rooms', { game_id: gameId, settings });
+  async function createRoom(gameId, settings = {}, guestName = null) {
+    const payload = { game_id: gameId, settings };
+    if (guestName) payload.guest_name = guestName;
+    const { data } = await axios.post('/api/rooms', payload);
     currentRoom.value = data;
     return data;
   }
@@ -29,8 +31,9 @@ export const usePlatformStore = defineStore('platform', () => {
     return data;
   }
 
-  async function joinRoom(code) {
-    await axios.post(`/api/rooms/${code}/join`);
+  async function joinRoom(code, guestName = null) {
+    const payload = guestName ? { guest_name: guestName } : {};
+    await axios.post(`/api/rooms/${code}/join`, payload);
   }
 
   return { games, currentRoom, toast, fetchGames, showToast, createRoom, fetchRoom, joinRoom };

@@ -6,15 +6,21 @@ const rooms = new Map();
 
 function initSocket(io) {
 
-  // Auth via token dans le handshake
+  // Auth via token (JWT normal ou token invité)
   io.use((socket, next) => {
-    const token = socket.handshake.auth?.token;
-    if (!token) return next(new Error('Non authentifié'));
-    try {
-      socket.user = jwt.verify(token, process.env.JWT_SECRET);
+    const token    = socket.handshake.auth?.token;
+    const username = socket.handshake.auth?.username;
+    if (!token && !username) return next(new Error('Identification requise'));
+    if (token) {
+      try {
+        socket.user = jwt.verify(token, process.env.JWT_SECRET);
+        next();
+      } catch {
+        next(new Error('Token invalide'));
+      }
+    } else {
+      socket.user = { id: `guest_${Date.now()}`, username, role: 'guest', isGuest: true };
       next();
-    } catch {
-      next(new Error('Token invalide'));
     }
   });
 

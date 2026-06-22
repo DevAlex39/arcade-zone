@@ -14,7 +14,12 @@
             <router-link to="/login"    class="btn btn-secondary btn-lg">Connexion</router-link>
           </template>
           <template v-else>
-            <span class="hero-welcome">Bienvenue, <strong>{{ auth.user.username }}</strong> 👋</span>
+            <span class="hero-welcome">
+              Bienvenue, <strong>{{ auth.user.username }}</strong>
+              <span v-if="auth.isGuest" class="badge badge-amber" style="margin-left:.5rem; font-size:.7rem;">Invité</span>
+              👋
+            </span>
+            <button v-if="auth.isGuest" class="btn btn-ghost btn-sm" @click="auth.logout()">Changer de pseudo</button>
           </template>
         </div>
       </div>
@@ -49,18 +54,14 @@
             :key="g.id"
             :game="g"
             @play="handlePlay"
-            @create="handleCreate"
-            @join="showJoinPrompt"
+            @create="(game) => requireIdentity(game, 'create')"
+            @join="(game) => requireIdentity(game, 'join')"
           />
         </div>
-
-        <p v-if="!auth.isLoggedIn" class="login-hint">
-          <router-link to="/login">Connecte-toi</router-link> pour accéder au multijoueur et sauvegarder tes scores.
-        </p>
       </div>
     </section>
 
-    <!-- Modal: rejoindre partie multi -->
+    <!-- Modal: rejoindre partie multi (saisie du code) -->
     <div v-if="joinModalGame" class="modal-backdrop" @click.self="joinModalGame = null">
       <div class="modal-box">
         <h3>Rejoindre — {{ joinModalGame.name }}</h3>
@@ -76,11 +77,35 @@
       </div>
     </div>
 
+    <!-- Modal: invité — saisie du pseudo -->
+    <div v-if="guestModal.open" class="modal-backdrop" @click.self="guestModal.open = false">
+      <div class="modal-box">
+        <h3>Choisir un pseudo</h3>
+        <p class="text-muted mt-1 mb-2">Tu joues sans compte — entre un pseudo pour cette session :</p>
+        <input
+          v-model="guestModal.name" placeholder="Pseudo" maxlength="20"
+          @keydown.enter="confirmGuest"
+          style="font-size:1rem; text-align:center;"
+          ref="guestInput"
+        />
+        <p class="text-muted" style="font-size:.75rem; margin-top:.4rem;">
+          Ou <router-link to="/login" style="color:var(--cyan)">connecte-toi</router-link> pour sauvegarder tes stats.
+        </p>
+        <div class="flex gap-1 mt-2">
+          <button class="btn btn-secondary btn-full" @click="guestModal.open = false">Annuler</button>
+          <button class="btn btn-primary btn-full" @click="confirmGuest" :disabled="!guestModal.name.trim()">
+            Continuer →
+          </button>
+        </div>
+        <div v-if="guestModal.error" class="text-error mt-1">{{ guestModal.error }}</div>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import GameCard from '@/components/GameCard.vue';
 import { useAuthStore } from '@/stores/auth.js';
@@ -93,6 +118,12 @@ const router   = useRouter();
 const joinCode      = ref('');
 const joinModalGame = ref(null);
 const joinCodeModal = ref('');
+const guestInput    = ref(null);
+
+// Pending action après saisie du pseudo invité
+const pendingAction = ref(null); // { type: 'create'|'join', game }
+
+const guestModal = ref({ open: false, name: '', error: '' });
 
 const activeGames = computed(() => platform.games.filter(g => g.is_active));
 
@@ -100,8 +131,43 @@ function handlePlay(game) {
   router.push(`/game/${game.id}`);
 }
 
+// Demande une identité si nécessaire, sinon exécute l'action
+function requireIdentity(game, type) {
+  if (auth.isLoggedIn) {
+    executeAction(game, type);
+  } else {
+    pendingAction.value = { type, game };
+    guestModal.value = { open: true, name: '', error: '' };
+    nextTick(() => guestInput.value?.focus());
+  }
+}
+
+async function confirmGuest() {
+  const name = guestModal.value.name.trim();
+  if (!name) return;
+  guestModal.value.error = '';
+  try {
+    await auth.loginAsGuest(name);
+    guestModal.value.open = false;
+    if (pendingAction.value) {
+      const { type, game } = pendingAction.value;
+      pendingAction.value = null;
+      executeAction(game, type);
+    }
+  } catch (e) {
+    guestModal.value.error = e.response?.data?.error || 'Erreur';
+  }
+}
+
+async function executeAction(game, type) {
+  if (type === 'create') {
+    await handleCreate(game);
+  } else {
+    showJoinPrompt(game);
+  }
+}
+
 async function handleCreate(game) {
-  if (!auth.isLoggedIn) { router.push('/login?redirect=/'); return; }
   try {
     const room = await platform.createRoom(game.id);
     router.push(`/lobby/${room.code}`);
@@ -111,15 +177,19 @@ async function handleCreate(game) {
 }
 
 function showJoinPrompt(game) {
-  if (!auth.isLoggedIn) { router.push('/login?redirect=/'); return; }
-  joinModalGame.value  = game;
-  joinCodeModal.value  = '';
+  joinModalGame.value = game;
+  joinCodeModal.value = '';
 }
 
 function handleJoin() {
-  if (!auth.isLoggedIn) { router.push('/login'); return; }
   const code = joinCode.value.toUpperCase().trim();
   if (code.length < 6) return;
+  if (!auth.isLoggedIn) {
+    pendingAction.value = { type: 'join-code', code };
+    guestModal.value = { open: true, name: '', error: '' };
+    nextTick(() => guestInput.value?.focus());
+    return;
+  }
   router.push(`/join/${code}`);
 }
 
@@ -155,7 +225,7 @@ function handleJoinModal() {
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
 .hero-sub { font-size: 1.1rem; color: var(--text-2); max-width: 480px; line-height: 1.65; }
-.hero-actions { display: flex; gap: .75rem; flex-wrap: wrap; justify-content: center; }
+.hero-actions { display: flex; gap: .75rem; flex-wrap: wrap; justify-content: center; align-items: center; }
 .hero-welcome { font-size: 1rem; color: var(--text-2); padding: .6rem 1.2rem; background: var(--bg-3); border-radius: var(--radius-sm); border: 1px solid var(--border); }
 
 /* JOIN BAR */
@@ -174,6 +244,6 @@ function handleJoinModal() {
   gap: 1.25rem;
 }
 .loading-row { color: var(--text-2); display: flex; align-items: center; gap: .5rem; padding: 2rem 0; }
-.login-hint { margin-top: 2rem; text-align: center; font-size: .85rem; color: var(--text-2); }
-.login-hint a { color: var(--cyan); text-decoration: none; }
+
+.text-error { color: #f87171; font-size: .82rem; }
 </style>

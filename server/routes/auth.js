@@ -61,13 +61,28 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// ─── Invité (session temporaire 6h) ──────────────────────────────────────────
+router.post('/guest', (req, res) => {
+  const { username } = req.body;
+  if (!username?.trim()) return res.status(400).json({ error: 'Pseudo requis' });
+  const name = username.trim().slice(0, 20);
+  const guestId = `guest_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const token = jwt.sign(
+    { id: guestId, username: name, role: 'guest', isGuest: true },
+    process.env.JWT_SECRET,
+    { expiresIn: '6h' }
+  );
+  res.json({ token, user: { id: guestId, username: name, role: 'guest', isGuest: true } });
+});
+
 // ─── Me (vérif token) ────────────────────────────────────────────────────────
 router.get('/me', async (req, res) => {
   const header = req.headers.authorization;
   if (!header?.startsWith('Bearer ')) return res.status(401).json({ error: 'Non authentifié' });
   try {
-    const jwt_ = require('jsonwebtoken');
-    const decoded = jwt_.verify(header.slice(7), process.env.JWT_SECRET);
+    const decoded = jwt.verify(header.slice(7), process.env.JWT_SECRET);
+    // Les invités n'ont pas de ligne en BDD
+    if (decoded.isGuest) return res.json({ user: { id: decoded.id, username: decoded.username, role: 'guest', isGuest: true } });
     const [rows] = await pool.query('SELECT * FROM users WHERE id=?', [decoded.id]);
     if (!rows.length) return res.status(404).json({ error: 'Utilisateur introuvable' });
     res.json({ user: safeUser(rows[0]) });

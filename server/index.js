@@ -9,6 +9,7 @@ const path     = require('path');
 const bcrypt   = require('bcrypt');
 
 const { pool, testConnection } = require('./config/db');
+const { migrate }              = require('./config/migrate');
 const { initSocket }           = require('./socket/index');
 
 const app    = express();
@@ -25,6 +26,7 @@ app.use(passport.initialize());
 // ─── Jeux solo — servir les fichiers statiques ────────────────────────────────
 const GAMES_BASE = path.resolve(__dirname, '..', '..'); // → Site web/
 app.use('/solo/yahtzee-rogue',  express.static(path.join(GAMES_BASE, 'Yahtzee_Rogue')));
+app.use('/solo/yahtzee',        express.static(path.join(GAMES_BASE, 'Yahtzee')));
 app.use('/solo/motus',          express.static(path.join(GAMES_BASE, 'Motus')));
 app.use('/solo/skyjo',          express.static(path.join(GAMES_BASE, 'Skyjo')));
 app.use('/solo/petits-chevaux', express.static(path.join(GAMES_BASE, 'Petits_chevaux')));
@@ -63,5 +65,6 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, async () => {
   console.log(`\n🚀 Serveur démarré sur http://localhost:${PORT}`);
   await testConnection();
+  await migrate();
   await seedAdmin();
 });

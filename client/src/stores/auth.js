@@ -47,5 +47,12 @@ export const useAuthStore = defineStore('auth', () => {
     setAuth(data);
   }
 
-  return { user, token, isLoggedIn, isAdmin, init, login, register, logout, setAuth };
+  async function loginAsGuest(username) {
+    const { data } = await axios.post('/api/auth/guest', { username });
+    setAuth(data);
+  }
+
+  const isGuest = computed(() => user.value?.role === 'guest');
+
+  return { user, token, isLoggedIn, isAdmin, isGuest, init, login, register, loginAsGuest, logout, setAuth };
 });

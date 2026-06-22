@@ -7,8 +7,23 @@
       <p class="text-muted mt-1" v-if="room">
         {{ room.players?.length || 0 }} / {{ room.max_players }} joueurs
       </p>
+
+      <!-- Saisie pseudo si non authentifié -->
+      <template v-if="!auth.isLoggedIn">
+        <p class="text-muted" style="font-size:.82rem; margin-top:.75rem;">
+          Tu rejoins en tant qu'invité — entre un pseudo :
+        </p>
+        <input v-model="guestName" placeholder="Pseudo" maxlength="20"
+               style="text-align:center; margin-top:.5rem;" @keydown.enter="join" />
+        <p class="text-muted" style="font-size:.72rem; margin-top:.3rem;">
+          Ou <router-link to="/login" style="color:var(--cyan)">connecte-toi</router-link> pour sauvegarder tes stats.
+        </p>
+      </template>
+
       <p v-if="error" class="auth-error mt-2">{{ error }}</p>
-      <button class="btn btn-primary btn-full btn-lg mt-2" :disabled="loading || !!error" @click="join">
+      <button class="btn btn-primary btn-full btn-lg mt-2"
+              :disabled="loading || !!error || (!auth.isLoggedIn && !guestName.trim())"
+              @click="join">
         <span v-if="loading" class="spin">⟳</span>
         {{ loading ? 'Connexion…' : 'Rejoindre la partie →' }}
       </button>
@@ -21,15 +36,18 @@
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { usePlatformStore } from '@/stores/platform.js';
+import { useAuthStore } from '@/stores/auth.js';
 
 const route    = useRoute();
 const router   = useRouter();
 const platform = usePlatformStore();
+const auth     = useAuthStore();
 
-const code    = route.params.code.toUpperCase();
-const room    = ref(null);
-const loading = ref(false);
-const error   = ref('');
+const code      = route.params.code.toUpperCase();
+const room      = ref(null);
+const loading   = ref(false);
+const error     = ref('');
+const guestName = ref('');
 
 onMounted(async () => {
   try {
@@ -41,13 +59,17 @@ onMounted(async () => {
 });
 
 async function join() {
+  if (!auth.isLoggedIn && !guestName.value.trim()) return;
   loading.value = true;
   try {
-    await platform.joinRoom(code);
+    // Si non authentifié, créer une session invitée d'abord
+    if (!auth.isLoggedIn) {
+      await auth.loginAsGuest(guestName.value.trim());
+    }
+    await platform.joinRoom(code, auth.user?.isGuest ? guestName.value.trim() : undefined);
     router.push(`/lobby/${code}`);
   } catch (e) {
     error.value = e.response?.data?.error || 'Impossible de rejoindre';
-  } finally {
     loading.value = false;
   }
 }

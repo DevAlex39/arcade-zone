@@ -17,16 +17,20 @@
     <p class="card-desc">{{ game.description }}</p>
 
     <div class="card-actions">
-      <button v-if="!game.has_multiplayer" class="btn btn-primary btn-sm" @click="$emit('play', game)">
-        Jouer →
-      </button>
+      <!-- Solo only -->
+      <template v-if="!game.has_multiplayer">
+        <button class="btn btn-primary btn-sm" @click="$emit('play', game)">Jouer →</button>
+      </template>
+      <!-- Multi only (pas de solo_url) -->
+      <template v-else-if="!game.solo_url">
+        <button class="btn btn-primary btn-sm" @click="$emit('create', game)">Créer une salle</button>
+        <button class="btn btn-secondary btn-sm" @click="$emit('join', game)">Rejoindre</button>
+      </template>
+      <!-- Solo + Multi -->
       <template v-else>
-        <button class="btn btn-primary btn-sm" @click="$emit('create', game)">
-          Créer une salle
-        </button>
-        <button class="btn btn-secondary btn-sm" @click="$emit('join', game)">
-          Rejoindre
-        </button>
+        <button class="btn btn-ghost btn-sm" @click="$emit('play', game)">Solo</button>
+        <button class="btn btn-primary btn-sm" @click="$emit('create', game)">Créer</button>
+        <button class="btn btn-secondary btn-sm" @click="$emit('join', game)">Rejoindre</button>
       </template>
     </div>
   </div>

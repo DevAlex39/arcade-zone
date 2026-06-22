@@ -11,10 +11,8 @@ Plateforme multijoueur temps réel : Vue 3 + Express + Socket.io + MySQL.
 
 ### 1. Base de données
 
-```sql
--- Dans MySQL Workbench ou en ligne de commande :
-SOURCE C:/Users/Alexis/Desktop/Site web/Plateforme_Jeux/database/schema.sql
-```
+Aucune action manuelle requise — le serveur crée automatiquement la base, les tables et les jeux au premier démarrage.
+Il suffit que MySQL tourne et que les variables `DB_*` dans `.env` soient correctes.
 
 ### 2. Variables d'environnement
 
