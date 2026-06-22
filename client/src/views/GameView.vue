@@ -12,7 +12,7 @@
     </template>
 
     <!-- JEU MULTI Motus : composant socket -->
-    <template v-else-if="game?.id === 'motus-multi' && roomCode">
+    <template v-else-if="game?.id === 'motus' && roomCode">
       <MotusMultiGame :room-code="roomCode" :game="game" />
     </template>
 

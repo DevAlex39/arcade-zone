@@ -73,8 +73,7 @@ const TABLES = [
 const GAMES_SEED = [
   ['yahtzee-rogue',  'Roll the Dice Rogue', 'Rogue-like de dés — combine les meilleures mains pour progresser',          '🎲', '#fb923c', 1, 1, 1, 0, '/solo/yahtzee-rogue/', 1],
   ['yahtzee',        'Yahtzee',             'Le grand classique des dés — solo ou multijoueur jusqu\'à 6',                '🎯', '#f59e0b', 1, 6, 1, 1, '/solo/yahtzee/',       2],
-  ['motus-solo',     'Trouve le Mot',       'Trouve le mot mystère en 6 essais — solo',                                   '🔤', '#38bdf8', 1, 1, 1, 0, '/solo/motus/',         3],
-  ['motus-multi',    'Trouve le Mot',       'Multijoueur — chacun sur son écran, système de vies et combos',              '🔥', '#f472b6', 2, 8, 1, 1, null,                   4],
+  ['motus',          'Trouve le Mot',       'Trouve le mot mystère — solo ou multijoueur avec vies et combos',            '🔤', '#38bdf8', 1, 8, 1, 1, '/solo/motus/',         3],
   ['skyjo',          'Cell Number',         'Jeu de cartes inspiré de Skyjo — minimise ton score, solo ou multi',         '🃏', '#4ade80', 1, 8, 1, 1, '/solo/skyjo/',         5],
   ['petits-chevaux', 'Petits Chevaux',      'Le grand classique du plateau — 1 à 4 joueurs',                              '🐴', '#a78bfa', 1, 4, 1, 1, '/solo/petits-chevaux/',6],
   ['escape',         'Escape',              'Jeu d\'évasion textuel — résous les énigmes pour t\'échapper',               '🔐', '#fbbf24', 1, 1, 1, 0, '/solo/escape/',        7],
@@ -106,9 +105,11 @@ async function migrate() {
     );
   }
 
-  // 4. Mettre à jour les jeux existants qui ont changé (has_multiplayer)
+  // 4. Mettre à jour les jeux existants qui ont changé
   await pool.query(`UPDATE games SET has_multiplayer=1, min_players=1, max_players=8 WHERE id='skyjo'`);
   await pool.query(`UPDATE games SET has_multiplayer=1, min_players=1, max_players=4 WHERE id='petits-chevaux'`);
+  // Supprimer les anciennes entrées motus séparées si elles existent encore
+  await pool.query(`DELETE FROM games WHERE id IN ('motus-solo','motus-multi')`).catch(() => {});
 
   console.log('✅ Base de données prête (tables + jeux)');
 }
