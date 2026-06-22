@@ -1,0 +1,164 @@
+/* ─── RESET ──────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ─── DESIGN TOKENS (Roll the Dice Rogue — Cobalt) ──────────────────────── */
+:root {
+  --bg:       #0d0f1a;
+  --bg-2:     #141622;
+  --bg-3:     #1c1f30;
+  --bg-4:     #252842;
+  --border:   rgba(255,255,255,.07);
+  --text:     #e2e4ef;
+  --text-2:   #8b8fa8;
+  --text-3:   #5c6080;
+
+  --cyan:     #38bdf8;
+  --violet:   #818cf8;
+  --rose:     #f472b6;
+  --amber:    #fb923c;
+  --green:    #4ade80;
+  --purple:   #a78bfa;
+  --yellow:   #fbbf24;
+
+  --accent:   var(--cyan);
+  --accent-2: var(--violet);
+
+  --radius-sm: 8px;
+  --radius:    12px;
+  --radius-lg: 18px;
+
+  --shadow:   0 4px 24px rgba(0,0,0,.4);
+  --glow-cyan:   0 0 20px rgba(56,189,248,.25);
+  --glow-violet: 0 0 20px rgba(129,140,248,.25);
+
+  --font-body:  'Manrope', sans-serif;
+  --font-title: 'Space Grotesk', sans-serif;
+}
+
+html, body { height: 100%; }
+
+body {
+  font-family: var(--font-body);
+  background:  var(--bg);
+  color:       var(--text);
+  min-height:  100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app { min-height: 100vh; display: flex; flex-direction: column; }
+
+/* ─── TYPOGRAPHY ─────────────────────────────────────────────────────────── */
+h1, h2, h3 { font-family: var(--font-title); font-weight: 800; }
+
+/* ─── BUTTONS ────────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .45rem;
+  font-family: var(--font-body); font-weight: 700; font-size: .9rem;
+  border: none; border-radius: var(--radius-sm); cursor: pointer;
+  padding: .65rem 1.4rem;
+  transition: opacity .2s, transform .15s, box-shadow .2s;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.btn:hover:not(:disabled) { transform: translateY(-1px); }
+.btn:disabled { opacity: .35; cursor: not-allowed; }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--cyan), var(--violet));
+  color: var(--bg);
+  box-shadow: var(--glow-cyan);
+}
+.btn-secondary {
+  background: var(--bg-3); border: 1px solid var(--border); color: var(--text);
+}
+.btn-secondary:hover:not(:disabled) { background: var(--bg-4); }
+
+.btn-danger  { background: rgba(239,68,68,.2); border: 1px solid rgba(239,68,68,.4); color: #f87171; }
+.btn-ghost   { background: transparent; color: var(--text-2); }
+.btn-ghost:hover:not(:disabled) { color: var(--text); background: var(--bg-3); }
+.btn-sm { padding: .4rem .9rem; font-size: .8rem; }
+.btn-lg { padding: .85rem 2rem; font-size: 1rem; }
+.btn-full { width: 100%; }
+
+.btn-google {
+  background: var(--bg-3); border: 1px solid var(--border); color: var(--text);
+  gap: .6rem;
+}
+.btn-google svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+/* ─── INPUTS ─────────────────────────────────────────────────────────────── */
+.input-group { display: flex; flex-direction: column; gap: .35rem; }
+.input-group label { font-size: .78rem; font-weight: 700; color: var(--text-2); letter-spacing: .05em; text-transform: uppercase; }
+
+input, select, textarea {
+  width: 100%;
+  background: var(--bg-3); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: .65rem .9rem;
+  color: var(--text); font-family: var(--font-body); font-size: .9rem;
+  outline: none; transition: border-color .15s;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--cyan); }
+input::placeholder { color: var(--text-3); }
+
+/* ─── CARDS ──────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 1.5rem;
+}
+.card-sm { padding: 1rem; border-radius: var(--radius); }
+
+/* ─── MODAL ──────────────────────────────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,.7); backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center; padding: 1rem;
+}
+.modal-box {
+  background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 2rem;
+  max-width: 420px; width: 100%;
+  animation: modalIn .2s ease;
+  position: relative;
+}
+@keyframes modalIn { from { transform: scale(.93); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* ─── BADGE ──────────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex; align-items: center; gap: .25rem;
+  font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  padding: .2rem .55rem; border-radius: 999px;
+}
+.badge-cyan   { background: rgba(56,189,248,.15);  color: var(--cyan);   border: 1px solid rgba(56,189,248,.3); }
+.badge-rose   { background: rgba(244,114,182,.15); color: var(--rose);   border: 1px solid rgba(244,114,182,.3); }
+.badge-amber  { background: rgba(251,146,60,.15);  color: var(--amber);  border: 1px solid rgba(251,146,60,.3); }
+.badge-green  { background: rgba(74,222,128,.15);  color: var(--green);  border: 1px solid rgba(74,222,128,.3); }
+.badge-violet { background: rgba(129,140,248,.15); color: var(--violet); border: 1px solid rgba(129,140,248,.3); }
+
+/* ─── DIVIDER ────────────────────────────────────────────────────────────── */
+.divider {
+  display: flex; align-items: center; gap: .75rem;
+  color: var(--text-3); font-size: .78rem;
+}
+.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ─── TOAST ──────────────────────────────────────────────────────────────── */
+.toast-enter-active, .toast-leave-active { transition: all .3s ease; }
+.toast-enter-from { opacity: 0; transform: translateY(-10px); }
+.toast-leave-to   { opacity: 0; transform: translateY(-10px); }
+
+/* ─── SCROLLBAR ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--bg-4); border-radius: 3px; }
+
+/* ─── UTILS ──────────────────────────────────────────────────────────────── */
+.text-muted { color: var(--text-2); }
+.text-center { text-align: center; }
+.mt-1 { margin-top: .5rem; }  .mt-2 { margin-top: 1rem; }  .mt-3 { margin-top: 1.5rem; }
+.mb-1 { margin-bottom: .5rem; } .mb-2 { margin-bottom: 1rem; }
+.gap-1 { gap: .5rem; } .gap-2 { gap: 1rem; }
+.flex { display: flex; } .flex-col { flex-direction: column; } .items-center { align-items: center; }
+.justify-between { justify-content: space-between; } .justify-center { justify-content: center; }
+.w-full { width: 100%; }
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
