@@ -163,10 +163,13 @@ const canSubmit       = computed(() => currentInput.value.every(l => !!l));
 onMounted(() => {
   socket = io('/', { auth: { token: auth.token, username: auth.user?.username } });
 
-  socket.emit('join_room', props.roomCode);
+  socket.on('connect', () => {
+    socket.emit('join_room', props.roomCode);
+  });
+
   socket.on('room_update', (data) => {
     players.value = data.players || [];
-    isHost.value  = data.hostId === myId;
+    isHost.value  = data.host_id === myId;
     if (data.status === 'playing' && phase.value === 'waiting') {
       // round_start devrait arriver
     }

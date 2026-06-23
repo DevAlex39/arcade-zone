@@ -32,21 +32,36 @@ function initSocket(io) {
       code = code?.toUpperCase();
       if (!rooms.has(code)) return socket.emit('error', 'Room introuvable');
       const room = rooms.get(code);
-      if (room.status !== 'waiting') return socket.emit('error', 'Partie déjà commencée');
 
-      // Ajouter le joueur s'il n'est pas déjà dedans
-      if (!room.players.find(p => p.id === user.id)) {
-        if (room.players.length >= room.maxPlayers) return socket.emit('error', 'Salle pleine');
-        room.players.push({ id: user.id, username: user.username, socketId: socket.id, ready: false });
-      } else {
-        // Reconnexion — mettre à jour le socketId
-        const p = room.players.find(p => p.id === user.id);
-        p.socketId = socket.id;
+      const existing = room.players.find(p => p.id === user.id);
+
+      // Bloquer uniquement les nouveaux joueurs quand la partie est commencée
+      if (room.status !== 'waiting' && !existing) {
+        return socket.emit('error', 'Partie déjà commencée');
       }
 
       socket.join(code);
       socket.currentRoom = code;
+
+      if (existing) {
+        existing.socketId = socket.id; // reconnexion
+      } else {
+        if (room.players.length >= room.maxPlayers) return socket.emit('error', 'Salle pleine');
+        room.players.push({ id: user.id, username: user.username, socketId: socket.id, ready: false });
+      }
+
       io.to(code).emit('room_update', sanitizeRoom(room));
+
+      // Si la partie est en cours, renvoyer l'état du round au joueur qui reconnecte
+      if (room.status === 'playing' && room.round) {
+        socket.emit('round_start', {
+          roundIdx:    room.round.idx,
+          wordLength:  room.round.word.length,
+          firstLetter: room.round.word[0],
+          maxAttempts: room.round.maxAttempts,
+          players:     room.players.map(p => ({ id: p.id, username: p.username, lives: p.lives, combo: p.combo })),
+        });
+      }
     });
 
     // ─── Hôte initialise la room en mémoire ────────────────────────
