@@ -45,8 +45,11 @@
                 <button @click="settings.pionsPerPlayer = Math.min(5, settings.pionsPerPlayer + 1)">+</button>
               </div>
             </div>
-            <div class="setting-toggle">
-              <label><input type="checkbox" v-model="settings.rejouerSur6" /> 🎲 Rejouer sur 6</label>
+            <div class="setting-row">
+              <span class="toggle-label">🎲 Rejouer sur 6</span>
+              <button class="toggle" :class="{ on: settings.rejouerSur6 }" @click="settings.rejouerSur6 = !settings.rejouerSur6">
+                <span class="toggle-thumb" />
+              </button>
             </div>
           </div>
 
@@ -96,14 +99,23 @@
                 <button @click="settings.maxLetters = Math.min(8, settings.maxLetters + 1)">+</button>
               </div>
             </div>
-            <div class="setting-toggle">
-              <label><input type="checkbox" v-model="settings.syncWords" /> Même mot pour tous</label>
+            <div class="setting-row">
+              <span class="toggle-label">Même mot pour tous</span>
+              <button class="toggle" :class="{ on: settings.syncWords }" @click="settings.syncWords = !settings.syncWords">
+                <span class="toggle-thumb" />
+              </button>
             </div>
-            <div class="setting-toggle">
-              <label><input type="checkbox" v-model="settings.comboEnabled" /> Mode Combo (×2, ×3…)</label>
+            <div class="setting-row">
+              <span class="toggle-label">Mode Combo (×2, ×3…)</span>
+              <button class="toggle" :class="{ on: settings.comboEnabled }" @click="settings.comboEnabled = !settings.comboEnabled">
+                <span class="toggle-thumb" />
+              </button>
             </div>
-            <div class="setting-toggle">
-              <label><input type="checkbox" v-model="settings.changeOnFind" /> Changer de mot dès qu'un joueur trouve</label>
+            <div class="setting-row">
+              <span class="toggle-label">Changer de mot dès qu'un joueur trouve</span>
+              <button class="toggle" :class="{ on: settings.changeOnFind }" @click="settings.changeOnFind = !settings.changeOnFind">
+                <span class="toggle-thumb" />
+              </button>
             </div>
           </div>
 
@@ -279,12 +291,33 @@ onUnmounted(() => socket?.disconnect());
 
 .lobby-right { display: flex; flex-direction: column; gap: 1rem; }
 .settings-title { font-size: .85rem; font-weight: 800; color: var(--text-2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: .75rem; }
-.setting-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: .5rem; font-size: .85rem; gap: .5rem; }
-.stepper { display: flex; align-items: center; gap: .6rem; }
-.stepper button { width: 26px; height: 26px; border-radius: 6px; background: var(--bg-4); border: 1px solid var(--border); color: var(--text); cursor: pointer; font-size: 1rem; }
-.setting-toggle { font-size: .83rem; margin-bottom: .35rem; }
-.setting-toggle label { display: flex; align-items: center; gap: .5rem; cursor: pointer; }
-.setting-toggle input { accent-color: var(--cyan); }
+.setting-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: .6rem; font-size: .85rem; gap: .75rem; }
+.toggle-label { flex: 1; line-height: 1.3; }
+
+/* Stepper */
+.stepper { display: flex; align-items: center; gap: 0; background: var(--bg-3); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.stepper button {
+  width: 30px; height: 30px; background: transparent; border: none;
+  color: var(--text); cursor: pointer; font-size: 1.1rem; font-weight: 700;
+  transition: background .12s;
+}
+.stepper button:hover { background: var(--bg-4); }
+.stepper span { min-width: 28px; text-align: center; font-weight: 700; font-size: .9rem; border-left: 1px solid var(--border); border-right: 1px solid var(--border); padding: 0 4px; }
+
+/* Toggle pill */
+.toggle {
+  position: relative; display: inline-flex; align-items: center;
+  width: 44px; height: 24px; border-radius: 999px; border: none; cursor: pointer;
+  background: var(--bg-4); border: 1px solid var(--border);
+  transition: background .2s, border-color .2s;
+  flex-shrink: 0; padding: 0;
+}
+.toggle.on { background: var(--cyan, #38bdf8); border-color: var(--cyan, #38bdf8); }
+.toggle-thumb {
+  position: absolute; left: 3px; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--text-3); transition: left .2s, background .2s;
+}
+.toggle.on .toggle-thumb { left: 23px; background: #fff; }
 
 /* Catégorie */
 .select-category {
