@@ -71,7 +71,9 @@ function initSocket(io) {
       const room = {
         code, gameId,
         hostId:     user.id,
+        hostName:   user.username,
         maxPlayers: maxPlayers || 8,
+        minPlayers: data.minPlayers || 1,
         status:     'waiting',
         settings:   { syncWords: true, comboEnabled: true, livesMax: 20, maxAttempts: 6, ...settings },
         players:    [{ id: user.id, username: user.username, socketId: socket.id, ready: true }],
@@ -88,7 +90,7 @@ function initSocket(io) {
       const room = rooms.get(code);
       if (!room) return socket.emit('error', 'Room introuvable');
       if (room.hostId !== user.id) return socket.emit('error', 'Seul l\'hôte peut lancer la partie');
-      if (room.players.length < 2) return socket.emit('error', 'Il faut au moins 2 joueurs');
+      if (room.players.length < room.minPlayers) return socket.emit('error', `Il faut au moins ${room.minPlayers} joueur(s)`);
       await startRound(io, room);
     });
 
@@ -230,13 +232,15 @@ async function endRound(io, room) {
 
 function sanitizeRoom(room) {
   return {
-    code:       room.code,
-    gameId:     room.gameId,
-    hostId:     room.hostId,
-    status:     room.status,
-    maxPlayers: room.maxPlayers,
-    settings:   room.settings,
-    players:    room.players.map(p => ({ id: p.id, username: p.username, ready: p.ready, lives: p.lives, combo: p.combo, eliminated: p.eliminated, online: !!p.socketId })),
+    code:        room.code,
+    game_id:     room.gameId,
+    host_id:     room.hostId,
+    host_name:   room.hostName,
+    status:      room.status,
+    max_players: room.maxPlayers,
+    min_players: room.minPlayers || 1,
+    settings:    room.settings,
+    players:     room.players.map(p => ({ id: p.id, username: p.username, ready: p.ready, lives: p.lives, combo: p.combo, eliminated: p.eliminated, online: !!p.socketId })),
   };
 }
 

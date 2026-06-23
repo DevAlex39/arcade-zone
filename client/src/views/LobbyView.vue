@@ -141,11 +141,15 @@ async function loadRoom() {
 function connectSocket() {
   socket = io('/', { auth: { token: auth.token, username: auth.user?.username } });
 
-  socket.emit('init_room', {
-    code:       room.value.code,
-    gameId:     room.value.game_id,
-    settings:   settings.value,
-    maxPlayers: room.value.max_players,
+  // Attendre la connexion avant d'émettre (fix timing)
+  socket.on('connect', () => {
+    socket.emit('init_room', {
+      code:       room.value.code,
+      gameId:     room.value.game_id,
+      settings:   settings.value,
+      maxPlayers: room.value.max_players,
+      minPlayers: room.value.min_players,
+    });
   });
 
   socket.on('room_update', (data) => {
@@ -156,6 +160,7 @@ function connectSocket() {
     router.push(`/game/${room.value.game_id}?room=${room.value.code}`);
   });
 
+  socket.on('connect_error', (err) => platform.showToast('Erreur de connexion : ' + err.message, 'error'));
   socket.on('error', (msg) => platform.showToast(msg, 'error'));
 }
 
