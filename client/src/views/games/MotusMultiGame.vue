@@ -161,7 +161,8 @@ const canSubmit       = computed(() => currentInput.value.every(l => !!l));
 
 // ─── Socket connexion ─────────────────────────────────────────────
 onMounted(() => {
-  socket = io('/', { auth: { token: auth.token } });
+  const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3000';
+  socket = io(serverUrl, { auth: { token: auth.token, username: auth.user?.username } });
 
   socket.emit('join_room', props.roomCode);
   socket.on('room_update', (data) => {
