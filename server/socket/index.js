@@ -90,7 +90,7 @@ function initSocket(io) {
         maxPlayers: maxPlayers || 8,
         minPlayers: data.minPlayers || 1,
         status:     'waiting',
-        settings:   { syncWords: true, comboEnabled: true, livesMax: 20, maxAttempts: 6, minLetters: 5, maxLetters: 6, lang: 'fr', ...settings },
+        settings:   { syncWords: true, comboEnabled: true, livesMax: 20, maxAttempts: 6, minLetters: 5, maxLetters: 6, lang: 'fr', changeOnFind: false, ...settings },
         players:    [{ id: user.id, username: user.username, socketId: socket.id, ready: true }],
         round:      null,
       };
@@ -138,12 +138,13 @@ function initSocket(io) {
         ps.status = 'failed';
       }
 
-      // Vérifier si tous les joueurs ont terminé
+      // Vérifier si tous les joueurs ont terminé (ou changeOnFind activé)
       const allDone = room.players.every(p => {
         const s = room.round.playerStates[p.id];
         return s && s.status !== 'playing';
       });
-      if (allDone) await endRound(io, room);
+      const someonFoundAndChangeOn = won && room.settings.changeOnFind;
+      if (allDone || someonFoundAndChangeOn) await endRound(io, room);
     });
 
     // ─── Déconnexion ──────────────────────────────────────────────

@@ -245,23 +245,24 @@ function resetGrid() {
 
 function prefillRow() {
   currentInput.value = Array(wordLength.value).fill(null);
+  // Pos 0 toujours fixée, autres positions pré-remplies comme hint (éditables)
   for (let i = 0; i < wordLength.value; i++) {
     if (confirmedLetters.value[i]) currentInput.value[i] = confirmedLetters.value[i];
   }
-  let pos = 1;
-  while (pos < wordLength.value && confirmedLetters.value[pos]) pos++;
-  cursorPos.value = pos < wordLength.value ? pos : -1;
+  cursorPos.value = 1; // départ toujours en pos 1
 }
 
 function getCellClass(r, c) {
   if (r < revealedRows.value.length) return revealedRows.value[r].result[c];
   if (r === revealedRows.value.length) {
-    if (confirmedLetters.value[c]) return 'first-letter';
+    if (c === 0) return 'first-letter'; // pos 0 toujours verrouillée visuellement
+    if (c === cursorPos.value) return confirmedLetters.value[c] ? 'confirmed-cursor' : 'cursor-active';
+    if (confirmedLetters.value[c] && currentInput.value[c] === confirmedLetters.value[c]) return 'confirmed-hint';
     if (currentInput.value[c]) return 'filled';
-    if (c === cursorPos.value) return 'cursor-active';
   }
   return '';
 }
+
 function getCellLetter(r, c) {
   if (r < revealedRows.value.length) return revealedRows.value[r].guess[c];
   if (r === revealedRows.value.length) return currentInput.value[c] || '';
@@ -275,8 +276,7 @@ function kbClass(k) {
 
 // ─── Curseur & saisie ────────────────────────────────────────────
 function setCursorAt(col) {
-  if (myDone.value || revealedRows.value.length >= maxAttempts.value) return;
-  if (confirmedLetters.value[col]) return;
+  if (col === 0 || myDone.value || revealedRows.value.length >= maxAttempts.value) return;
   cursorPos.value = col;
 }
 
@@ -288,26 +288,35 @@ function handleKey(key) {
 }
 
 function nextEditablePos(from) {
+  // Avancer vers la prochaine case vide (ou fin)
   for (let i = from + 1; i < wordLength.value; i++)
-    if (!confirmedLetters.value[i]) return i;
-  return -1;
+    if (!currentInput.value[i]) return i;
+  // Si tout est rempli, rester sur la dernière pos éditable
+  return from + 1 < wordLength.value ? from + 1 : -1;
 }
 
 function addLetter(letter) {
   const pos = cursorPos.value;
-  if (pos < 0 || pos >= wordLength.value) return;
+  if (pos <= 0 || pos >= wordLength.value) return; // bloquer pos 0
   currentInput.value = [...currentInput.value];
   currentInput.value[pos] = letter;
-  cursorPos.value = nextEditablePos(pos);
+  // Avancer vers la prochaine case (vide en priorité, sinon juste +1)
+  const next = nextEditablePos(pos);
+  cursorPos.value = next >= 0 ? next : (pos + 1 < wordLength.value ? pos + 1 : pos);
 }
 
 function deleteLetter() {
   const inp = [...currentInput.value];
-  const start = cursorPos.value >= 0 && cursorPos.value < wordLength.value && inp[cursorPos.value]
-    ? cursorPos.value
-    : (cursorPos.value >= 0 ? cursorPos.value - 1 : wordLength.value - 1);
-  for (let i = start; i >= 1; i--) {
-    if (!confirmedLetters.value[i] && inp[i]) {
+  const pos = cursorPos.value;
+  // Effacer la case courante si elle a une lettre (sauf pos 0)
+  if (pos > 0 && inp[pos]) {
+    inp[pos] = null;
+    currentInput.value = inp;
+    return;
+  }
+  // Sinon reculer et effacer
+  for (let i = pos - 1; i >= 1; i--) {
+    if (inp[i]) {
       inp[i] = null;
       currentInput.value = inp;
       cursorPos.value = i;
@@ -383,9 +392,13 @@ function nextRound() {
   transition: border-color .15s;
   user-select: none; cursor: default;
 }
-.cell.filled       { border-color: rgba(255,255,255,.3); }
-.cell.first-letter { border-color: #1a8a4a !important; background: #0d4f2a !important; }
-.cell.cursor-active{ border-color: var(--cyan) !important; box-shadow: 0 0 0 2px rgba(56,189,248,.3); }
+.cell.filled          { border-color: rgba(255,255,255,.3); }
+.cell.first-letter    { border-color: #1a8a4a !important; background: #0d4f2a !important; }
+/* Lettre confirmée éditable — hint vert doux */
+.cell.confirmed-hint  { border-color: #1a8a4a; background: #0d4f2a; opacity: .65; cursor: pointer; }
+/* Lettre confirmée avec curseur dessus */
+.cell.confirmed-cursor{ border-color: var(--cyan) !important; background: #0d4f2a; box-shadow: 0 0 0 2px rgba(56,189,248,.3); cursor: text; }
+.cell.cursor-active   { border-color: var(--cyan) !important; box-shadow: 0 0 0 2px rgba(56,189,248,.3); }
 .cell.correct { background: #0d4f2a; border-color: #1a8a4a; animation: flip .4s ease; }
 .cell.present { background: #4a2e00; border-color: #c97d00; animation: flip .4s ease; }
 .cell.absent  { background: #3a3d4d; border-color: transparent; color: #6b6f82; animation: flip .4s ease; }

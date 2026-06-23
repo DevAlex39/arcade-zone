@@ -75,6 +75,9 @@
             <div class="setting-toggle">
               <label><input type="checkbox" v-model="settings.comboEnabled" /> Mode Combo (×2, ×3…)</label>
             </div>
+            <div class="setting-toggle">
+              <label><input type="checkbox" v-model="settings.changeOnFind" /> Changer de mot dès qu'un joueur trouve</label>
+            </div>
           </div>
 
           <!-- Liste des joueurs -->
@@ -132,7 +135,7 @@ const platform = usePlatformStore();
 
 const room     = ref(null);
 const copied   = ref(false);
-const settings = ref({ livesMax: 20, maxAttempts: 6, syncWords: true, comboEnabled: true, minLetters: 5, maxLetters: 6, lang: 'fr' });
+const settings = ref({ livesMax: 20, maxAttempts: 6, syncWords: true, comboEnabled: true, minLetters: 5, maxLetters: 6, lang: 'fr', changeOnFind: false });
 let   socket   = null;
 
 const isHost   = computed(() => {
