@@ -16,7 +16,22 @@
       <MotusMultiGame :room-code="roomCode" :game="game" />
     </template>
 
-    <!-- JEU MULTI avec solo_url : iframe (multi socket pas encore implémenté) -->
+    <!-- JEU MULTI Yahtzee -->
+    <template v-else-if="game?.id === 'yahtzee' && roomCode">
+      <YahtzeeMultiGame :room-code="roomCode" :game="game" />
+    </template>
+
+    <!-- JEU MULTI Cell Number (Skyjo) -->
+    <template v-else-if="game?.id === 'skyjo' && roomCode">
+      <SkyjoMultiGame :room-code="roomCode" :game="game" />
+    </template>
+
+    <!-- JEU MULTI Petits Chevaux -->
+    <template v-else-if="game?.id === 'petits-chevaux' && roomCode">
+      <PetitsChevauxMultiGame :room-code="roomCode" :game="game" />
+    </template>
+
+    <!-- JEU MULTI avec solo_url : iframe fallback -->
     <template v-else-if="game?.solo_url && roomCode">
       <div class="solo-bar">
         <router-link to="/" class="btn btn-ghost btn-sm">← Menu</router-link>
@@ -49,6 +64,9 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { usePlatformStore } from '@/stores/platform.js';
 import MotusMultiGame from '@/views/games/MotusMultiGame.vue';
+import YahtzeeMultiGame from '@/views/games/YahtzeeMultiGame.vue';
+import SkyjoMultiGame from '@/views/games/SkyjoMultiGame.vue';
+import PetitsChevauxMultiGame from '@/views/games/PetitsChevauxMultiGame.vue';
 
 const route    = useRoute();
 const platform = usePlatformStore();
