@@ -4,6 +4,17 @@ const { fetchWord, validateWord, computeResult, computeDamage } = require('../ga
 // rooms en mémoire : code → state
 const rooms = new Map();
 
+// Timers de déconnexion (lobby uniquement) : `${code}_${userId}` → timeout
+const disconnectTimers = new Map();
+
+function clearDisconnectTimer(code, userId) {
+  const key = `${code}_${userId}`;
+  if (disconnectTimers.has(key)) {
+    clearTimeout(disconnectTimers.get(key));
+    disconnectTimers.delete(key);
+  }
+}
+
 function initSocket(io) {
 
   // Auth via token (JWT normal ou token invité)
@@ -42,6 +53,7 @@ function initSocket(io) {
 
       socket.join(code);
       socket.currentRoom = code;
+      clearDisconnectTimer(code, user.id);
 
       if (existing) {
         existing.socketId = socket.id; // reconnexion
@@ -73,6 +85,7 @@ function initSocket(io) {
         const room = rooms.get(code);
         socket.join(code);
         socket.currentRoom = code;
+        clearDisconnectTimer(code, user.id);
         const existing = room.players.find(p => p.id === user.id);
         if (existing) {
           existing.socketId = socket.id; // reconnexion
@@ -90,9 +103,14 @@ function initSocket(io) {
         maxPlayers: maxPlayers || 8,
         minPlayers: data.minPlayers || 1,
         status:     'waiting',
-        settings:   { syncWords: true, comboEnabled: true, livesMax: 20, maxAttempts: 6, minLetters: 5, maxLetters: 6, lang: 'fr', changeOnFind: false, ...settings },
-        players:    [{ id: user.id, username: user.username, socketId: socket.id, ready: true }],
-        round:      null,
+        settings: {
+          syncWords: true, comboEnabled: true, livesMax: 20, maxAttempts: 6,
+          minLetters: 5, maxLetters: 6, lang: 'fr', changeOnFind: false,
+          category: 'tous',
+          ...settings,
+        },
+        players: [{ id: user.id, username: user.username, socketId: socket.id, ready: true }],
+        round:   null,
       };
       rooms.set(code, room);
       socket.join(code);
@@ -107,6 +125,27 @@ function initSocket(io) {
       if (room.hostId !== user.id) return socket.emit('error', 'Seul l\'hôte peut lancer la partie');
       if (room.players.length < room.minPlayers) return socket.emit('error', `Il faut au moins ${room.minPlayers} joueur(s)`);
       await startRound(io, room);
+    });
+
+    // ─── Exclure un joueur (hôte seulement) ───────────────────────
+    socket.on('kick_player', ({ code, targetId }) => {
+      code = code?.toUpperCase();
+      const room = rooms.get(code);
+      if (!room) return;
+      if (room.hostId !== user.id) return socket.emit('error', 'Seul l\'hôte peut exclure un joueur');
+      if (targetId === user.id) return;
+
+      const target = room.players.find(p => p.id === targetId);
+      if (!target) return;
+
+      // Notifier le joueur exclu
+      if (target.socketId) {
+        io.to(target.socketId).emit('kicked');
+      }
+
+      room.players = room.players.filter(p => p.id !== targetId);
+      clearDisconnectTimer(code, targetId);
+      io.to(code).emit('room_update', sanitizeRoom(room));
     });
 
     // ─── Soumettre un mot ─────────────────────────────────────────
@@ -152,9 +191,37 @@ function initSocket(io) {
       const code = socket.currentRoom;
       if (!code || !rooms.has(code)) return;
       const room = rooms.get(code);
-      const p = room.players.find(p => p.id === user.id);
-      if (p) p.socketId = null; // garder dans la liste mais marquer déconnecté
+      const p = room.players.find(pl => pl.id === user.id);
+      if (!p) return;
+
+      p.socketId = null;
       io.to(code).emit('room_update', sanitizeRoom(room));
+
+      // En lobby : retirer automatiquement après 30 secondes si pas de reconnexion
+      if (room.status === 'waiting') {
+        const timerKey = `${code}_${user.id}`;
+        const timer = setTimeout(() => {
+          disconnectTimers.delete(timerKey);
+          const r = rooms.get(code);
+          if (!r || r.status !== 'waiting') return;
+
+          r.players = r.players.filter(pl => pl.id !== user.id);
+
+          // Si c'était l'hôte, transférer au premier joueur restant
+          if (r.hostId === user.id) {
+            if (r.players.length > 0) {
+              r.hostId   = r.players[0].id;
+              r.hostName = r.players[0].username;
+            } else {
+              rooms.delete(code);
+              return;
+            }
+          }
+
+          io.to(code).emit('room_update', sanitizeRoom(r));
+        }, 30_000);
+        disconnectTimers.set(timerKey, timer);
+      }
     });
   });
 }
@@ -164,9 +231,8 @@ async function startRound(io, room) {
   room.status = 'playing';
   room.round  = room.round ? { ...room.round, idx: (room.round.idx || 0) + 1 } : { idx: 1 };
 
-  // Récupérer le mot selon les réglages
   const s    = room.settings;
-  const word = await fetchWord(s.lang || 'fr', s.minLetters || 5, s.maxLetters || 6);
+  const word = await fetchWord(s.lang || 'fr', s.minLetters || 5, s.maxLetters || 6, s.category || 'tous');
   room.round.word        = word;
   room.round.maxAttempts = s.maxAttempts || 6;
 
@@ -182,7 +248,6 @@ async function startRound(io, room) {
       combo:            p.combo ?? 0,
     };
   });
-  // Copier lives/combo dans les joueurs
   room.players.forEach(p => {
     if (p.lives === undefined) p.lives = room.settings.livesMax;
     if (p.combo === undefined) p.combo = 0;
@@ -200,11 +265,11 @@ async function startRound(io, room) {
 async function endRound(io, room) {
   const round   = room.round;
   const results = room.players.map(p => ({
-    id:       p.id,
-    username: p.username,
-    status:   round.playerStates[p.id]?.status,
+    id:         p.id,
+    username:   p.username,
+    status:     round.playerStates[p.id]?.status,
     foundAtRow: round.playerStates[p.id]?.foundAtRow,
-    guesses:  round.playerStates[p.id]?.guesses?.length,
+    guesses:    round.playerStates[p.id]?.guesses?.length,
   }));
 
   // Calcul dégâts
@@ -229,12 +294,13 @@ async function endRound(io, room) {
   const alive      = room.players.filter(p => !p.eliminated);
 
   io.to(room.code).emit('round_end', {
-    word:        round.word,
+    word:      round.word,
     results,
     damages,
-    players:     room.players.map(p => ({ id: p.id, username: p.username, lives: p.lives, combo: p.combo, eliminated: p.eliminated })),
+    players:   room.players.map(p => ({ id: p.id, username: p.username, lives: p.lives, combo: p.combo, eliminated: p.eliminated })),
     eliminated,
-    roundIdx:    round.idx,
+    roundIdx:  round.idx,
+    category:  room.settings.category || 'tous',
   });
 
   if (alive.length <= 1) {
@@ -242,7 +308,6 @@ async function endRound(io, room) {
     io.to(room.code).emit('game_over', { winner: alive[0] || null });
     rooms.delete(room.code);
   } else {
-    // Préparer le prochain round (l'hôte devra cliquer "Rejouer")
     room.status = 'waiting';
   }
 }

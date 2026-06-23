@@ -8,6 +8,7 @@
         <span class="badge badge-rose">🔥 Multi</span>
         <span class="bar-round" v-if="roundState">Manche {{ roundState.roundIdx }}</span>
       </div>
+      <span class="badge-category" v-if="currentCategory !== 'tous'">{{ categoryLabel }}</span>
       <span class="bar-info">{{ statusMsg }}</span>
     </div>
 
@@ -94,6 +95,19 @@
           </div>
         </div>
 
+        <!-- Signaler le mot (bêta) -->
+        <div class="rr-report">
+          <button
+            class="btn-report"
+            :disabled="wordReported"
+            @click="reportWord"
+            :title="`Signaler '${roundResults?.word}' comme mal catégorisé`"
+          >
+            {{ wordReported ? '✅ Signalement envoyé' : '🏷️ Ce mot n\'est pas dans la bonne catégorie' }}
+          </button>
+          <span class="badge-beta">Bêta</span>
+        </div>
+
         <button v-if="isHost" class="btn btn-primary btn-full mt-2" @click="nextRound">
           Manche suivante →
         </button>
@@ -126,6 +140,16 @@ const auth     = useAuthStore();
 const platform = usePlatformStore();
 const myId     = auth.user?.id;
 const isHost   = ref(false);
+
+// Catégorie active (reçue via room_update ou round_end)
+const currentCategory = ref('tous');
+const wordReported    = ref(false);
+const CATEGORY_LABELS = {
+  tous: 'Tous les mots', animaux: '🐾 Animaux', cuisine: '🍽️ Cuisine',
+  sport: '⚽ Sport', nature: '🌿 Nature', geographie: '🌍 Géographie',
+  metiers: '👷 Métiers', corps: '🫀 Corps humain', transport: '🚗 Transport',
+};
+const categoryLabel = computed(() => CATEGORY_LABELS[currentCategory.value] || currentCategory.value);
 
 const KB_ROWS = [
   ['A','Z','E','R','T','Y','U','I','O','P'],
@@ -170,6 +194,7 @@ onMounted(() => {
   socket.on('room_update', (data) => {
     players.value = data.players || [];
     isHost.value  = data.host_id === myId;
+    if (data.settings?.category) currentCategory.value = data.settings.category;
     if (data.status === 'playing' && phase.value === 'waiting') {
       // round_start devrait arriver
     }
@@ -219,8 +244,10 @@ onMounted(() => {
   socket.on('round_end', (data) => {
     roundResults.value = data;
     players.value      = data.players || players.value;
+    if (data.category) currentCategory.value = data.category;
     phase.value = 'results';
     showResults.value = true;
+    wordReported.value = false;
     if (roundState.value) roundState.value.word = data.word;
   });
 
@@ -348,6 +375,24 @@ function nextRound() {
   showResults.value = false;
   socket.emit('start_game', props.roomCode);
 }
+
+async function reportWord() {
+  if (wordReported.value || !roundResults.value?.word) return;
+  wordReported.value = true;
+  try {
+    await fetch('/api/motus/report', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(auth.token ? { Authorization: `Bearer ${auth.token}` } : {}),
+      },
+      body: JSON.stringify({ word: roundResults.value.word, category: currentCategory.value }),
+    });
+    platform.showToast('Signalement envoyé, merci !', 'success');
+  } catch {
+    wordReported.value = false;
+  }
+}
 </script>
 
 <style scoped>
@@ -436,4 +481,27 @@ function nextRound() {
 .rr-dmg { color: #f87171; font-size: .75rem; }
 .rr-lives { display: flex; flex-direction: column; gap: .3rem; background: var(--bg-3); border-radius: 8px; padding: .6rem; }
 .rr-life-row { display: flex; justify-content: space-between; font-size: .82rem; }
+
+/* Signaler */
+.rr-report { display: flex; align-items: center; gap: .5rem; margin-top: .75rem; }
+.btn-report {
+  flex: 1; background: transparent; border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text-2); font-size: .75rem; padding: .35rem .6rem; cursor: pointer;
+  text-align: left; transition: border-color .15s, color .15s;
+}
+.btn-report:hover:not(:disabled) { border-color: #fbbf24; color: #fbbf24; }
+.btn-report:disabled { opacity: .6; cursor: default; }
+
+/* Badge catégorie dans la barre */
+.badge-category {
+  font-size: .72rem; background: rgba(56,189,248,.1); border: 1px solid rgba(56,189,248,.3);
+  color: var(--cyan); border-radius: 6px; padding: 0 .5rem; line-height: 1.7;
+}
+
+/* Badge bêta */
+.badge-beta {
+  display: inline-block; background: rgba(251,191,36,.15); border: 1px solid rgba(251,191,36,.4);
+  color: #fbbf24; border-radius: 4px; padding: 0 .35rem; font-size: .63rem;
+  font-weight: 700; letter-spacing: .04em; white-space: nowrap; flex-shrink: 0;
+}
 </style>

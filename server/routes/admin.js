@@ -43,4 +43,27 @@ router.get('/stats', async (req, res) => {
   res.json({ users, rooms, sessions });
 });
 
+// Mots signalés pour Trouve le Mot
+router.get('/motus-reports', async (req, res) => {
+  const [rows] = await pool.query(
+    `SELECT word, category, COUNT(*) AS reports, MAX(reported_at) AS last_report
+     FROM motus_word_reports
+     GROUP BY word, category
+     ORDER BY reports DESC
+     LIMIT 100`
+  );
+  res.json(rows);
+});
+
+// Supprimer les signalements d'un mot (après validation admin)
+router.delete('/motus-reports/:word', async (req, res) => {
+  const { category } = req.query;
+  const sql = category
+    ? 'DELETE FROM motus_word_reports WHERE word=? AND category=?'
+    : 'DELETE FROM motus_word_reports WHERE word=?';
+  const params = category ? [req.params.word.toUpperCase(), category] : [req.params.word.toUpperCase()];
+  await pool.query(sql, params);
+  res.json({ ok: true });
+});
+
 module.exports = router;

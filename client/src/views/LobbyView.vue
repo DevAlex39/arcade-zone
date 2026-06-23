@@ -35,8 +35,19 @@
         <div class="lobby-right">
 
           <!-- Paramètres Motus (hôte seulement) -->
-          <div class="card lobby-settings" v-if="isHost && room.game_id === 'motus-multi'">
+          <div class="card lobby-settings" v-if="isHost && room.game_id === 'motus'">
             <h3 class="settings-title">Paramètres</h3>
+
+            <!-- Catégorie -->
+            <div class="setting-row">
+              <label>Catégorie <span class="badge-beta">Bêta</span></label>
+              <select v-model="settings.category" class="select-category">
+                <option v-for="cat in CATEGORY_LIST" :key="cat.id" :value="cat.id">
+                  {{ cat.icon }} {{ cat.label }}
+                </option>
+              </select>
+            </div>
+
             <div class="setting-row">
               <label>Vies de départ</label>
               <div class="stepper">
@@ -90,6 +101,13 @@
                 <span v-if="p.id === room.host_id" class="badge badge-amber">Hôte</span>
                 <span v-else-if="p.online !== false" class="badge badge-green">En ligne</span>
                 <span v-else class="badge" style="color:var(--text-3)">Déconnecté</span>
+                <!-- Bouton kick (hôte seulement, pas sur soi-même) -->
+                <button
+                  v-if="isHost && p.id !== room.host_id"
+                  class="btn-kick"
+                  title="Exclure ce joueur"
+                  @click="kickPlayer(p.id)"
+                >✕</button>
               </div>
               <div v-if="(room.players?.length || 0) < room.max_players" class="player-row placeholder">
                 <div class="player-avatar ghost">?</div>
@@ -135,10 +153,26 @@ const platform = usePlatformStore();
 
 const room     = ref(null);
 const copied   = ref(false);
-const settings = ref({ livesMax: 20, maxAttempts: 6, syncWords: true, comboEnabled: true, minLetters: 5, maxLetters: 6, lang: 'fr', changeOnFind: false });
-let   socket   = null;
+const settings = ref({
+  livesMax: 20, maxAttempts: 6, syncWords: true, comboEnabled: true,
+  minLetters: 5, maxLetters: 6, lang: 'fr', changeOnFind: false,
+  category: 'tous',
+});
+let socket = null;
 
-const isHost   = computed(() => {
+const CATEGORY_LIST = [
+  { id: 'tous',       icon: '📚', label: 'Tous les mots' },
+  { id: 'animaux',    icon: '🐾', label: 'Animaux' },
+  { id: 'cuisine',    icon: '🍽️', label: 'Cuisine & Nourriture' },
+  { id: 'sport',      icon: '⚽', label: 'Sport' },
+  { id: 'nature',     icon: '🌿', label: 'Nature & Plantes' },
+  { id: 'geographie', icon: '🌍', label: 'Géographie' },
+  { id: 'metiers',    icon: '👷', label: 'Métiers' },
+  { id: 'corps',      icon: '🫀', label: 'Corps humain' },
+  { id: 'transport',  icon: '🚗', label: 'Transport' },
+];
+
+const isHost = computed(() => {
   if (!room.value || !auth.user) return false;
   if (auth.user.isGuest) return room.value.host_name === auth.user.username;
   return room.value.host_id === auth.user.id;
@@ -160,7 +194,6 @@ async function loadRoom() {
 function connectSocket() {
   socket = io('/', { auth: { token: auth.token, username: auth.user?.username } });
 
-  // Attendre la connexion avant d'émettre (fix timing)
   socket.on('connect', () => {
     socket.emit('init_room', {
       code:       room.value.code,
@@ -179,6 +212,11 @@ function connectSocket() {
     router.push(`/game/${room.value.game_id}?room=${room.value.code}`);
   });
 
+  socket.on('kicked', () => {
+    platform.showToast('Vous avez été exclu de la salle par l\'hôte', 'error');
+    router.push('/');
+  });
+
   socket.on('connect_error', (err) => platform.showToast('Erreur de connexion : ' + err.message, 'error'));
   socket.on('error', (msg) => platform.showToast(msg, 'error'));
 }
@@ -186,6 +224,11 @@ function connectSocket() {
 function startGame() {
   if (!socket) return;
   socket.emit('start_game', room.value.code);
+}
+
+function kickPlayer(targetId) {
+  if (!socket) return;
+  socket.emit('kick_player', { code: room.value.code, targetId });
 }
 
 async function copyLink() {
@@ -219,13 +262,26 @@ onUnmounted(() => socket?.disconnect());
 
 .lobby-right { display: flex; flex-direction: column; gap: 1rem; }
 .settings-title { font-size: .85rem; font-weight: 800; color: var(--text-2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: .75rem; }
-.setting-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: .5rem; font-size: .85rem; }
+.setting-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: .5rem; font-size: .85rem; gap: .5rem; }
 .stepper { display: flex; align-items: center; gap: .6rem; }
 .stepper button { width: 26px; height: 26px; border-radius: 6px; background: var(--bg-4); border: 1px solid var(--border); color: var(--text); cursor: pointer; font-size: 1rem; }
 .setting-toggle { font-size: .83rem; margin-bottom: .35rem; }
 .setting-toggle label { display: flex; align-items: center; gap: .5rem; cursor: pointer; }
 .setting-toggle input { accent-color: var(--cyan); }
 
+/* Catégorie */
+.select-category {
+  background: var(--bg-4); border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); padding: .25rem .5rem; font-size: .82rem;
+  cursor: pointer; max-width: 180px;
+}
+.badge-beta {
+  display: inline-block; background: rgba(251,191,36,.15); border: 1px solid rgba(251,191,36,.4);
+  color: #fbbf24; border-radius: 4px; padding: 0 .35rem; font-size: .65rem;
+  font-weight: 700; letter-spacing: .04em; vertical-align: middle; margin-left: .3rem;
+}
+
+/* Players */
 .player-list { display: flex; flex-direction: column; gap: .5rem; }
 .player-row { display: flex; align-items: center; gap: .6rem; }
 .player-avatar {
@@ -237,6 +293,16 @@ onUnmounted(() => socket?.disconnect());
 .player-avatar.ghost { background: var(--bg-4); color: var(--text-3); }
 .player-name { flex: 1; font-weight: 600; }
 .player-row.placeholder { opacity: .4; }
+
+/* Kick button */
+.btn-kick {
+  background: transparent; border: 1px solid rgba(239,68,68,.35); border-radius: 6px;
+  color: #f87171; cursor: pointer; width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center; font-size: .7rem;
+  transition: background .12s;
+  flex-shrink: 0;
+}
+.btn-kick:hover { background: rgba(239,68,68,.15); }
 
 .waiting-msg { display: flex; align-items: center; gap: .6rem; color: var(--text-2); font-size: .88rem; padding: 1rem; background: var(--bg-3); border-radius: var(--radius); }
 .loading-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .5rem; }

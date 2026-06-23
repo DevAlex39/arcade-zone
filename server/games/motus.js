@@ -1,6 +1,13 @@
 const { getRandomWord, isValidWord } = require('./words');
+const { CATEGORIES } = require('./categories');
 
-async function fetchWord(lang = 'fr', minLength = 5, maxLength = 6) {
+async function fetchWord(lang = 'fr', minLength = 5, maxLength = 6, category = 'tous') {
+  const cat = CATEGORIES[category];
+  if (cat && cat.words) {
+    const pool = cat.words.filter(w => w.length >= minLength && w.length <= maxLength);
+    if (pool.length > 0) return pool[Math.floor(Math.random() * pool.length)];
+    // Pas de mots de la bonne longueur dans cette catégorie → fallback dict complet
+  }
   return getRandomWord(lang, minLength, maxLength);
 }
 

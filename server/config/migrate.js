@@ -58,6 +58,15 @@ const TABLES = [
     FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE
   ) CHARACTER SET utf8mb4`,
 
+  `CREATE TABLE IF NOT EXISTS motus_word_reports (
+    id          INT PRIMARY KEY AUTO_INCREMENT,
+    word        VARCHAR(20) NOT NULL,
+    category    VARCHAR(50) DEFAULT 'tous',
+    user_id     INT NULL,
+    reported_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_word_cat (word, category)
+  ) CHARACTER SET utf8mb4`,
+
   `CREATE TABLE IF NOT EXISTS game_sessions (
     id        INT PRIMARY KEY AUTO_INCREMENT,
     user_id   INT,
