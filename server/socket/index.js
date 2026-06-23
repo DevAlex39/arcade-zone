@@ -139,12 +139,7 @@ function initSocket(io) {
       else if (ps.guesses.length >= room.round.maxAttempts) { ps.status = 'failed'; }
 
       if (won && room.settings.changeOnFind) {
-        // Fin immédiate : marquer tous les autres 'playing' comme 'failed'
-        // et ne calculer les dégâts QUE pour le joueur qui vient de trouver
-        room.players.forEach(p => {
-          const other = room.round.playerStates[p.id];
-          if (other && other.status === 'playing') other.status = 'failed';
-        });
+        // Fin anticipée : les joueurs encore en cours ne reçoivent pas de dégâts
         await endMotusRoundChangeOnFind(io, room, user.id);
       } else {
         const allDone = room.players.every(p => { const s = room.round.playerStates[p.id]; return s && s.status !== 'playing'; });
@@ -409,19 +404,24 @@ async function endMotusRoundChangeOnFind(io, room, finderId) {
   const finder = room.players.find(p => p.id === finderId);
   const finderPs = round.playerStates[finderId];
 
-  // Incrémenter le combo du trouveur uniquement
   finder.combo = (finder.combo || 0) + 1;
   const dmg = computeDamage(finderPs.foundAtRow, round.maxAttempts, finder.combo, room.settings.comboEnabled);
 
-  // Appliquer les dégâts de ce seul joueur à tous les autres
+  // Dégâts uniquement pour les joueurs qui ont naturellement échoué (essais épuisés).
+  // Les joueurs encore en cours (status 'playing') sont juste interrompus sans pénalité.
   const damages = {};
   room.players.forEach(p => {
     if (p.id === finderId) return;
-    damages[p.id] = dmg;
-    p.lives = Math.max(0, (p.lives || 0) - dmg);
+    const ps = round.playerStates[p.id];
+    if (!ps) return;
+    if (ps.status === 'playing') {
+      ps.status = 'failed'; // interrompu, pas de dégâts
+    } else if (ps.status === 'failed') {
+      damages[p.id] = dmg; // a épuisé ses essais avant que le trouveur trouve
+      p.lives = Math.max(0, (p.lives || 0) - dmg);
+    }
   });
 
-  // Réinitialiser le combo des non-trouveurs
   room.players.forEach(p => {
     if (p.id !== finderId) p.combo = 0;
   });
