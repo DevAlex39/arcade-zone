@@ -1,46 +1,41 @@
-// Dictionnaires — génération vs validation séparées.
-// Génération : wordlist-fr.js (formes de base uniquement : infinitifs, singuliers)
-// Validation  : an-array-of-french-words (tout le vocabulaire, formes conjuguées incluses)
+// Génération : wordlist-fr/en.js (formes de base : infinitifs, singuliers)
+// Validation FR : an-array-of-french-words (formes conjuguées incluses)
+// Validation EN : wordlist-en.js (même liste que génération, suffisant pour le jeu)
 
-const WORDLIST_BASE = require('./wordlist-fr');
+const WORDLIST_FR = require('./wordlist-fr');
+const WORDLIST_EN = require('./wordlist-en');
 
-const VALIDATION = {
-  fr: null, // chargé en lazy depuis an-array-of-french-words
-};
+const VALIDATION = { fr: null, en: null };
 
 function normalize(w) {
   return w.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
-function loadValidationFr() {
-  if (VALIDATION.fr) return VALIDATION.fr;
+function loadValidation(lang) {
+  if (VALIDATION[lang]) return VALIDATION[lang];
+  if (lang === 'en') {
+    VALIDATION.en = new Set(WORDLIST_EN);
+    return VALIDATION.en;
+  }
+  // FR — an-array-of-french-words avec fallback
   try {
     const raw = require('an-array-of-french-words');
-    VALIDATION.fr = new Set(
-      raw.map(normalize).filter(w => /^[A-Z]{4,10}$/.test(w))
-    );
+    VALIDATION.fr = new Set(raw.map(normalize).filter(w => /^[A-Z]{4,10}$/.test(w)));
   } catch {
-    // Package non installé (ex: avant npm install) — fallback sur la liste de base
-    VALIDATION.fr = new Set(WORDLIST_BASE);
+    VALIDATION.fr = new Set(WORDLIST_FR);
   }
   return VALIDATION.fr;
 }
 
-/**
- * Récupère un mot aléatoire depuis la liste curated (formes de base uniquement).
- */
 function getRandomWord(lang = 'fr', min = 5, max = 6) {
-  const pool = WORDLIST_BASE.filter(w => w.length >= min && w.length <= max);
-  if (!pool.length) return 'MAISON';
+  const list = lang === 'en' ? WORDLIST_EN : WORDLIST_FR;
+  const pool = list.filter(w => w.length >= min && w.length <= max);
+  if (!pool.length) return lang === 'en' ? 'STONE' : 'MAISON';
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-/**
- * Vérifie qu'un mot soumis par le joueur est valide (toutes formes acceptées).
- */
 function isValidWord(word, lang = 'fr') {
-  const dict = lang === 'fr' ? loadValidationFr() : loadValidationFr();
-  return dict.has(normalize(word));
+  return loadValidation(lang).has(normalize(word));
 }
 
 module.exports = { getRandomWord, isValidWord };

@@ -6,6 +6,23 @@ export const usePlatformStore = defineStore('platform', () => {
   const games       = ref([]);
   const currentRoom = ref(null);
   const toast       = ref(null);
+  const theme       = ref(localStorage.getItem('az-theme') || 'cobalt');
+  const lang        = ref(localStorage.getItem('az-lang')  || 'fr');
+
+  function setTheme(t) {
+    theme.value = t;
+    localStorage.setItem('az-theme', t);
+    document.documentElement.setAttribute('data-theme', t);
+  }
+
+  function setLang(l) {
+    lang.value = l;
+    localStorage.setItem('az-lang', l);
+  }
+
+  function applyTheme() {
+    document.documentElement.setAttribute('data-theme', theme.value);
+  }
 
   async function fetchGames() {
     const { data } = await axios.get('/api/games');
@@ -36,5 +53,5 @@ export const usePlatformStore = defineStore('platform', () => {
     await axios.post(`/api/rooms/${code}/join`, payload);
   }
 
-  return { games, currentRoom, toast, fetchGames, showToast, createRoom, fetchRoom, joinRoom };
+  return { games, currentRoom, toast, theme, lang, fetchGames, showToast, createRoom, fetchRoom, joinRoom, setTheme, setLang, applyTheme };
 });

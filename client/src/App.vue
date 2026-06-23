@@ -25,6 +25,7 @@ const auth     = useAuthStore();
 const platform = usePlatformStore();
 
 onMounted(async () => {
+  platform.applyTheme();
   await auth.init();
   await platform.fetchGames();
 });

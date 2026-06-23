@@ -21,26 +21,15 @@
 
       <!-- Dés -->
       <div class="dice-row">
-        <div
+        <DieFace
           v-for="(val, i) in dice"
           :key="i"
-          class="die"
-          :class="{ kept: kept[i], selectable: isMyTurn && hasRolled }"
+          :val="val"
+          :kept="kept[i]"
+          :idx="i"
+          :selectable="isMyTurn && hasRolled"
           @click="toggleKeep(i)"
-        >
-          <svg viewBox="0 0 60 60" width="56" height="56">
-            <rect rx="8" ry="8" width="60" height="60" fill="currentColor" />
-            <g fill="white">
-              <template v-if="val===1"><circle cx="30" cy="30" r="6"/></template>
-              <template v-else-if="val===2"><circle cx="18" cy="18" r="6"/><circle cx="42" cy="42" r="6"/></template>
-              <template v-else-if="val===3"><circle cx="18" cy="18" r="6"/><circle cx="30" cy="30" r="6"/><circle cx="42" cy="42" r="6"/></template>
-              <template v-else-if="val===4"><circle cx="18" cy="18" r="6"/><circle cx="42" cy="18" r="6"/><circle cx="18" cy="42" r="6"/><circle cx="42" cy="42" r="6"/></template>
-              <template v-else-if="val===5"><circle cx="18" cy="18" r="6"/><circle cx="42" cy="18" r="6"/><circle cx="30" cy="30" r="6"/><circle cx="18" cy="42" r="6"/><circle cx="42" cy="42" r="6"/></template>
-              <template v-else><circle cx="18" cy="18" r="6"/><circle cx="42" cy="18" r="6"/><circle cx="18" cy="30" r="6"/><circle cx="42" cy="30" r="6"/><circle cx="18" cy="42" r="6"/><circle cx="42" cy="42" r="6"/></template>
-            </g>
-          </svg>
-          <div v-if="kept[i]" class="kept-label">Gardé</div>
-        </div>
+        />
       </div>
 
       <!-- Bouton Lancer -->
@@ -115,6 +104,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { io } from 'socket.io-client';
 import { useAuthStore } from '@/stores/auth.js';
+import DieFace from '@/components/DieFace.vue';
 
 const props  = defineProps({ roomCode: String, game: Object });
 const router = useRouter();
@@ -212,12 +202,7 @@ onUnmounted(() => {
 .my-turn { color:#4caf50; font-weight:600; }
 .round-num { opacity:.6; font-size:.85rem; }
 
-.dice-row { display:flex; gap:12px; justify-content:center; margin-bottom:1rem; flex-wrap:wrap; }
-.die { position:relative; cursor:default; color:#ddd; transition:transform .15s; }
-.die.selectable { cursor:pointer; }
-.die.kept { color:#fbbf24; }
-.die.selectable:hover { transform:scale(1.08); }
-.kept-label { text-align:center; font-size:.65rem; color:#fbbf24; margin-top:2px; }
+.dice-row { display:flex; gap:14px; justify-content:center; margin-bottom:1rem; flex-wrap:wrap; }
 
 .roll-row { text-align:center; margin-bottom:1.5rem; }
 .btn-roll { padding:.7rem 2rem; border:none; border-radius:8px; background:#4caf50; color:#fff; font-size:1rem; font-weight:600; cursor:pointer; }

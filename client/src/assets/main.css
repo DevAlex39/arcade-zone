@@ -1,38 +1,100 @@
 /* ─── RESET ──────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ─── DESIGN TOKENS (Roll the Dice Rogue — Cobalt) ──────────────────────── */
-:root {
-  --bg:       #0d0f1a;
-  --bg-2:     #141622;
-  --bg-3:     #1c1f30;
-  --bg-4:     #252842;
-  --border:   rgba(255,255,255,.07);
-  --text:     #e2e4ef;
-  --text-2:   #8b8fa8;
-  --text-3:   #5c6080;
+/* ─── THEME TOKENS ──────────────────────────────────────────────────────── */
+:root,
+html[data-theme="cobalt"] {
+  --bg:       #0a0c14;
+  --bg-2:     #10131e;
+  --bg-3:     #171b2a;
+  --bg-4:     #222740;
+  --border:   rgba(150,170,255,.09);
+  --text:     #eef1fb;
+  --text-2:   #8c95b8;
+  --text-3:   #5b6486;
 
-  --cyan:     #38bdf8;
-  --violet:   #818cf8;
-  --rose:     #f472b6;
-  --amber:    #fb923c;
-  --green:    #4ade80;
-  --purple:   #a78bfa;
-  --yellow:   #fbbf24;
+  --cyan:     #46d6ff;
+  --violet:   #8b7bff;
+  --rose:     #ff5d8f;
+  --amber:    #ffc24b;
+  --green:    #2fe6b0;
+  --purple:   #b3a6ff;
+  --yellow:   #ffd887;
 
   --accent:   var(--cyan);
   --accent-2: var(--violet);
 
-  --radius-sm: 8px;
-  --radius:    12px;
-  --radius-lg: 18px;
-
-  --shadow:   0 4px 24px rgba(0,0,0,.4);
-  --glow-cyan:   0 0 20px rgba(56,189,248,.25);
-  --glow-violet: 0 0 20px rgba(129,140,248,.25);
+  /* Dice */
+  --die-face-1:    #fbfdff;
+  --die-face-2:    #c7d2ec;
+  --die-pip:       #1c2233;
+  --die-pip-1:     #ff5d8f;
+  --die-kept-1:    #1a2438;
+  --die-kept-2:    #46d6ff;
+  --die-kept-glow: rgba(70,214,255,.6);
+  --die-kept-pip:  #0c2433;
 
   --font-body:  'Manrope', sans-serif;
   --font-title: 'Space Grotesk', sans-serif;
+
+  --glow-cyan:   0 0 20px rgba(70,214,255,.25);
+  --glow-violet: 0 0 20px rgba(139,123,255,.25);
+  --grain: .022;
+}
+
+html[data-theme="ember"] {
+  --bg:       #100d0a;
+  --bg-2:     #181410;
+  --bg-3:     #221c15;
+  --bg-4:     #322a20;
+  --border:   rgba(255,200,150,.09);
+  --text:     #f7f1e9;
+  --text-2:   #ab9c89;
+  --text-3:   #786a5a;
+
+  --cyan:     #ff8a3d;
+  --violet:   #2fd0c4;
+  --rose:     #ff6b4a;
+  --amber:    #ffc24b;
+  --green:    #36d39b;
+  --purple:   #c084fc;
+  --yellow:   #ffd08a;
+
+  --accent:   var(--cyan);
+  --accent-2: var(--violet);
+
+  /* Dice */
+  --die-face-1:    #fffaf0;
+  --die-face-2:    #e6d3b0;
+  --die-pip:       #2a2114;
+  --die-pip-1:     #ff6b4a;
+  --die-kept-1:    #2a1d10;
+  --die-kept-2:    #ff8a3d;
+  --die-kept-glow: rgba(255,138,61,.55);
+  --die-kept-pip:  #3a2410;
+
+  --font-body:  'Manrope', sans-serif;
+  --font-title: 'Archivo', sans-serif;
+
+  --glow-cyan:   0 0 20px rgba(255,138,61,.3);
+  --glow-violet: 0 0 20px rgba(47,208,196,.25);
+  --grain: .03;
+}
+
+/* Grain texture */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 9999; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: var(--grain, .022);
+}
+
+/* ─── SHARED (non-theme) ─────────────────────────────────────────────────── */
+:root {
+  --radius-sm: 8px;
+  --radius:    12px;
+  --radius-lg: 18px;
+  --shadow:    0 4px 24px rgba(0,0,0,.4);
 }
 
 html, body { height: 100%; }

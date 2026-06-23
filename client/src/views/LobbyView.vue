@@ -57,6 +57,15 @@
           <div class="card lobby-settings" v-if="isHost && room.game_id === 'motus'">
             <h3 class="settings-title">Paramètres</h3>
 
+            <!-- Langue -->
+            <div class="setting-row">
+              <span class="toggle-label">Langue des mots</span>
+              <div class="lang-switch">
+                <button class="lang-btn" :class="{ active: settings.lang === 'fr' }" @click="settings.lang = 'fr'">🇫🇷 FR</button>
+                <button class="lang-btn" :class="{ active: settings.lang === 'en' }" @click="settings.lang = 'en'">🇬🇧 EN</button>
+              </div>
+            </div>
+
             <!-- Catégories (multi-sélection) -->
             <div class="setting-block">
               <label class="setting-label">Catégories <span class="badge-beta">Bêta</span></label>
@@ -187,7 +196,7 @@ const room     = ref(null);
 const copied   = ref(false);
 const settings = ref({
   livesMax: 20, maxAttempts: 6, syncWords: true, comboEnabled: true,
-  minLetters: 5, maxLetters: 6, lang: 'fr', changeOnFind: false,
+  minLetters: 5, maxLetters: 6, lang: platform.lang, changeOnFind: false,
   categories: ['tous'],
   pionsPerPlayer: 2, rejouerSur6: true,
 });
@@ -357,6 +366,14 @@ onUnmounted(() => socket?.disconnect());
 }
 .cat-chip:hover { border-color: var(--cyan, #46d6ff); color: var(--text); }
 .cat-chip.active { background: color-mix(in srgb, var(--cyan, #46d6ff) 15%, transparent); border-color: var(--cyan, #46d6ff); color: var(--cyan, #46d6ff); font-weight: 600; }
+.lang-switch { display: flex; background: var(--bg-3); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.lang-btn {
+  padding: .25rem .55rem; background: transparent; border: none; cursor: pointer;
+  font-size: .75rem; font-weight: 700; color: var(--text-2); transition: all .12s;
+}
+.lang-btn:hover { background: var(--bg-4); color: var(--text); }
+.lang-btn.active { background: var(--bg-4); color: var(--cyan); }
+
 .badge-beta {
   display: inline-block; background: rgba(251,191,36,.15); border: 1px solid rgba(251,191,36,.4);
   color: #fbbf24; border-radius: 4px; padding: 0 .35rem; font-size: .65rem;
