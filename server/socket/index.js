@@ -136,7 +136,8 @@ function initSocket(io) {
       if (!ps || ps.status !== 'playing') return;
       guess = guess.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
       if (guess.length !== room.round.word.length) return socket.emit('guess_error', 'Longueur incorrecte');
-      const valid = await validateWord(guess, room.round.word, room.settings.lang || 'fr');
+      const cats  = room.settings.categories || (room.settings.category ? [room.settings.category] : ['tous']);
+      const valid = await validateWord(guess, room.round.word, room.settings.lang || 'fr', cats);
       if (!valid) { socket.emit('guess_invalid'); return; }
       const result = computeResult(guess, room.round.word);
       ps.guesses.push({ guess, result });
@@ -346,7 +347,8 @@ async function startMotusRound(io, room) {
   room.status = 'playing';
   room.round  = room.round ? { ...room.round, idx: (room.round.idx || 0) + 1 } : { idx: 1 };
   const s    = room.settings;
-  const word = await fetchWord(s.lang || 'fr', s.minLetters || 5, s.maxLetters || 6, s.category || 'tous');
+  const cats = s.categories || (s.category ? [s.category] : ['tous']);
+  const word = await fetchWord(s.lang || 'fr', s.minLetters || 5, s.maxLetters || 6, cats);
   room.round.word        = word;
   room.round.maxAttempts = s.maxAttempts || 6;
   room.round.playerStates = {};
@@ -394,7 +396,7 @@ async function endMotusRound(io, room) {
   const eliminated = room.players.filter(p => p.lives <= 0 && !p.eliminated).map(p => { p.eliminated = true; return p.id; });
   const alive      = room.players.filter(p => !p.eliminated);
   io.to(room.code).emit('round_end', {
-    word: round.word, results, damages, roundIdx: round.idx, category: room.settings.category || 'tous',
+    word: round.word, results, damages, roundIdx: round.idx, categories: room.settings.categories || [room.settings.category || 'tous'],
     players: room.players.map(p => ({ id: p.id, username: p.username, lives: p.lives, combo: p.combo, eliminated: p.eliminated })),
     eliminated,
   });
@@ -441,7 +443,7 @@ async function endMotusRoundChangeOnFind(io, room, finderId) {
   const alive = room.players.filter(p => !p.eliminated);
 
   io.to(room.code).emit('round_end', {
-    word: round.word, results, damages, roundIdx: round.idx, category: room.settings.category || 'tous',
+    word: round.word, results, damages, roundIdx: round.idx, categories: room.settings.categories || [room.settings.category || 'tous'],
     players: room.players.map(p => ({ id: p.id, username: p.username, lives: p.lives, combo: p.combo, eliminated: p.eliminated })),
     eliminated,
   });

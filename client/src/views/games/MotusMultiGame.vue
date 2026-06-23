@@ -8,7 +8,7 @@
         <span class="badge badge-rose">🔥 Multi</span>
         <span class="bar-round" v-if="roundState">Manche {{ roundState.roundIdx }}</span>
       </div>
-      <span class="badge-category" v-if="currentCategory !== 'tous'">{{ categoryLabel }}</span>
+      <span class="badge-category" v-if="!currentCategories.includes('tous')">{{ categoryLabel }}</span>
       <span class="bar-info">{{ statusMsg }}</span>
     </div>
 
@@ -141,15 +141,19 @@ const platform = usePlatformStore();
 const myId     = auth.user?.id;
 const isHost   = ref(false);
 
-// Catégorie active (reçue via room_update ou round_end)
-const currentCategory = ref('tous');
+// Catégories actives (reçues via room_update ou round_end)
+const currentCategories = ref(['tous']);
 const wordReported    = ref(false);
 const CATEGORY_LABELS = {
   tous: 'Tous les mots', animaux: '🐾 Animaux', cuisine: '🍽️ Cuisine',
   sport: '⚽ Sport', nature: '🌿 Nature', geographie: '🌍 Géographie',
   metiers: '👷 Métiers', corps: '🫀 Corps humain', transport: '🚗 Transport',
 };
-const categoryLabel = computed(() => CATEGORY_LABELS[currentCategory.value] || currentCategory.value);
+const categoryLabel = computed(() => {
+  const cats = currentCategories.value.filter(c => c !== 'tous');
+  if (!cats.length) return 'Tous les mots';
+  return cats.map(c => CATEGORY_LABELS[c] || c).join(' · ');
+});
 
 const KB_ROWS = [
   ['A','Z','E','R','T','Y','U','I','O','P'],
@@ -194,7 +198,8 @@ onMounted(() => {
   socket.on('room_update', (data) => {
     players.value = data.players || [];
     isHost.value  = data.host_id === myId;
-    if (data.settings?.category) currentCategory.value = data.settings.category;
+    if (data.settings?.categories) currentCategories.value = data.settings.categories;
+    else if (data.settings?.category) currentCategories.value = [data.settings.category];
     if (data.status === 'playing' && phase.value === 'waiting') {
       // round_start devrait arriver
     }
@@ -244,7 +249,8 @@ onMounted(() => {
   socket.on('round_end', (data) => {
     roundResults.value = data;
     players.value      = data.players || players.value;
-    if (data.category) currentCategory.value = data.category;
+    if (data.categories) currentCategories.value = data.categories;
+    else if (data.category) currentCategories.value = [data.category];
     phase.value = 'results';
     showResults.value = true;
     wordReported.value = false;
@@ -386,7 +392,7 @@ async function reportWord() {
         'Content-Type': 'application/json',
         ...(auth.token ? { Authorization: `Bearer ${auth.token}` } : {}),
       },
-      body: JSON.stringify({ word: roundResults.value.word, category: currentCategory.value }),
+      body: JSON.stringify({ word: roundResults.value.word, categories: currentCategories.value }),
     });
     platform.showToast('Signalement envoyé, merci !', 'success');
   } catch {

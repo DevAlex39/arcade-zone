@@ -57,14 +57,18 @@
           <div class="card lobby-settings" v-if="isHost && room.game_id === 'motus'">
             <h3 class="settings-title">Paramètres</h3>
 
-            <!-- Catégorie -->
-            <div class="setting-row">
-              <label>Catégorie <span class="badge-beta">Bêta</span></label>
-              <select v-model="settings.category" class="select-category">
-                <option v-for="cat in CATEGORY_LIST" :key="cat.id" :value="cat.id">
-                  {{ cat.icon }} {{ cat.label }}
-                </option>
-              </select>
+            <!-- Catégories (multi-sélection) -->
+            <div class="setting-block">
+              <label class="setting-label">Catégories <span class="badge-beta">Bêta</span></label>
+              <div class="cat-grid">
+                <button
+                  v-for="cat in CATEGORY_LIST"
+                  :key="cat.id"
+                  class="cat-chip"
+                  :class="{ active: isCatActive(cat.id) }"
+                  @click="toggleCat(cat.id)"
+                >{{ cat.icon }} {{ cat.label }}</button>
+              </div>
             </div>
 
             <div class="setting-row">
@@ -184,7 +188,7 @@ const copied   = ref(false);
 const settings = ref({
   livesMax: 20, maxAttempts: 6, syncWords: true, comboEnabled: true,
   minLetters: 5, maxLetters: 6, lang: 'fr', changeOnFind: false,
-  category: 'tous',
+  categories: ['tous'],
   pionsPerPlayer: 2, rejouerSur6: true,
 });
 let socket = null;
@@ -200,6 +204,25 @@ const CATEGORY_LIST = [
   { id: 'corps',      icon: '🫀', label: 'Corps humain' },
   { id: 'transport',  icon: '🚗', label: 'Transport' },
 ];
+
+function isCatActive(id) {
+  return settings.value.categories.includes(id);
+}
+function toggleCat(id) {
+  const cats = settings.value.categories;
+  if (id === 'tous') {
+    settings.value.categories = ['tous'];
+    return;
+  }
+  // Retirer 'tous' si on sélectionne une vraie catégorie
+  let next = cats.filter(c => c !== 'tous');
+  if (next.includes(id)) {
+    next = next.filter(c => c !== id);
+  } else {
+    next.push(id);
+  }
+  settings.value.categories = next.length ? next : ['tous'];
+}
 
 const isHost = computed(() => {
   if (!room.value || !auth.user) return false;
@@ -324,11 +347,16 @@ onUnmounted(() => socket?.disconnect());
 .toggle.on .toggle-thumb { left: 23px; background: #fff; }
 
 /* Catégorie */
-.select-category {
-  background: var(--bg-4); border: 1px solid var(--border); border-radius: 8px;
-  color: var(--text); padding: .25rem .5rem; font-size: .82rem;
-  cursor: pointer; max-width: 180px;
+.setting-block { margin-bottom: .6rem; font-size: .85rem; }
+.setting-label { display: block; margin-bottom: .4rem; color: var(--text-2, #8c95b8); }
+.cat-grid { display: flex; flex-wrap: wrap; gap: .35rem; }
+.cat-chip {
+  padding: .25rem .6rem; border-radius: 20px; font-size: .75rem; cursor: pointer;
+  border: 1px solid var(--border); background: var(--bg-3); color: var(--text-2, #8c95b8);
+  transition: all .15s;
 }
+.cat-chip:hover { border-color: var(--cyan, #46d6ff); color: var(--text); }
+.cat-chip.active { background: color-mix(in srgb, var(--cyan, #46d6ff) 15%, transparent); border-color: var(--cyan, #46d6ff); color: var(--cyan, #46d6ff); font-weight: 600; }
 .badge-beta {
   display: inline-block; background: rgba(251,191,36,.15); border: 1px solid rgba(251,191,36,.4);
   color: #fbbf24; border-radius: 4px; padding: 0 .35rem; font-size: .65rem;
