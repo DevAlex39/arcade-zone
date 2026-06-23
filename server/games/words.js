@@ -1,39 +1,46 @@
-// Dictionnaires locaux par langue — aucune dépendance réseau
+// Dictionnaires — génération vs validation séparées.
+// Génération : wordlist-fr.js (formes de base uniquement : infinitifs, singuliers)
+// Validation  : an-array-of-french-words (tout le vocabulaire, formes conjuguées incluses)
 
-const LANGS = {
-  fr: null, // chargé en lazy
-  // en: null, // à ajouter plus tard avec 'an-array-of-english-words'
+const WORDLIST_BASE = require('./wordlist-fr');
+
+const VALIDATION = {
+  fr: null, // chargé en lazy depuis an-array-of-french-words
 };
 
-function loadFr() {
-  if (LANGS.fr) return LANGS.fr;
-  const raw = require('an-array-of-french-words');
-  // Garder uniquement les mots alphabétiques purs (pas de tiret, apostrophe…)
-  LANGS.fr = raw
-    .map(w => w.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, ''))
-    .filter(w => /^[A-Z]{4,10}$/.test(w));
-  return LANGS.fr;
+function normalize(w) {
+  return w.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+function loadValidationFr() {
+  if (VALIDATION.fr) return VALIDATION.fr;
+  try {
+    const raw = require('an-array-of-french-words');
+    VALIDATION.fr = new Set(
+      raw.map(normalize).filter(w => /^[A-Z]{4,10}$/.test(w))
+    );
+  } catch {
+    // Package non installé (ex: avant npm install) — fallback sur la liste de base
+    VALIDATION.fr = new Set(WORDLIST_BASE);
+  }
+  return VALIDATION.fr;
 }
 
 /**
- * Récupère un mot aléatoire dans la langue donnée.
- * @param {string} lang  'fr' | 'en'
- * @param {number} min   longueur minimale
- * @param {number} max   longueur maximale
+ * Récupère un mot aléatoire depuis la liste curated (formes de base uniquement).
  */
 function getRandomWord(lang = 'fr', min = 5, max = 6) {
-  const list = lang === 'fr' ? loadFr() : loadFr();
-  const pool = list.filter(w => w.length >= min && w.length <= max);
-  if (!pool.length) return 'MAISON'; // ultra-fallback
+  const pool = WORDLIST_BASE.filter(w => w.length >= min && w.length <= max);
+  if (!pool.length) return 'MAISON';
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
 /**
- * Vérifie qu'un mot existe dans le dictionnaire.
+ * Vérifie qu'un mot soumis par le joueur est valide (toutes formes acceptées).
  */
 function isValidWord(word, lang = 'fr') {
-  const list = lang === 'fr' ? loadFr() : loadFr();
-  return list.includes(word.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, ''));
+  const dict = lang === 'fr' ? loadValidationFr() : loadValidationFr();
+  return dict.has(normalize(word));
 }
 
 module.exports = { getRandomWord, isValidWord };
