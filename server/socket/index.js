@@ -415,19 +415,15 @@ async function endMotusRoundChangeOnFind(io, room, finderId) {
   finder.combo = (finder.combo || 0) + 1;
   const dmg = computeDamage(finderPs.foundAtRow, round.maxAttempts, finder.combo, room.settings.comboEnabled);
 
-  // Dégâts uniquement pour les joueurs qui ont naturellement échoué (essais épuisés).
-  // Les joueurs encore en cours (status 'playing') sont juste interrompus sans pénalité.
+  // Le trouveur inflige des dégâts à tous les autres (qu'ils soient encore en jeu ou non).
   const damages = {};
   room.players.forEach(p => {
     if (p.id === finderId) return;
     const ps = round.playerStates[p.id];
     if (!ps) return;
-    if (ps.status === 'playing') {
-      ps.status = 'failed'; // interrompu, pas de dégâts
-    } else if (ps.status === 'failed') {
-      damages[p.id] = dmg; // a épuisé ses essais avant que le trouveur trouve
-      p.lives = Math.max(0, (p.lives || 0) - dmg);
-    }
+    if (ps.status === 'playing') ps.status = 'failed';
+    damages[p.id] = dmg;
+    p.lives = Math.max(0, (p.lives || 0) - dmg);
   });
 
   room.players.forEach(p => {
