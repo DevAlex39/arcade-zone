@@ -22,7 +22,7 @@
       >
         <span class="hud-name">{{ p.username }}</span>
         <span class="hud-lives">{{ p.eliminated ? '💀' : `❤️ ${p.lives}` }}</span>
-        <span v-if="p.combo >= 2" class="hud-combo">🔥×{{ p.combo }}</span>
+        <span v-if="p.combo >= 1" class="hud-combo">🔥×{{ p.combo }}</span>
       </div>
     </div>
 
@@ -81,6 +81,9 @@
             <span class="rr-name">{{ r.username }}</span>
             <span :class="r.status === 'found' ? 'rr-found' : 'rr-failed'">
               {{ r.status === 'found' ? `✅ Essai ${r.foundAtRow + 1}` : '❌ Raté' }}
+            </span>
+            <span v-if="getCombo(r.id) >= 1 && r.status === 'found'" class="rr-combo">
+              🔥×{{ getCombo(r.id) }}
             </span>
             <span v-if="roundResults.damages?.[r.id]" class="rr-dmg">
               ⚔️ −{{ roundResults.damages[r.id] }}
@@ -382,6 +385,10 @@ function nextRound() {
   socket.emit('start_game', props.roomCode);
 }
 
+function getCombo(playerId) {
+  return roundResults.value?.players?.find(p => p.id === playerId)?.combo ?? 0;
+}
+
 async function reportWord() {
   if (wordReported.value || !roundResults.value?.word) return;
   wordReported.value = true;
@@ -484,6 +491,7 @@ async function reportWord() {
 .rr-name { flex: 1; font-weight: 700; }
 .rr-found { color: #4ade80; }
 .rr-failed { color: var(--text-2); }
+.rr-combo { color: var(--amber, #fbbf24); font-size: .75rem; font-weight: 700; }
 .rr-dmg { color: #f87171; font-size: .75rem; }
 .rr-lives { display: flex; flex-direction: column; gap: .3rem; background: var(--bg-3); border-radius: 8px; padding: .6rem; }
 .rr-life-row { display: flex; justify-content: space-between; font-size: .82rem; }
