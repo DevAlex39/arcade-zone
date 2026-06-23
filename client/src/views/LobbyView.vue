@@ -53,6 +53,22 @@
                 <button @click="settings.maxAttempts = Math.min(8, settings.maxAttempts + 1)">+</button>
               </div>
             </div>
+            <div class="setting-row">
+              <label>Lettres min</label>
+              <div class="stepper">
+                <button @click="settings.minLetters = Math.max(4, settings.minLetters - 1)">−</button>
+                <span>{{ settings.minLetters }}</span>
+                <button @click="settings.minLetters = Math.min(settings.maxLetters, settings.minLetters + 1)">+</button>
+              </div>
+            </div>
+            <div class="setting-row">
+              <label>Lettres max</label>
+              <div class="stepper">
+                <button @click="settings.maxLetters = Math.max(settings.minLetters, settings.maxLetters - 1)">−</button>
+                <span>{{ settings.maxLetters }}</span>
+                <button @click="settings.maxLetters = Math.min(8, settings.maxLetters + 1)">+</button>
+              </div>
+            </div>
             <div class="setting-toggle">
               <label><input type="checkbox" v-model="settings.syncWords" /> Même mot pour tous</label>
             </div>
@@ -116,7 +132,7 @@ const platform = usePlatformStore();
 
 const room     = ref(null);
 const copied   = ref(false);
-const settings = ref({ livesMax: 20, maxAttempts: 6, syncWords: true, comboEnabled: true });
+const settings = ref({ livesMax: 20, maxAttempts: 6, syncWords: true, comboEnabled: true, minLetters: 5, maxLetters: 6, lang: 'fr' });
 let   socket   = null;
 
 const isHost   = computed(() => {

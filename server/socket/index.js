@@ -90,7 +90,7 @@ function initSocket(io) {
         maxPlayers: maxPlayers || 8,
         minPlayers: data.minPlayers || 1,
         status:     'waiting',
-        settings:   { syncWords: true, comboEnabled: true, livesMax: 20, maxAttempts: 6, ...settings },
+        settings:   { syncWords: true, comboEnabled: true, livesMax: 20, maxAttempts: 6, minLetters: 5, maxLetters: 6, lang: 'fr', ...settings },
         players:    [{ id: user.id, username: user.username, socketId: socket.id, ready: true }],
         round:      null,
       };
@@ -119,7 +119,7 @@ function initSocket(io) {
       guess = guess.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
       if (guess.length !== room.round.word.length) return socket.emit('guess_error', 'Longueur incorrecte');
 
-      const valid = await validateWord(guess, room.round.word);
+      const valid = await validateWord(guess, room.round.word, room.settings.lang || 'fr');
       if (!valid) { socket.emit('guess_invalid'); return; }
 
       const result = computeResult(guess, room.round.word);
@@ -163,10 +163,11 @@ async function startRound(io, room) {
   room.status = 'playing';
   room.round  = room.round ? { ...room.round, idx: (room.round.idx || 0) + 1 } : { idx: 1 };
 
-  // Récupérer le mot
-  const word = await fetchWord();
+  // Récupérer le mot selon les réglages
+  const s    = room.settings;
+  const word = await fetchWord(s.lang || 'fr', s.minLetters || 5, s.maxLetters || 6);
   room.round.word        = word;
-  room.round.maxAttempts = room.settings.maxAttempts || 6;
+  room.round.maxAttempts = s.maxAttempts || 6;
 
   // Initialiser l'état de chaque joueur
   room.round.playerStates = {};
