@@ -470,6 +470,7 @@ function publicYahtzeeState(gs) {
     curRound:    gs.curRound,
     scores:      gs.scores,
     playerOrder: gs.playerOrder,
+    players:     gs.players || [],
     previews:    gs.hasRolled ? yahtzee.allPreviews(gs.dice) : {},
     winner:      gs.winner || null,
   };

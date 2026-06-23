@@ -64,6 +64,7 @@ function initGame(players) {
     curRound:    0,
     scores:      Object.fromEntries(players.map(p => [p.id, {}])),
     playerOrder: players.map(p => p.id),
+    players:     players.map(p => ({ id: p.id, username: p.username })),
     winner:      null,
   };
 }

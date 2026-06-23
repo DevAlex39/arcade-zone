@@ -237,9 +237,11 @@ function connectSocket() {
     room.value = { ...room.value, ...data };
   });
 
-  socket.on('round_start', () => {
-    router.push(`/game/${room.value.game_id}?room=${room.value.code}`);
-  });
+  // Motus démarre avec round_start, les autres jeux avec leur propre événement
+  socket.on('round_start',    () => router.push(`/game/${room.value.game_id}?room=${room.value.code}`));
+  socket.on('yahtzee_state',  () => router.push(`/game/${room.value.game_id}?room=${room.value.code}`));
+  socket.on('skyjo_state',    () => router.push(`/game/${room.value.game_id}?room=${room.value.code}`));
+  socket.on('pc_state',       () => router.push(`/game/${room.value.game_id}?room=${room.value.code}`));
 
   socket.on('kicked', () => {
     platform.showToast('Vous avez été exclu de la salle par l\'hôte', 'error');
