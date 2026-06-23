@@ -22,15 +22,20 @@ async function fetchWord() {
 
 async function validateWord(word, targetWord) {
   if (word === targetWord) return true;
+  if (word.length !== targetWord.length) return false;
   const lower = word.toLowerCase();
   try {
     const res = await fetch(`https://trouve-mot.fr/api/mot?mot=${encodeURIComponent(lower)}`, { timeout: 3000 });
     if (res.ok) {
       const data = await res.json();
+      // L'API renvoie un tableau — mot valide si non vide
       if (Array.isArray(data)) return data.length > 0;
+      // Certaines versions renvoient un objet avec `mot`
+      if (data?.mot) return true;
     }
   } catch (_) {}
-  return FALLBACK.includes(word.toUpperCase());
+  // API indisponible → accepter tout mot de la bonne longueur
+  return true;
 }
 
 function computeResult(guess, target) {
