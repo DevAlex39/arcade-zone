@@ -137,9 +137,19 @@ function initSocket(io) {
       socket.emit('guess_result', { result, confirmedLetters: ps.confirmedLetters, won });
       if (won) { ps.status = 'found'; ps.foundAtRow = ps.guesses.length - 1; }
       else if (ps.guesses.length >= room.round.maxAttempts) { ps.status = 'failed'; }
-      const allDone = room.players.every(p => { const s = room.round.playerStates[p.id]; return s && s.status !== 'playing'; });
-      const changeOn = won && room.settings.changeOnFind;
-      if (allDone || changeOn) await endMotusRound(io, room);
+
+      if (won && room.settings.changeOnFind) {
+        // Fin immédiate : marquer tous les autres 'playing' comme 'failed'
+        // et ne calculer les dégâts QUE pour le joueur qui vient de trouver
+        room.players.forEach(p => {
+          const other = room.round.playerStates[p.id];
+          if (other && other.status === 'playing') other.status = 'failed';
+        });
+        await endMotusRoundChangeOnFind(io, room, user.id);
+      } else {
+        const allDone = room.players.every(p => { const s = room.round.playerStates[p.id]; return s && s.status !== 'playing'; });
+        if (allDone) await endMotusRound(io, room);
+      }
     });
 
     // ─── Actions Yahtzee ────────────────────────────────────────────
@@ -385,6 +395,53 @@ async function endMotusRound(io, room) {
     players: room.players.map(p => ({ id: p.id, username: p.username, lives: p.lives, combo: p.combo, eliminated: p.eliminated })),
     eliminated,
   });
+  if (alive.length <= 1) {
+    room.status = 'finished';
+    io.to(room.code).emit('game_over', { winner: alive[0] || null });
+    rooms.delete(room.code);
+  } else {
+    room.status = 'waiting';
+  }
+}
+
+async function endMotusRoundChangeOnFind(io, room, finderId) {
+  const round = room.round;
+  const finder = room.players.find(p => p.id === finderId);
+  const finderPs = round.playerStates[finderId];
+
+  // Incrémenter le combo du trouveur uniquement
+  finder.combo = (finder.combo || 0) + 1;
+  const dmg = computeDamage(finderPs.foundAtRow, round.maxAttempts, finder.combo, room.settings.comboEnabled);
+
+  // Appliquer les dégâts de ce seul joueur à tous les autres
+  const damages = {};
+  room.players.forEach(p => {
+    if (p.id === finderId) return;
+    damages[p.id] = dmg;
+    p.lives = Math.max(0, (p.lives || 0) - dmg);
+  });
+
+  // Réinitialiser le combo des non-trouveurs
+  room.players.forEach(p => {
+    if (p.id !== finderId) p.combo = 0;
+  });
+
+  const results = room.players.map(p => ({
+    id: p.id, username: p.username,
+    status: round.playerStates[p.id]?.status,
+    foundAtRow: round.playerStates[p.id]?.foundAtRow,
+    guesses: round.playerStates[p.id]?.guesses?.length,
+  }));
+
+  const eliminated = room.players.filter(p => p.lives <= 0 && !p.eliminated).map(p => { p.eliminated = true; return p.id; });
+  const alive = room.players.filter(p => !p.eliminated);
+
+  io.to(room.code).emit('round_end', {
+    word: round.word, results, damages, roundIdx: round.idx, category: room.settings.category || 'tous',
+    players: room.players.map(p => ({ id: p.id, username: p.username, lives: p.lives, combo: p.combo, eliminated: p.eliminated })),
+    eliminated,
+  });
+
   if (alive.length <= 1) {
     room.status = 'finished';
     io.to(room.code).emit('game_over', { winner: alive[0] || null });
