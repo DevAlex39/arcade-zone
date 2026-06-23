@@ -33,10 +33,11 @@ app.use('/solo/petits-chevaux', express.static(path.join(GAMES_BASE, 'Petits_che
 app.use('/solo/escape',         express.static(path.join(GAMES_BASE, 'Escape')));
 
 // ─── Routes API ───────────────────────────────────────────────────────────────
-app.use('/api/auth',  require('./routes/auth'));
-app.use('/api/games', require('./routes/games'));
-app.use('/api/rooms', require('./routes/rooms'));
-app.use('/api/admin', require('./routes/admin'));
+app.use('/api/auth',   require('./routes/auth'));
+app.use('/api/games',  require('./routes/games'));
+app.use('/api/rooms',  require('./routes/rooms'));
+app.use('/api/admin',  require('./routes/admin'));
+app.use('/api/motus',  require('./routes/motus'));
 
 app.get('/api/health', (_, res) => res.json({ ok: true, ts: Date.now() }));
 
