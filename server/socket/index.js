@@ -282,8 +282,8 @@ function initSocket(io) {
         gs.hasRolled  = true;
         gs.movablePawns = pc.computeMovablePawns(gs.pawns[curId], gs.colorMap[curId], dice);
         if (gs.movablePawns.length === 0) {
-          // Aucun pion ne peut bouger → passer le tour
-          advancePCTurn(io, code, room, gs, dice === 6);
+          // Aucun pion ne peut bouger → passer le tour (rejouer si 6 et règle active)
+          advancePCTurn(io, code, room, gs, dice === 6 && (room.settings.rejouerSur6 !== false));
         } else if (gs.movablePawns.length === 1) {
           // Un seul pion possible → auto-déplacer
           applyPCMove(io, code, room, gs, gs.movablePawns[0]);
@@ -526,7 +526,7 @@ function applyPCMove(io, code, room, gs, pionIdx) {
     return;
   }
 
-  const rolledSix = gs.diceValue === 6;
+  const rolledSix = gs.diceValue === 6 && (room.settings.rejouerSur6 !== false);
   advancePCTurn(io, code, room, gs, rolledSix);
 }
 

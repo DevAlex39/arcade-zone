@@ -34,6 +34,22 @@
         <!-- RIGHT: settings + players -->
         <div class="lobby-right">
 
+          <!-- Paramètres Petits Chevaux (hôte seulement) -->
+          <div class="card lobby-settings" v-if="isHost && room.game_id === 'petits-chevaux'">
+            <h3 class="settings-title">Paramètres</h3>
+            <div class="setting-row">
+              <label>Pions par joueur</label>
+              <div class="stepper">
+                <button @click="settings.pionsPerPlayer = Math.max(1, settings.pionsPerPlayer - 1)">−</button>
+                <span>{{ settings.pionsPerPlayer }}</span>
+                <button @click="settings.pionsPerPlayer = Math.min(5, settings.pionsPerPlayer + 1)">+</button>
+              </div>
+            </div>
+            <div class="setting-toggle">
+              <label><input type="checkbox" v-model="settings.rejouerSur6" /> 🎲 Rejouer sur 6</label>
+            </div>
+          </div>
+
           <!-- Paramètres Motus (hôte seulement) -->
           <div class="card lobby-settings" v-if="isHost && room.game_id === 'motus'">
             <h3 class="settings-title">Paramètres</h3>
@@ -157,6 +173,7 @@ const settings = ref({
   livesMax: 20, maxAttempts: 6, syncWords: true, comboEnabled: true,
   minLetters: 5, maxLetters: 6, lang: 'fr', changeOnFind: false,
   category: 'tous',
+  pionsPerPlayer: 2, rejouerSur6: true,
 });
 let socket = null;
 

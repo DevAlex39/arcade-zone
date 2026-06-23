@@ -2,7 +2,7 @@
   <div class="game-view">
 
     <!-- JEU SOLO : iframe vers le jeu HTML existant -->
-    <template v-if="game && !game.has_multiplayer && !roomCode">
+    <template v-if="game && game.solo_url && !roomCode">
       <div class="solo-bar">
         <router-link to="/" class="btn btn-ghost btn-sm">← Menu</router-link>
         <span class="solo-title">{{ game.icon }} {{ game.name }}</span>
@@ -37,16 +37,6 @@
         <router-link to="/" class="btn btn-ghost btn-sm">← Menu</router-link>
         <span class="solo-title">{{ game.icon }} {{ game.name }}</span>
         <span class="badge badge-rose">Multi</span>
-      </div>
-      <iframe :src="game.solo_url" class="game-frame" :title="game.name" />
-    </template>
-
-    <!-- Solo sans multi -->
-    <template v-else-if="game && !game.has_multiplayer">
-      <div class="solo-bar">
-        <router-link to="/" class="btn btn-ghost btn-sm">← Menu</router-link>
-        <span class="solo-title">{{ game.icon }} {{ game.name }}</span>
-        <span class="badge badge-cyan">Solo</span>
       </div>
       <iframe :src="game.solo_url" class="game-frame" :title="game.name" />
     </template>

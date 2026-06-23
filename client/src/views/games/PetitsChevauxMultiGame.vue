@@ -51,27 +51,38 @@
           <!-- Pions -->
           <template v-for="(pid, pi) in state.playerOrder" :key="`pawns${pi}`">
             <template v-for="(pion, idx) in state.pawns[pid]" :key="`p${pi}_${idx}`">
-              <template v-if="pion.pos !== POS_DONE">
-                <circle
-                  v-if="pionCell(pid, pion)"
-                  :cx="CELL * (pionCell(pid, pion)[1] + 0.5) + pionOffset(pid, idx, pion)[0]"
-                  :cy="CELL * (pionCell(pid, pion)[0] + 0.5) + pionOffset(pid, idx, pion)[1]"
-                  :r="CELL*0.3"
-                  :fill="colorHex(state.colorMap[pid])"
-                  :stroke="isMyTurn && pid === myId && state.movablePawns.includes(idx) ? '#fbbf24' : '#000'"
-                  stroke-width="2"
-                  :style="{ cursor: isMyTurn && pid === myId && state.movablePawns.includes(idx) ? 'pointer' : 'default' }"
-                  @click="selectPion(pid, idx)"
-                />
-              </template>
-              <!-- Pions arrivés au centre -->
+              <!-- Pion en écurie -->
               <circle
-                v-else
-                :cx="CELL*7.5 + (idx - 0.5) * CELL*0.5"
-                :cy="CELL*7.5"
+                v-if="pion.pos === POS_STABLE"
+                :cx="CELL * (STABLE_SLOTS[state.colorMap[pid]]?.[idx]?.[1] ?? 3) + CELL*0.5"
+                :cy="CELL * (STABLE_SLOTS[state.colorMap[pid]]?.[idx]?.[0] ?? 3) + CELL*0.5"
+                :r="CELL*0.3"
+                :fill="colorHex(state.colorMap[pid])"
+                :stroke="isMyTurn && pid === myId && state.movablePawns.includes(idx) ? '#fbbf24' : '#000'"
+                stroke-width="2"
+                :style="{ cursor: isMyTurn && pid === myId && state.movablePawns.includes(idx) ? 'pointer' : 'default' }"
+                @click="selectPion(pid, idx)"
+              />
+              <!-- Pion arrivé au centre -->
+              <circle
+                v-else-if="pion.pos === POS_DONE"
+                :cx="CELL*7.5 + (idx % 3 - 1) * CELL*0.45"
+                :cy="CELL*7.5 + (Math.floor(idx / 3) - 0.5) * CELL*0.45"
                 :r="CELL*0.25"
                 :fill="colorHex(state.colorMap[pid])"
                 stroke="#fbbf24" stroke-width="1.5"
+              />
+              <!-- Pion sur la piste ou dans le couloir -->
+              <circle
+                v-else-if="pionCell(pid, pion)"
+                :cx="CELL * (pionCell(pid, pion)[1] + 0.5) + pionOffset(pid, idx, pion)[0]"
+                :cy="CELL * (pionCell(pid, pion)[0] + 0.5) + pionOffset(pid, idx, pion)[1]"
+                :r="CELL*0.3"
+                :fill="colorHex(state.colorMap[pid])"
+                :stroke="isMyTurn && pid === myId && state.movablePawns.includes(idx) ? '#fbbf24' : '#000'"
+                stroke-width="2"
+                :style="{ cursor: isMyTurn && pid === myId && state.movablePawns.includes(idx) ? 'pointer' : 'default' }"
+                @click="selectPion(pid, idx)"
               />
             </template>
           </template>

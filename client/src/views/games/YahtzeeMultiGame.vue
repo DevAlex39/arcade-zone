@@ -57,7 +57,7 @@
           <thead>
             <tr>
               <th>Catégorie</th>
-              <th v-for="pid in playerOrder" :key="pid" :class="{ active-col: pid === currentPlayerId }">
+              <th v-for="pid in playerOrder" :key="pid" :class="{ 'active-col': pid === currentPlayerId }">
                 {{ playerName(pid) }}
               </th>
             </tr>
