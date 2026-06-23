@@ -139,8 +139,7 @@ async function loadRoom() {
 }
 
 function connectSocket() {
-  const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3000';
-  socket = io(serverUrl, { auth: { token: auth.token, username: auth.user?.username } });
+  socket = io('/', { auth: { token: auth.token, username: auth.user?.username } });
 
   // Attendre la connexion avant d'émettre (fix timing)
   socket.on('connect', () => {
