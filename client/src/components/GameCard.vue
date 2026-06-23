@@ -45,7 +45,7 @@
             <span class="action-label action-label-rose">MULTI</span>
             <div class="actions-multi">
               <button class="btn btn-primary btn-sm" @click="$emit('create', game)">Créer</button>
-              <button class="btn btn-ghost btn-sm" @click="$emit('join', game)">Rejoindre</button>
+              <button class="btn btn-secondary btn-sm" @click="$emit('join', game)">Rejoindre</button>
             </div>
           </div>
         </div>
