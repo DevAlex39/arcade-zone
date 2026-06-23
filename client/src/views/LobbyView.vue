@@ -254,6 +254,8 @@ function connectSocket() {
 
 function startGame() {
   if (!socket) return;
+  // Synchroniser les settings avant de lancer (l'init_room initial ne capture pas les changements tardifs)
+  socket.emit('update_settings', { code: room.value.code, settings: settings.value });
   socket.emit('start_game', room.value.code);
 }
 

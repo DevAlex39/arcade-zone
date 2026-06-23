@@ -88,6 +88,14 @@ function initSocket(io) {
       socket.emit('room_update', sanitizeRoom(room));
     });
 
+    // ─── Mise à jour des settings (hôte seulement) ─────────────────
+    socket.on('update_settings', ({ code, settings }) => {
+      code = code?.toUpperCase();
+      const room = rooms.get(code);
+      if (!room || room.hostId !== user.id || room.status !== 'waiting') return;
+      room.settings = { ...room.settings, ...settings };
+    });
+
     // ─── Lancer la partie ───────────────────────────────────────────
     socket.on('start_game', async (code) => {
       const room = rooms.get(code);
