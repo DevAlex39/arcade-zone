@@ -14,9 +14,9 @@
     <template v-else>
       <!-- Infos tour -->
       <div class="turn-info">
-        <span v-if="isMyTurn" class="my-turn">Votre tour — {{ rollsLeft }} lancer(s) restant(s)</span>
-        <span v-else>Tour de <strong>{{ currentPlayerName }}</strong></span>
-        <span class="round-num">Manche {{ curRound + 1 }}</span>
+        <span v-if="isMyTurn" class="my-turn">{{ t('your_turn') }} — {{ t('ytz.rolls_left', { n: rollsLeft }) }}</span>
+        <span v-else>{{ t('turn_of') }} <strong>{{ currentPlayerName }}</strong></span>
+        <span class="round-num">{{ t('ytz.round', { n: curRound + 1 }) }}</span>
       </div>
 
       <!-- Dés -->
@@ -35,17 +35,17 @@
       <!-- Bouton Lancer -->
       <div class="roll-row">
         <button class="btn-roll" :disabled="!isMyTurn || rollsLeft <= 0" @click="roll">
-          🎲 Lancer ({{ rollsLeft }})
+          {{ t('ytz.roll', { n: rollsLeft }) }}
         </button>
       </div>
 
       <!-- Tableau de scores -->
       <div class="score-section">
-        <h3>Scores</h3>
+        <h3>{{ t('ytz.scores') }}</h3>
         <table class="score-table">
           <thead>
             <tr>
-              <th>Catégorie</th>
+              <th>{{ t('ytz.category') }}</th>
               <th v-for="pid in playerOrder" :key="pid" :class="{ 'active-col': pid === currentPlayerId }">
                 {{ playerName(pid) }}
               </th>
@@ -64,7 +64,7 @@
             </tr>
             <!-- Bonus section haute -->
             <tr class="bonus-row">
-              <td>Bonus (+35 si ≥63)</td>
+              <td>{{ t('ytz.bonus') }}</td>
               <td v-for="pid in playerOrder" :key="pid">{{ scores[pid]?.bonus ?? '—' }}</td>
             </tr>
             <tr v-for="cat in LOWER_CATS" :key="cat.id" class="cat-row lower">
@@ -78,7 +78,7 @@
               </td>
             </tr>
             <tr class="total-row">
-              <td><strong>Total</strong></td>
+              <td><strong>{{ t('ytz.total') }}</strong></td>
               <td v-for="pid in playerOrder" :key="pid"><strong>{{ scores[pid]?.total ?? 0 }}</strong></td>
             </tr>
           </tbody>
@@ -90,9 +90,9 @@
     <Teleport to="body">
       <div v-if="gameOver" class="overlay">
         <div class="modal-go">
-          <h2>{{ gameOver.winner?.id === myId ? '🏆 Victoire !' : '😔 Fin de partie' }}</h2>
-          <p v-if="gameOver.winner">Gagnant : <strong>{{ gameOver.winner.username }}</strong></p>
-          <button class="btn-back" @click="$router.push('/')">Retour</button>
+          <h2>{{ gameOver.winner?.id === myId ? t('victory') : t('ytz.defeat') }}</h2>
+          <p v-if="gameOver.winner">{{ t('winner_label') }} <strong>{{ gameOver.winner.username }}</strong></p>
+          <button class="btn-back" @click="$router.push('/')">{{ t('back_home') }}</button>
         </div>
       </div>
     </Teleport>
@@ -105,10 +105,12 @@ import { useRouter } from 'vue-router';
 import { io } from 'socket.io-client';
 import { useAuthStore } from '@/stores/auth.js';
 import DieFace from '@/components/DieFace.vue';
+import { useI18n } from '@/composables/useI18n.js';
 
 const props  = defineProps({ roomCode: String, game: Object });
 const router = useRouter();
 const auth   = useAuthStore();
+const { t }  = useI18n();
 
 let socket = null;
 
@@ -132,23 +134,23 @@ const currentPlayerName = computed(() => {
   return state.value?.players?.find(p => p.id === pid)?.username ?? pid;
 });
 
-const UPPER_CATS = [
-  { id:'ones',   label:'1 — As'     },
-  { id:'twos',   label:'2 — Deux'   },
-  { id:'threes', label:'3 — Trois'  },
-  { id:'fours',  label:'4 — Quatre' },
-  { id:'fives',  label:'5 — Cinq'   },
-  { id:'sixes',  label:'6 — Six'    },
-];
-const LOWER_CATS = [
-  { id:'threeKind',  label:'Brelan'           },
-  { id:'fourKind',   label:'Carré'            },
-  { id:'fullHouse',  label:'Full (25 pts)'    },
-  { id:'smStraight', label:'Petite suite (30)'},
-  { id:'lgStraight', label:'Grande suite (40)'},
-  { id:'yahtzee',    label:'Yahtzee (50)'     },
-  { id:'chance',     label:'Chance'           },
-];
+const UPPER_CATS = computed(() => [
+  { id:'ones',   label: t('ytz.ones')   },
+  { id:'twos',   label: t('ytz.twos')   },
+  { id:'threes', label: t('ytz.threes') },
+  { id:'fours',  label: t('ytz.fours')  },
+  { id:'fives',  label: t('ytz.fives')  },
+  { id:'sixes',  label: t('ytz.sixes')  },
+]);
+const LOWER_CATS = computed(() => [
+  { id:'threeKind',  label: t('ytz.threeKind')  },
+  { id:'fourKind',   label: t('ytz.fourKind')   },
+  { id:'fullHouse',  label: t('ytz.fullHouse')  },
+  { id:'smStraight', label: t('ytz.smStraight') },
+  { id:'lgStraight', label: t('ytz.lgStraight') },
+  { id:'yahtzee',    label: t('ytz.yahtzee')    },
+  { id:'chance',     label: t('ytz.chance')     },
+]);
 
 function playerName(pid) {
   return state.value?.players?.find(p => p.id === pid)?.username ?? pid;

@@ -15,7 +15,7 @@
 
         <!-- LEFT: code + QR -->
         <div class="lobby-share card">
-          <h2 class="lobby-code-label">Code de la salle</h2>
+          <h2 class="lobby-code-label">{{ t('lobby.room_code') }}</h2>
           <div class="lobby-code">{{ room.code }}</div>
 
           <div class="qr-wrap">
@@ -24,11 +24,11 @@
 
           <div class="share-actions">
             <button class="btn btn-secondary btn-sm btn-full" @click="copyLink">
-              {{ copied ? '✅ Copié !' : '📋 Copier le lien' }}
+              {{ copied ? t('lobby.copied') : t('lobby.copy_link') }}
             </button>
           </div>
 
-          <p class="share-hint">Partagez ce code ou ce QR code — les autres joueurs se connectent sur leur propre appareil.</p>
+          <p class="share-hint">{{ t('lobby.share_hint') }}</p>
         </div>
 
         <!-- RIGHT: settings + players -->
@@ -36,9 +36,9 @@
 
           <!-- Paramètres Cell Number (hôte seulement) -->
           <div class="card lobby-settings" v-if="isHost && room.game_id === 'skyjo'">
-            <h3 class="settings-title">Paramètres</h3>
+            <h3 class="settings-title">{{ t('lobby.settings') }}</h3>
             <div class="setting-row">
-              <label>Joueurs IA</label>
+              <label>{{ t('lobby.ai_players') }}</label>
               <div class="stepper">
                 <button @click="settings.aiCount = Math.max(0, settings.aiCount - 1)">−</button>
                 <span>{{ settings.aiCount }}</span>
@@ -49,9 +49,9 @@
 
           <!-- Paramètres Petits Chevaux (hôte seulement) -->
           <div class="card lobby-settings" v-if="isHost && room.game_id === 'petits-chevaux'">
-            <h3 class="settings-title">Paramètres</h3>
+            <h3 class="settings-title">{{ t('lobby.settings') }}</h3>
             <div class="setting-row">
-              <label>Pions par joueur</label>
+              <label>{{ t('lobby.pawns') }}</label>
               <div class="stepper">
                 <button @click="settings.pionsPerPlayer = Math.max(1, settings.pionsPerPlayer - 1)">−</button>
                 <span>{{ settings.pionsPerPlayer }}</span>
@@ -59,13 +59,13 @@
               </div>
             </div>
             <div class="setting-row">
-              <span class="toggle-label">🎲 Rejouer sur 6</span>
+              <span class="toggle-label">{{ t('lobby.replay_6') }}</span>
               <button class="toggle" :class="{ on: settings.rejouerSur6 }" @click="settings.rejouerSur6 = !settings.rejouerSur6">
                 <span class="toggle-thumb" />
               </button>
             </div>
             <div class="setting-row">
-              <label>Joueurs IA</label>
+              <label>{{ t('lobby.ai_players') }}</label>
               <div class="stepper">
                 <button @click="settings.aiCount = Math.max(0, settings.aiCount - 1)">−</button>
                 <span>{{ settings.aiCount }}</span>
@@ -76,11 +76,11 @@
 
           <!-- Paramètres Motus (hôte seulement) -->
           <div class="card lobby-settings" v-if="isHost && room.game_id === 'motus'">
-            <h3 class="settings-title">Paramètres</h3>
+            <h3 class="settings-title">{{ t('lobby.settings') }}</h3>
 
             <!-- Langue -->
             <div class="setting-row">
-              <span class="toggle-label">Langue des mots</span>
+              <span class="toggle-label">{{ t('lobby.word_lang') }}</span>
               <div class="lang-switch">
                 <button class="lang-btn" :class="{ active: settings.lang === 'fr' }" @click="settings.lang = 'fr'">🇫🇷 FR</button>
                 <button class="lang-btn" :class="{ active: settings.lang === 'en' }" @click="settings.lang = 'en'">🇬🇧 EN</button>
@@ -89,7 +89,7 @@
 
             <!-- Catégories (multi-sélection) -->
             <div class="setting-block">
-              <label class="setting-label">Catégories <span class="badge-beta">Bêta</span></label>
+              <label class="setting-label">{{ t('lobby.categories') }} <span class="badge-beta">Bêta</span></label>
               <div class="cat-grid">
                 <button
                   v-for="cat in CATEGORY_LIST"
@@ -102,7 +102,7 @@
             </div>
 
             <div class="setting-row">
-              <label>Vies de départ</label>
+              <label>{{ t('lobby.lives') }}</label>
               <div class="stepper">
                 <button @click="settings.livesMax = Math.max(5, settings.livesMax - 5)">−</button>
                 <span>{{ settings.livesMax }}</span>
@@ -110,7 +110,7 @@
               </div>
             </div>
             <div class="setting-row">
-              <label>Essais par mot</label>
+              <label>{{ t('lobby.attempts') }}</label>
               <div class="stepper">
                 <button @click="settings.maxAttempts = Math.max(4, settings.maxAttempts - 1)">−</button>
                 <span>{{ settings.maxAttempts }}</span>
@@ -118,7 +118,7 @@
               </div>
             </div>
             <div class="setting-row">
-              <label>Lettres min</label>
+              <label>{{ t('lobby.min_letters') }}</label>
               <div class="stepper">
                 <button @click="settings.minLetters = Math.max(4, settings.minLetters - 1)">−</button>
                 <span>{{ settings.minLetters }}</span>
@@ -126,7 +126,7 @@
               </div>
             </div>
             <div class="setting-row">
-              <label>Lettres max</label>
+              <label>{{ t('lobby.max_letters') }}</label>
               <div class="stepper">
                 <button @click="settings.maxLetters = Math.max(settings.minLetters, settings.maxLetters - 1)">−</button>
                 <span>{{ settings.maxLetters }}</span>
@@ -134,19 +134,19 @@
               </div>
             </div>
             <div class="setting-row">
-              <span class="toggle-label">Même mot pour tous</span>
+              <span class="toggle-label">{{ t('lobby.same_word') }}</span>
               <button class="toggle" :class="{ on: settings.syncWords }" @click="settings.syncWords = !settings.syncWords">
                 <span class="toggle-thumb" />
               </button>
             </div>
             <div class="setting-row">
-              <span class="toggle-label">Mode Combo (×2, ×3…)</span>
+              <span class="toggle-label">{{ t('lobby.combo_mode') }}</span>
               <button class="toggle" :class="{ on: settings.comboEnabled }" @click="settings.comboEnabled = !settings.comboEnabled">
                 <span class="toggle-thumb" />
               </button>
             </div>
             <div class="setting-row">
-              <span class="toggle-label">Changer de mot dès qu'un joueur trouve</span>
+              <span class="toggle-label">{{ t('lobby.change_on_find') }}</span>
               <button class="toggle" :class="{ on: settings.changeOnFind }" @click="settings.changeOnFind = !settings.changeOnFind">
                 <span class="toggle-thumb" />
               </button>
@@ -155,14 +155,14 @@
 
           <!-- Liste des joueurs -->
           <div class="card lobby-players">
-            <h3 class="settings-title">Joueurs ({{ room.players?.length || 0 }} / {{ room.max_players }})</h3>
+            <h3 class="settings-title">{{ t('lobby.players') }} ({{ room.players?.length || 0 }} / {{ room.max_players }})</h3>
             <div class="player-list">
               <div v-for="p in room.players" :key="p.id" class="player-row">
                 <div class="player-avatar">{{ p.username[0].toUpperCase() }}</div>
                 <span class="player-name">{{ p.username }}</span>
-                <span v-if="p.id === room.host_id" class="badge badge-amber">Hôte</span>
-                <span v-else-if="p.online !== false" class="badge badge-green">En ligne</span>
-                <span v-else class="badge" style="color:var(--text-3)">Déconnecté</span>
+                <span v-if="p.id === room.host_id" class="badge badge-amber">{{ t('lobby.host') }}</span>
+                <span v-else-if="p.online !== false" class="badge badge-green">{{ t('lobby.online') }}</span>
+                <span v-else class="badge" style="color:var(--text-3)">{{ t('lobby.disconnected') }}</span>
                 <!-- Bouton kick (hôte seulement, pas sur soi-même) -->
                 <button
                   v-if="isHost && p.id !== room.host_id"
@@ -173,7 +173,7 @@
               </div>
               <div v-if="(room.players?.length || 0) < room.max_players" class="player-row placeholder">
                 <div class="player-avatar ghost">?</div>
-                <span class="text-muted">En attente…</span>
+                <span class="text-muted">{{ t('lobby.waiting_slot') }}</span>
               </div>
             </div>
           </div>
@@ -185,10 +185,10 @@
             :disabled="!canStart"
             @click="startGame"
           >
-            {{ canStart ? 'Lancer la partie →' : `Il faut au moins ${room.min_players} joueurs` }}
+            {{ canStart ? t('lobby.start') : t('lobby.need_players', { n: room.min_players }) }}
           </button>
           <div v-else class="waiting-msg">
-            <span class="spin">⟳</span> En attente que l'hôte lance la partie…
+            {{ t('lobby.waiting_host') }}
           </div>
         </div>
       </div>
@@ -207,11 +207,13 @@ import { useRoute, useRouter } from 'vue-router';
 import { io } from 'socket.io-client';
 import { useAuthStore } from '@/stores/auth.js';
 import { usePlatformStore } from '@/stores/platform.js';
+import { useI18n } from '@/composables/useI18n.js';
 
 const route    = useRoute();
 const router   = useRouter();
 const auth     = useAuthStore();
 const platform = usePlatformStore();
+const { t }    = useI18n();
 
 const room     = ref(null);
 const copied   = ref(false);
@@ -223,17 +225,17 @@ const settings = ref({
 });
 let socket = null;
 
-const CATEGORY_LIST = [
-  { id: 'tous',       icon: '📚', label: 'Tous les mots' },
-  { id: 'animaux',    icon: '🐾', label: 'Animaux' },
-  { id: 'cuisine',    icon: '🍽️', label: 'Cuisine & Nourriture' },
-  { id: 'sport',      icon: '⚽', label: 'Sport' },
-  { id: 'nature',     icon: '🌿', label: 'Nature & Plantes' },
-  { id: 'geographie', icon: '🌍', label: 'Géographie' },
-  { id: 'metiers',    icon: '👷', label: 'Métiers' },
-  { id: 'corps',      icon: '🫀', label: 'Corps humain' },
-  { id: 'transport',  icon: '🚗', label: 'Transport' },
-];
+const CATEGORY_LIST = computed(() => [
+  { id: 'tous',       icon: '📚', label: t('lobby.cat_all') },
+  { id: 'animaux',    icon: '🐾', label: t('lobby.cat_animals') },
+  { id: 'cuisine',    icon: '🍽️', label: t('lobby.cat_food') },
+  { id: 'sport',      icon: '⚽', label: t('lobby.cat_sport') },
+  { id: 'nature',     icon: '🌿', label: t('lobby.cat_nature') },
+  { id: 'geographie', icon: '🌍', label: t('lobby.cat_geo') },
+  { id: 'metiers',    icon: '👷', label: t('lobby.cat_jobs') },
+  { id: 'corps',      icon: '🫀', label: t('lobby.cat_body') },
+  { id: 'transport',  icon: '🚗', label: t('lobby.cat_transport') },
+]);
 
 function isCatActive(id) {
   return settings.value.categories.includes(id);

@@ -10,16 +10,16 @@
 
     <div v-if="!state" class="waiting-screen">
       <span class="spin-icon">⟳</span>
-      <p>En attente de la partie…</p>
+      <p>{{ t('waiting_game') }}</p>
     </div>
 
     <template v-else>
       <!-- HUD tour / phase -->
       <div class="turn-hud">
         <div class="hud-left">
-          <span v-if="isMyTurn" class="my-turn-badge">Votre tour</span>
+          <span v-if="isMyTurn" class="my-turn-badge">{{ t('your_turn') }}</span>
           <span v-else class="other-turn">
-            Tour de <strong>{{ currentPlayerName }}</strong>
+            {{ t('turn_of') }} <strong>{{ currentPlayerName }}</strong>
             <span v-if="isAIPlayer(currentPlayerId)" class="ai-tag">IA</span>
           </span>
         </div>
@@ -35,7 +35,7 @@
               <small>{{ state.deckSize }}</small>
             </div>
           </div>
-          <span class="pile-label">Pioche</span>
+          <span class="pile-label">{{ t('skyjo.deck') }}</span>
         </div>
 
         <div class="pile-wrap">
@@ -45,7 +45,7 @@
             </div>
             <div v-else class="pile-inner"><span class="pile-icon">—</span></div>
           </div>
-          <span class="pile-label">Défausse</span>
+          <span class="pile-label">{{ t('skyjo.discard') }}</span>
         </div>
 
         <div v-if="state.heldCard !== null" class="held-wrap">
@@ -53,9 +53,9 @@
             {{ state.heldCard }}
           </div>
           <button v-if="state.heldFrom === 'deck'" class="btn btn-secondary btn-sm mt-1" @click="discardAndFlip">
-            Défausser + Retourner
+            {{ t('skyjo.discard_flip') }}
           </button>
-          <span class="held-hint">Cliquez une carte pour échanger</span>
+          <span class="held-hint">{{ t('skyjo.held_hint') }}</span>
         </div>
       </div>
 
@@ -69,9 +69,9 @@
         >
           <div class="hand-header">
             <span class="hand-name">{{ playerName(pid) }}</span>
-            <span v-if="pid === myId" class="hand-you">(vous)</span>
+            <span v-if="pid === myId" class="hand-you">({{ t('you') }})</span>
             <span v-if="isAIPlayer(pid)" class="ai-tag">IA</span>
-            <span class="hand-score">{{ handScore(pid) }} pts</span>
+            <span class="hand-score">{{ handScore(pid) }} {{ t('skyjo.pts') }}</span>
           </div>
           <div class="hand-grid">
             <template v-for="(card, idx) in state.hands[pid]" :key="idx">
@@ -101,10 +101,10 @@
       <div v-if="gameOver" class="modal-backdrop" @click.self="$router.push('/')">
         <div class="modal-box game-over-modal">
           <div class="go-title">
-            {{ gameOver.winner?.id === myId ? '🏆 Victoire !' : '🏁 Fin de partie' }}
+            {{ gameOver.winner?.id === myId ? t('victory') : t('game_over_title') }}
           </div>
           <p v-if="gameOver.winner" class="go-winner">
-            Gagnant : <strong>{{ gameOver.winner.username }}</strong>
+            {{ t('winner_label') }} <strong>{{ gameOver.winner.username }}</strong>
           </p>
           <div class="score-list">
             <div v-for="(sc, pid) in gameOver.scores" :key="pid" class="score-row">
@@ -112,7 +112,7 @@
               <span class="score-val">{{ sc }} pts</span>
             </div>
           </div>
-          <button class="btn btn-primary mt-2" @click="$router.push('/')">Retour à l'accueil</button>
+          <button class="btn btn-primary mt-2" @click="$router.push('/')">{{ t('back_home') }}</button>
         </div>
       </div>
     </Teleport>
@@ -123,9 +123,11 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { io } from 'socket.io-client';
 import { useAuthStore } from '@/stores/auth.js';
+import { useI18n } from '@/composables/useI18n.js';
 
 const props = defineProps({ roomCode: String, game: Object });
 const auth  = useAuthStore();
+const { t } = useI18n();
 
 let socket = null;
 
@@ -142,12 +144,13 @@ const phaseLabel = computed(() => {
   const p = state.value?.phase;
   if (p === 'initFlip') {
     const fp = playerOrder.value[state.value?.initFlipPlayer ?? 0];
-    return `Retournez 2 cartes (${fp === myId.value ? 'vous' : playerName(fp)})`;
+    const name = fp === myId.value ? t('you') : playerName(fp);
+    return t('skyjo.init_flip', { name });
   }
-  if (p === 'draw')     return 'Piochez une carte';
-  if (p === 'hold')     return 'Échangez ou défaussez';
-  if (p === 'flipOne')  return 'Retournez une carte';
-  if (p === 'lastTurn') return '⚠️ Dernier tour !';
+  if (p === 'draw')     return t('skyjo.draw');
+  if (p === 'hold')     return t('skyjo.hold');
+  if (p === 'flipOne')  return t('skyjo.flip_one');
+  if (p === 'lastTurn') return t('skyjo.last_turn');
   return '';
 });
 

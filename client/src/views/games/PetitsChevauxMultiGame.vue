@@ -7,16 +7,16 @@
       <span class="room-code">{{ roomCode }}</span>
     </div>
 
-    <div v-if="!state" class="waiting"><p>En attente de la partie…</p></div>
+    <div v-if="!state" class="waiting"><p>{{ t('waiting_game') }}</p></div>
 
     <template v-else>
       <!-- Info tour -->
       <div class="turn-info">
         <template v-if="isMyTurn">
-          <span class="my-turn">Votre tour</span>
+          <span class="my-turn">{{ t('your_turn') }}</span>
         </template>
         <template v-else>
-          <span>Tour de <strong :style="{ color: colorHex(state.colorMap[currentPlayerId]) }">{{ playerName(currentPlayerId) }}</strong></span>
+          <span>{{ t('turn_of') }} <strong :style="{ color: colorHex(state.colorMap[currentPlayerId]) }">{{ playerName(currentPlayerId) }}</strong></span>
         </template>
         <div class="color-badge" :style="{ background: colorHex(myColor), color: '#fff' }">
           {{ colorLabel(myColor) }}
@@ -114,18 +114,18 @@
               class="btn btn-primary btn-full mt-1"
               :disabled="!isMyTurn || state.hasRolled"
               @click="roll"
-            >🎲 Lancer</button>
+            >{{ t('pc.roll') }}</button>
           </div>
 
           <!-- Hint -->
           <div v-if="isMyTurn && state.phase === 'select'" class="hint">
-            Cliquez sur un pion doré pour le déplacer
+            {{ t('pc.click_pion') }}
           </div>
           <div v-else-if="isMyTurn && !state.hasRolled" class="hint">
-            Lancez le dé !
+            {{ t('pc.roll_hint') }}
           </div>
           <div v-else-if="!isMyTurn" class="hint muted">
-            En attente de <strong>{{ playerName(currentPlayerId) }}</strong>…
+            {{ t('pc.waiting_for', { name: playerName(currentPlayerId) }) }}
           </div>
 
           <!-- Joueurs -->
@@ -151,8 +151,8 @@
       <div v-if="gameOver" class="modal-backdrop">
         <div class="modal-box text-center">
           <div style="font-size:3rem">{{ gameOver.winner?.id === myId ? '🏆' : '🏁' }}</div>
-          <h2 class="mt-1">{{ gameOver.winner ? `${gameOver.winner.username} gagne !` : 'Fin de partie !' }}</h2>
-          <router-link to="/" class="btn btn-primary btn-full mt-2">Retour au menu →</router-link>
+          <h2 class="mt-1">{{ gameOver.winner ? t('pc.wins', { name: gameOver.winner.username }) : t('pc.game_over') }}</h2>
+          <router-link to="/" class="btn btn-primary btn-full mt-2">{{ t('back_home') }}</router-link>
         </div>
       </div>
     </Teleport>
@@ -164,9 +164,11 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { io } from 'socket.io-client';
 import { useAuthStore } from '@/stores/auth.js';
 import DieFace from '@/components/DieFace.vue';
+import { useI18n } from '@/composables/useI18n.js';
 
 const props = defineProps({ roomCode: String, game: Object });
 const auth  = useAuthStore();
+const { t } = useI18n();
 
 let socket = null;
 
@@ -174,7 +176,9 @@ const CELL      = 36;
 const boardSize = CELL * 15;
 
 const COLOR_HEX = { red: '#ef4444', blue: '#3b82f6', green: '#22c55e', yellow: '#eab308' };
-const COLOR_LABELS = { red: 'Rouge', blue: 'Bleu', green: 'Vert', yellow: 'Jaune' };
+const COLOR_LABELS = computed(() => ({
+  red: t('pc.red'), blue: t('pc.blue'), green: t('pc.green'), yellow: t('pc.yellow'),
+}));
 
 const TRACK = (() => {
   const t = [];
@@ -217,7 +221,7 @@ function isAIPlayer(pid) {
   return state.value?.players?.find(p => p.id === pid)?.isAI ?? false;
 }
 function colorHex(color) { return COLOR_HEX[color] ?? '#888'; }
-function colorLabel(color) { return COLOR_LABELS[color] ?? color; }
+function colorLabel(color) { return COLOR_LABELS.value[color] ?? color; }
 function stableColor(color) {
   const hex = COLOR_HEX[color];
   return hex + '22'; // très transparent
