@@ -265,7 +265,7 @@ function initSocket(io) {
         old.revealed = true;
         old.eliminated = false;
         gs.heldCard = null; gs.heldFrom = null;
-        skyjo.checkColumnElimination(hand);
+        skyjo.checkColumnElimination(hand, gs.discard);
         advanceSkyjoTurn(io, code, room, gs);
       }
       else if (action === 'discard_and_flip' && gs.phase === 'hold' && gs.heldFrom === 'deck') {
@@ -279,7 +279,7 @@ function initSocket(io) {
         if (!card || card.revealed || card.eliminated) return;
         card.revealed = true;
         gs.heldCard = null;
-        skyjo.checkColumnElimination(gs.hands[curId]);
+        skyjo.checkColumnElimination(gs.hands[curId], gs.discard);
         advanceSkyjoTurn(io, code, room, gs);
       }
     });
@@ -648,7 +648,7 @@ function aiPlaySkyjoTurn(io, code, room, gs, curId) {
       gs.discard.push(old.value);
       old.value = gs.heldCard; old.revealed = true; old.eliminated = false;
       gs.heldCard = null; gs.heldFrom = null;
-      skyjo.checkColumnElimination(hand);
+      skyjo.checkColumnElimination(hand, gs.discard);
       advanceSkyjoTurn(io, code, room, gs);
     }, 700);
     return;
@@ -675,7 +675,7 @@ function aiPlaySkyjoTurn(io, code, room, gs, curId) {
       gs.discard.push(old.value);
       old.value = gs.heldCard; old.revealed = true; old.eliminated = false;
       gs.heldCard = null; gs.heldFrom = null;
-      skyjo.checkColumnElimination(hand);
+      skyjo.checkColumnElimination(hand, gs.discard);
     } else {
       // Discard and flip an unrevealed card
       gs.discard.push(gs.heldCard);
@@ -683,7 +683,7 @@ function aiPlaySkyjoTurn(io, code, room, gs, curId) {
       const unIdx = hand.findIndex(c => !c.revealed && !c.eliminated);
       if (unIdx >= 0) {
         hand[unIdx].revealed = true;
-        skyjo.checkColumnElimination(hand);
+        skyjo.checkColumnElimination(hand, gs.discard);
       }
     }
     advanceSkyjoTurn(io, code, room, gs);

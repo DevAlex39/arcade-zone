@@ -25,7 +25,7 @@ function shuffle(arr) {
 function colIndices(col) { return [col, col + COLS, col + COLS * 2]; }
 
 // Returns true if any column was eliminated
-function checkColumnElimination(cards) {
+function checkColumnElimination(cards, discard) {
   let changed = false;
   for (let c = 0; c < COLS; c++) {
     const idx = colIndices(c);
@@ -33,6 +33,7 @@ function checkColumnElimination(cards) {
       const val = cards[idx[0]].value;
       if (idx.every(i => cards[i].value === val)) {
         idx.forEach(i => { cards[i].eliminated = true; });
+        if (discard) discard.push(val); // les 3 cartes vont sur la défausse (règle officielle)
         changed = true;
       }
     }
