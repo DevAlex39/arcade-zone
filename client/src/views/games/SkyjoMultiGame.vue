@@ -62,7 +62,7 @@
       <!-- Mains des joueurs -->
       <div class="all-hands">
         <div
-          v-for="pid in state.playerOrder"
+          v-for="pid in orderedPlayers"
           :key="pid"
           class="player-hand card"
           :class="{ 'hand-me': pid === myId, 'hand-active': pid === currentPlayerId }"
@@ -137,6 +137,13 @@ const gameOver = ref(null);
 const myId            = computed(() => auth.user?.id);
 const playerOrder     = computed(() => state.value?.playerOrder ?? []);
 const currentPlayerId = computed(() => playerOrder.value[state.value?.curPlayer ?? 0]);
+const orderedPlayers  = computed(() => {
+  const order = state.value?.playerOrder ?? [];
+  const myIdx = order.indexOf(myId.value);
+  if (myIdx <= 0) return order;
+  return [order[myIdx], ...order.slice(0, myIdx), ...order.slice(myIdx + 1)];
+});
+
 const isMyTurn        = computed(() => {
   if (state.value?.phase === 'initFlip') {
     return playerOrder.value[state.value?.initFlipPlayer ?? 0] === myId.value;
