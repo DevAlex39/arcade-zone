@@ -84,7 +84,7 @@
                 }"
                 @click="cardClick(pid, idx, card)"
               >
-                <div v-if="card.revealed || card.eliminated || pid === myId" class="card-face" :style="cardStyle(card.value)">
+                <div v-if="card.revealed || card.eliminated" class="card-face" :style="cardStyle(card.value)">
                   <span v-if="!card.eliminated">{{ card.value }}</span>
                   <span v-else class="x-mark">✕</span>
                 </div>
