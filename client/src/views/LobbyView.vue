@@ -34,6 +34,19 @@
         <!-- RIGHT: settings + players -->
         <div class="lobby-right">
 
+          <!-- Paramètres Cell Number (hôte seulement) -->
+          <div class="card lobby-settings" v-if="isHost && room.game_id === 'skyjo'">
+            <h3 class="settings-title">Paramètres</h3>
+            <div class="setting-row">
+              <label>Joueurs IA</label>
+              <div class="stepper">
+                <button @click="settings.aiCount = Math.max(0, settings.aiCount - 1)">−</button>
+                <span>{{ settings.aiCount }}</span>
+                <button @click="settings.aiCount = Math.min(6, settings.aiCount + 1)">+</button>
+              </div>
+            </div>
+          </div>
+
           <!-- Paramètres Petits Chevaux (hôte seulement) -->
           <div class="card lobby-settings" v-if="isHost && room.game_id === 'petits-chevaux'">
             <h3 class="settings-title">Paramètres</h3>
@@ -246,7 +259,11 @@ const isHost = computed(() => {
   if (auth.user.isGuest) return room.value.host_name === auth.user.username;
   return room.value.host_id === auth.user.id;
 });
-const canStart = computed(() => (room.value?.players?.length || 0) >= (room.value?.min_players || 2));
+const canStart = computed(() => {
+  const real  = room.value?.players?.length || 0;
+  const ai    = settings.value.aiCount || 0;
+  return (real + ai) >= (room.value?.min_players || 2);
+});
 
 async function loadRoom() {
   try {

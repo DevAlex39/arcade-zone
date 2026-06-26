@@ -230,10 +230,12 @@ function initSocket(io) {
           gs.initFlipCount = 0;
           gs.initFlipPlayer = (gs.initFlipPlayer + 1) % gs.playerOrder.length;
           if (gs.initFlipPlayer === 0) {
-            gs.phase = 'draw'; // tous ont retourné 2 cartes
+            gs.phase = 'draw';
+            gs.curPlayer = findSkyjoStartPlayer(gs);
           }
         }
         io.to(code).emit('skyjo_state', publicSkyjoState(gs));
+        scheduleAISkyjoTurn(io, code, room);
         return;
       }
 
@@ -486,13 +488,21 @@ function publicYahtzeeState(gs) {
 // SKYJO
 // ═══════════════════════════════════════════════════════════════════════
 function startSkyjoGame(io, room) {
+  const realCount = room.players.length;
+  const aiCount   = Math.min(room.settings?.aiCount || 0, 8 - realCount);
+  const aiPlayers = Array.from({ length: aiCount }, (_, i) => ({
+    id: `ai_skyjo_${i}`, username: `IA ${i + 1}`, isAI: true,
+  }));
+  const allPlayers = [...room.players, ...aiPlayers];
   room.status    = 'playing';
-  room.gameState = skyjo.initGame(room.players);
+  room.gameState = skyjo.initGame(allPlayers);
   io.to(room.code).emit('skyjo_state', publicSkyjoState(room.gameState));
+  scheduleAISkyjoTurn(io, room.code, room);
 }
 
 function publicSkyjoState(gs) {
   return {
+    players:        gs.players || [],
     hands:          gs.hands,
     deckSize:       gs.deck.length,
     discardTop:     gs.discard[gs.discard.length - 1] ?? null,
@@ -536,7 +546,8 @@ function advanceSkyjoTurn(io, code, room, gs) {
       const sorted = gs.playerOrder
         .map(pid => ({ id: pid, score: scores[pid] }))
         .sort((a, b) => a.score - b.score);
-      const winner = room.players.find(p => p.id === sorted[0].id);
+      const winner = (gs.players || []).find(p => p.id === sorted[0].id)
+                  || room.players.find(p => p.id === sorted[0].id);
 
       io.to(code).emit('skyjo_state', publicSkyjoState(gs));
       io.to(code).emit('game_over', { winner, scores });
@@ -550,6 +561,133 @@ function advanceSkyjoTurn(io, code, room, gs) {
 
   gs.curPlayer = (gs.curPlayer + 1) % gs.playerOrder.length;
   io.to(code).emit('skyjo_state', publicSkyjoState(gs));
+  scheduleAISkyjoTurn(io, code, room);
+}
+
+function findSkyjoStartPlayer(gs) {
+  let maxScore = -Infinity, maxIdx = 0;
+  gs.playerOrder.forEach((pid, i) => {
+    const s = skyjo.visibleScore(gs.hands[pid]);
+    if (s > maxScore) { maxScore = s; maxIdx = i; }
+  });
+  return maxIdx;
+}
+
+function scheduleAISkyjoTurn(io, code, room) {
+  if (room.status !== 'playing') return;
+  const gs = room.gameState;
+  if (!gs || !gs.players) return;
+
+  if (gs.phase === 'initFlip') {
+    const flipPid = gs.playerOrder[gs.initFlipPlayer];
+    const flipPlayer = gs.players.find(p => p.id === flipPid);
+    if (!flipPlayer?.isAI) return;
+    aiDoSkyjoInitFlip(io, code, room, gs, flipPid);
+    return;
+  }
+
+  if (gs.phase === 'finished') return;
+  const curId = gs.playerOrder[gs.curPlayer];
+  const curPlayer = gs.players.find(p => p.id === curId);
+  if (!curPlayer?.isAI) return;
+
+  setTimeout(() => {
+    if (room.status !== 'playing') return;
+    aiPlaySkyjoTurn(io, code, room, gs, curId);
+  }, 900);
+}
+
+function aiDoSkyjoInitFlip(io, code, room, gs, flipPid) {
+  const hand = gs.hands[flipPid];
+  const unrevealed = hand.map((c, i) => i).filter(i => !hand[i].revealed && !hand[i].eliminated);
+  if (unrevealed.length < 2) return;
+
+  setTimeout(() => {
+    if (room.status !== 'playing') return;
+    hand[unrevealed[0]].revealed = true;
+    gs.initFlipCount++;
+    io.to(code).emit('skyjo_state', publicSkyjoState(gs));
+
+    setTimeout(() => {
+      if (room.status !== 'playing') return;
+      hand[unrevealed[1]].revealed = true;
+      gs.initFlipCount++;
+      if (gs.initFlipCount >= 2) {
+        gs.initFlipCount = 0;
+        gs.initFlipPlayer = (gs.initFlipPlayer + 1) % gs.playerOrder.length;
+        if (gs.initFlipPlayer === 0) {
+          gs.phase = 'draw';
+          gs.curPlayer = findSkyjoStartPlayer(gs);
+        }
+      }
+      io.to(code).emit('skyjo_state', publicSkyjoState(gs));
+      scheduleAISkyjoTurn(io, code, room);
+    }, 600);
+  }, 800);
+}
+
+function aiPlaySkyjoTurn(io, code, room, gs, curId) {
+  const hand = gs.hands[curId];
+  const discardTop = gs.discard[gs.discard.length - 1] ?? null;
+
+  const revealedHigh = hand.reduce((best, c, i) => {
+    if (!c.revealed || c.eliminated) return best;
+    if (c.value > best.val) return { val: c.value, i };
+    return best;
+  }, { val: -Infinity, i: -1 });
+
+  // Take discard if it's low and better than our worst revealed
+  if (discardTop !== null && discardTop <= 2 && revealedHigh.i >= 0 && discardTop < revealedHigh.val) {
+    gs.heldCard = gs.discard.pop();
+    gs.heldFrom = 'discard';
+    gs.phase = 'hold';
+    io.to(code).emit('skyjo_state', publicSkyjoState(gs));
+    setTimeout(() => {
+      if (room.status !== 'playing') return;
+      const old = hand[revealedHigh.i];
+      gs.discard.push(old.value);
+      old.value = gs.heldCard; old.revealed = true; old.eliminated = false;
+      gs.heldCard = null; gs.heldFrom = null;
+      skyjo.checkColumnElimination(hand);
+      advanceSkyjoTurn(io, code, room, gs);
+    }, 700);
+    return;
+  }
+
+  // Draw from deck
+  gs.heldCard = skyjo.deckPop(gs.deck, gs.discard);
+  gs.heldFrom = 'deck';
+  gs.phase = 'hold';
+  io.to(code).emit('skyjo_state', publicSkyjoState(gs));
+
+  setTimeout(() => {
+    if (room.status !== 'playing') return;
+    // Find worst card to replace (highest value or unknown)
+    const worst = hand.reduce((best, c, i) => {
+      if (c.eliminated) return best;
+      const effective = c.revealed ? c.value : 6;
+      if (effective > best.val) return { val: effective, i };
+      return best;
+    }, { val: -Infinity, i: -1 });
+
+    if (gs.heldCard < (worst.val > 5 ? worst.val : 7) && worst.i >= 0) {
+      const old = hand[worst.i];
+      gs.discard.push(old.value);
+      old.value = gs.heldCard; old.revealed = true; old.eliminated = false;
+      gs.heldCard = null; gs.heldFrom = null;
+      skyjo.checkColumnElimination(hand);
+    } else {
+      // Discard and flip an unrevealed card
+      gs.discard.push(gs.heldCard);
+      gs.heldCard = null; gs.heldFrom = null;
+      const unIdx = hand.findIndex(c => !c.revealed && !c.eliminated);
+      if (unIdx >= 0) {
+        hand[unIdx].revealed = true;
+        skyjo.checkColumnElimination(hand);
+      }
+    }
+    advanceSkyjoTurn(io, code, room, gs);
+  }, 700);
 }
 
 // ═══════════════════════════════════════════════════════════════════════

@@ -78,17 +78,18 @@ function initGame(players) {
   const firstDiscard = deck.pop();
 
   return {
+    players:         players.map(p => ({ id: p.id, username: p.username, isAI: !!p.isAI })),
     deck,
     discard:         [firstDiscard],
     hands,
     playerOrder:     players.map(p => p.id),
-    curPlayer:       0,               // index dans playerOrder
-    phase:           'initFlip',      // initFlip | draw | hold | flipOne | lastTurn | finished
-    initFlipPlayer:  0,               // qui retourne ses 2 cartes initiales
+    curPlayer:       0,
+    phase:           'initFlip',
+    initFlipPlayer:  0,
     initFlipCount:   0,
     heldCard:        null,
-    heldFrom:        null,            // 'deck' | 'discard'
-    endTriggeredBy:  null,            // playerId qui a tout révélé
+    heldFrom:        null,
+    endTriggeredBy:  null,
     lastTurnCount:   0,
     roundScores:     Object.fromEntries(players.map(p => [p.id, null])),
   };
