@@ -137,7 +137,12 @@ const gameOver = ref(null);
 const myId            = computed(() => auth.user?.id);
 const playerOrder     = computed(() => state.value?.playerOrder ?? []);
 const currentPlayerId = computed(() => playerOrder.value[state.value?.curPlayer ?? 0]);
-const isMyTurn        = computed(() => currentPlayerId.value === myId.value);
+const isMyTurn        = computed(() => {
+  if (state.value?.phase === 'initFlip') {
+    return playerOrder.value[state.value?.initFlipPlayer ?? 0] === myId.value;
+  }
+  return currentPlayerId.value === myId.value;
+});
 const currentPlayerName = computed(() => playerName(currentPlayerId.value));
 
 const phaseLabel = computed(() => {
