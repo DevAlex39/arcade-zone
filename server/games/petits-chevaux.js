@@ -120,6 +120,7 @@ function initGame(players, pionsPerPlayer = 2) {
   });
 
   return {
+    players:      players.map(p => ({ id: p.id, username: p.username, isAI: !!p.isAI })),
     playerOrder:  players.map(p => p.id),
     colorMap,
     pawns,
@@ -127,13 +128,13 @@ function initGame(players, pionsPerPlayer = 2) {
     diceValue:    null,
     hasRolled:    false,
     movablePawns: [],
-    phase:        'roll', // 'roll' | 'select'
+    phase:        'roll',
     winner:       null,
   };
 }
 
 module.exports = {
-  TRACK, START_IDX, HOME_PATH, STABLE_SLOTS, CENTER,
+  TRACK, START_IDX, HOME_PATH, STABLE_SLOTS, CENTER, SAFE_ABS,
   TRACK_LEN, HOME_LEN, POS_STABLE, POS_DONE,
   rollDice, getAbsPos, getPionCell, computeMovablePawns, applyMove, checkWinner, initGame,
 };

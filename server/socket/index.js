@@ -556,13 +556,75 @@ function advanceSkyjoTurn(io, code, room, gs) {
 // PETITS CHEVAUX
 // ═══════════════════════════════════════════════════════════════════════
 function startPCGame(io, room) {
+  const realCount = room.players.length;
+  const aiCount   = Math.min(room.settings.aiCount || 0, 4 - realCount);
+  const aiPlayers = Array.from({ length: aiCount }, (_, i) => ({
+    id: `ai_${i}`, username: `IA ${i + 1}`, isAI: true,
+  }));
+  const allPlayers = [...room.players, ...aiPlayers];
   room.status    = 'playing';
-  room.gameState = pc.initGame(room.players, room.settings.pionsPerPlayer || 2);
+  room.gameState = pc.initGame(allPlayers, room.settings.pionsPerPlayer || 2);
   io.to(room.code).emit('pc_state', publicPCState(room.gameState));
+  scheduleAITurn(io, room.code, room);
+}
+
+function pickBestPion(gs, pid, movable, diceValue) {
+  const color = gs.colorMap[pid];
+  const pawns = gs.pawns[pid];
+  // 1. Capturer un adversaire
+  for (const idx of movable) {
+    const pion = pawns[idx];
+    if (pion.pos === pc.POS_STABLE || pion.pos >= pc.TRACK_LEN) continue;
+    const newPos = pion.pos + diceValue;
+    if (newPos >= pc.TRACK_LEN) continue;
+    const absNew = pc.getAbsPos(newPos, color);
+    if (pc.SAFE_ABS.has(absNew)) continue;
+    for (const [othId, othPawns] of Object.entries(gs.pawns)) {
+      if (othId === pid) continue;
+      const othColor = gs.colorMap[othId];
+      for (const op of othPawns) {
+        if (op.pos === pc.POS_STABLE || op.pos >= pc.TRACK_LEN) continue;
+        if (pc.getAbsPos(op.pos, othColor) === absNew) return idx;
+      }
+    }
+  }
+  // 2. Sortir de l'écurie sur un 6
+  if (diceValue === 6) {
+    const out = movable.find(i => pawns[i].pos === pc.POS_STABLE);
+    if (out !== undefined) return out;
+  }
+  // 3. Avancer le pion le plus en avant
+  return movable.reduce((best, idx) => pawns[idx].pos > pawns[best].pos ? idx : best, movable[0]);
+}
+
+function scheduleAITurn(io, code, room) {
+  if (room.status !== 'playing') return;
+  const gs    = room.gameState;
+  const curId = gs.playerOrder[gs.curPlayer];
+  const isAI  = gs.players.find(p => p.id === curId)?.isAI;
+  if (!isAI) return;
+  setTimeout(() => {
+    if (room.status !== 'playing') return;
+    // Lancer le dé
+    const dice = pc.rollDice();
+    gs.diceValue    = dice;
+    gs.hasRolled    = true;
+    gs.movablePawns = pc.computeMovablePawns(gs.pawns[curId], gs.colorMap[curId], dice);
+    io.to(code).emit('pc_state', publicPCState(gs));
+    setTimeout(() => {
+      if (room.status !== 'playing') return;
+      if (gs.movablePawns.length === 0) {
+        advancePCTurn(io, code, room, gs, dice === 6 && (room.settings.rejouerSur6 !== false));
+      } else {
+        applyPCMove(io, code, room, gs, pickBestPion(gs, curId, gs.movablePawns, dice));
+      }
+    }, 600);
+  }, 900);
 }
 
 function publicPCState(gs) {
   return {
+    players:      gs.players,
     playerOrder:  gs.playerOrder,
     colorMap:     gs.colorMap,
     pawns:        gs.pawns,
@@ -585,7 +647,7 @@ function applyPCMove(io, code, room, gs, pionIdx) {
     gs.phase    = 'done';
     room.status = 'finished';
     io.to(code).emit('pc_state', publicPCState(gs));
-    io.to(code).emit('game_over', { winner: room.players.find(p => p.id === winner) || null });
+    io.to(code).emit('game_over', { winner: gs.players.find(p => p.id === winner) || null });
     rooms.delete(code);
     return;
   }
@@ -604,6 +666,7 @@ function advancePCTurn(io, code, room, gs, reroll) {
     gs.curPlayer = (gs.curPlayer + 1) % gs.playerOrder.length;
   }
   io.to(code).emit('pc_state', publicPCState(gs));
+  scheduleAITurn(io, code, room);
 }
 
 // ═══════════════════════════════════════════════════════════════════════

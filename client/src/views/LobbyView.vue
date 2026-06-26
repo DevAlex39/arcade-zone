@@ -51,6 +51,14 @@
                 <span class="toggle-thumb" />
               </button>
             </div>
+            <div class="setting-row">
+              <label>Joueurs IA</label>
+              <div class="stepper">
+                <button @click="settings.aiCount = Math.max(0, settings.aiCount - 1)">−</button>
+                <span>{{ settings.aiCount }}</span>
+                <button @click="settings.aiCount = Math.min(3, settings.aiCount + 1)">+</button>
+              </div>
+            </div>
           </div>
 
           <!-- Paramètres Motus (hôte seulement) -->
@@ -197,7 +205,7 @@ const copied   = ref(false);
 const settings = ref({
   livesMax: 20, maxAttempts: 6, syncWords: true, comboEnabled: true,
   minLetters: 5, maxLetters: 6, lang: platform.lang, changeOnFind: false,
-  categories: ['tous'],
+  categories: ['tous'], aiCount: 0,
   pionsPerPlayer: 2, rejouerSur6: true,
 });
 let socket = null;
