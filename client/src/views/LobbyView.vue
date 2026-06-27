@@ -149,14 +149,6 @@
             <h3 class="settings-title">{{ t('lobby.settings') }}</h3>
 
             <div class="setting-row">
-              <span class="toggle-label">Langue des questions</span>
-              <div class="lang-switch">
-                <button class="lang-btn" :class="{ active: settings.quizLang === 'fr' }" @click="settings.quizLang = 'fr'">🇫🇷 Français</button>
-                <button class="lang-btn" :class="{ active: settings.quizLang === 'en' }" @click="settings.quizLang = 'en'">🇬🇧 English</button>
-              </div>
-            </div>
-
-            <div class="setting-row">
               <span class="toggle-label">{{ t('quiz.mode') }}</span>
               <div class="lang-switch">
                 <button class="lang-btn" :class="{ active: settings.quizMode === 1 }" @click="settings.quizMode = 1">⚡ {{ t('quiz.mode1') }}</button>
