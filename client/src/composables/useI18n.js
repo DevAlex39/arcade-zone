@@ -29,6 +29,8 @@ const T = {
   'lobby.ai_players':    { fr: 'Joueurs IA',           en: 'AI Players' },
   'lobby.pawns':         { fr: 'Pions par joueur',     en: 'Pawns per player' },
   'lobby.replay_6':      { fr: '🎲 Rejouer sur 6',    en: '🎲 Replay on 6' },
+  'lobby.allow_overtake':   { fr: 'Autoriser le dépassement', en: 'Allow overtaking' },
+  'lobby.corridor_simple':  { fr: 'Corridor simplifié',       en: 'Simplified corridor' },
   'lobby.lives':         { fr: 'Vies de départ',       en: 'Starting lives' },
   'lobby.attempts':      { fr: 'Essais par mot',       en: 'Attempts per word' },
   'lobby.min_letters':   { fr: 'Lettres min',          en: 'Min letters' },

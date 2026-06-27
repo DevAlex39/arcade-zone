@@ -296,7 +296,7 @@ function initSocket(io) {
         const dice = pc.rollDice();
         gs.diceValue  = dice;
         gs.hasRolled  = true;
-        gs.movablePawns = pc.computeMovablePawns(gs.pawns[curId], gs.colorMap[curId], dice);
+        gs.movablePawns = pc.computeMovablePawns(gs.pawns[curId], gs.colorMap[curId], dice, gs.settings, gs.pawns, gs.colorMap);
         if (gs.movablePawns.length === 0) {
           // Aucun pion ne peut bouger → passer le tour (rejouer si 6 et règle active)
           advancePCTurn(io, code, room, gs, dice === 6 && (room.settings.rejouerSur6 !== false));
@@ -702,6 +702,7 @@ function startPCGame(io, room) {
   const allPlayers = [...room.players, ...aiPlayers];
   room.status    = 'playing';
   room.gameState = pc.initGame(allPlayers, room.settings.pionsPerPlayer || 2);
+  room.gameState.settings = room.settings; // pour y accéder depuis les fonctions AI
   io.to(room.code).emit('pc_state', publicPCState(room.gameState));
   scheduleAITurn(io, room.code, room);
 }
@@ -747,7 +748,7 @@ function scheduleAITurn(io, code, room) {
     const dice = pc.rollDice();
     gs.diceValue    = dice;
     gs.hasRolled    = true;
-    gs.movablePawns = pc.computeMovablePawns(gs.pawns[curId], gs.colorMap[curId], dice);
+    gs.movablePawns = pc.computeMovablePawns(gs.pawns[curId], gs.colorMap[curId], dice, gs.settings, gs.pawns, gs.colorMap);
     io.to(code).emit('pc_state', publicPCState(gs));
     setTimeout(() => {
       if (room.status !== 'playing') return;

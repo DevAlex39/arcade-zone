@@ -9,30 +9,14 @@
       <div class="nav-right">
         <!-- Theme switcher -->
         <div class="switcher" title="Thème">
-          <button
-            class="sw-btn"
-            :class="{ active: platform.theme === 'cobalt' }"
-            @click="platform.setTheme('cobalt')"
-          >🌌</button>
-          <button
-            class="sw-btn"
-            :class="{ active: platform.theme === 'ember' }"
-            @click="platform.setTheme('ember')"
-          >🔥</button>
+          <button class="sw-btn" :class="{ active: platform.theme === 'cobalt' }" @click="platform.setTheme('cobalt')">🌌</button>
+          <button class="sw-btn" :class="{ active: platform.theme === 'ember' }"  @click="platform.setTheme('ember')">🔥</button>
         </div>
 
         <!-- Lang switcher -->
         <div class="switcher" title="Langue">
-          <button
-            class="sw-btn sw-text"
-            :class="{ active: platform.lang === 'fr' }"
-            @click="platform.setLang('fr')"
-          >FR</button>
-          <button
-            class="sw-btn sw-text"
-            :class="{ active: platform.lang === 'en' }"
-            @click="platform.setLang('en')"
-          >EN</button>
+          <button class="sw-btn sw-text" :class="{ active: platform.lang === 'fr' }" @click="platform.setLang('fr')">FR</button>
+          <button class="sw-btn sw-text" :class="{ active: platform.lang === 'en' }" @click="platform.setLang('en')">EN</button>
         </div>
 
         <template v-if="auth.isLoggedIn">
@@ -77,48 +61,38 @@ function handleLogout() {
 <style scoped>
 .navbar {
   position: sticky; top: 0; z-index: 50;
-  background: rgba(13,15,26,.85); backdrop-filter: blur(12px);
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--border);
 }
-html[data-theme="ember"] .navbar { background: rgba(16,13,10,.88); }
 
 .navbar-inner {
   max-width: 1200px; margin: 0 auto;
-  padding: .65rem 1.5rem;
-  display: flex; align-items: center; justify-content: space-between;
+  padding: .7rem 1.5rem;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
 }
-.brand {
-  display: flex; align-items: center; gap: .6rem;
-  text-decoration: none;
+.brand { display: flex; align-items: center; gap: .55rem; text-decoration: none; }
+.brand-icon {
+  width: 30px; height: 30px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center; font-size: .95rem;
+  background: linear-gradient(135deg, var(--cyan), var(--violet));
+  box-shadow: 0 0 16px color-mix(in srgb, var(--cyan) 45%, transparent);
 }
-.brand-icon { font-size: 1.4rem; }
-.brand-text {
-  font-family: var(--font-title); font-size: 1.2rem; font-weight: 800; letter-spacing: .1em;
-  color: var(--cyan); text-transform: uppercase;
-}
+.brand-text { font-family: var(--font-title); font-size: 1.15rem; font-weight: 800; letter-spacing: .12em; color: var(--cyan); text-transform: uppercase; }
 .brand-zone { color: var(--violet); }
 
 .nav-right { display: flex; align-items: center; gap: .5rem; }
 
-/* Switcher pill */
-.switcher {
-  display: flex; background: var(--bg-3); border: 1px solid var(--border);
-  border-radius: 8px; overflow: hidden; flex-shrink: 0;
-}
+.switcher { display: flex; background: var(--bg-3); border: 1px solid var(--border); border-radius: 9px; overflow: hidden; flex-shrink: 0; }
 .sw-btn {
-  padding: .3rem .5rem; background: transparent; border: none;
-  cursor: pointer; font-size: .85rem; color: var(--text-2);
-  transition: background .12s, color .12s;
+  padding: .32rem .55rem; background: transparent; border: none; cursor: pointer;
+  font-size: .85rem; color: var(--text-3); transition: background .12s, color .12s;
 }
-.sw-btn.sw-text { font-size: .72rem; font-weight: 800; letter-spacing: .05em; padding: .3rem .45rem; }
+.sw-btn.sw-text { font-size: .72rem; font-weight: 800; letter-spacing: .05em; padding: .32rem .5rem; }
 .sw-btn:hover { color: var(--text); background: var(--bg-4); }
 .sw-btn.active { background: var(--bg-4); color: var(--cyan); }
 
-.user-pill {
-  display: flex; align-items: center; gap: .5rem;
-  background: var(--bg-3); border: 1px solid var(--border);
-  border-radius: 999px; padding: .3rem .3rem .3rem .5rem;
-}
+.user-pill { display: flex; align-items: center; gap: .5rem; background: var(--bg-3); border: 1px solid var(--border); border-radius: 999px; padding: .28rem .28rem .28rem .55rem; }
 .user-avatar {
   width: 28px; height: 28px; border-radius: 50%;
   background: linear-gradient(135deg, var(--cyan), var(--violet));

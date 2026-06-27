@@ -54,8 +54,11 @@ function getPionCell(pos, color) {
   return TRACK[getAbsPos(pos, color)];
 }
 
-function computeMovablePawns(pawns, color, diceValue) {
+function computeMovablePawns(pawns, color, diceValue, settings = {}, allPawns = {}, colorMap = {}) {
+  const allowOvertake    = settings.allowOvertake    !== false; // défaut: autorisé côté serveur
+  const corridorSimplifie = settings.corridorSimplifie !== false; // défaut: simplifié côté serveur
   const movable = [];
+
   for (let i = 0; i < pawns.length; i++) {
     const p = pawns[i];
     if (p.pos === POS_DONE) continue;
@@ -64,7 +67,28 @@ function computeMovablePawns(pawns, color, diceValue) {
       continue;
     }
     const newPos = p.pos + diceValue;
-    if (newPos > POS_DONE) continue; // dépasserait le centre
+    if (newPos > POS_DONE) continue;
+
+    // Corridor strict : dans le couloir d'arrivée, le dé doit être EXACTEMENT la distance restante
+    if (!corridorSimplifie && p.pos >= TRACK_LEN && newPos !== POS_DONE) continue;
+
+    // Pas de dépassement : un pion ne peut pas sauter par-dessus un ennemi sur la piste principale
+    if (!allowOvertake && p.pos >= 0 && p.pos < TRACK_LEN) {
+      const myAbs = getAbsPos(p.pos, color);
+      let blocked = false;
+      for (const [othId, othPawns] of Object.entries(allPawns)) {
+        if (colorMap[othId] === color) continue; // ignorer sa propre couleur
+        for (const op of othPawns) {
+          if (op.pos === POS_STABLE || op.pos >= TRACK_LEN || op.pos === POS_DONE) continue;
+          const othAbs = getAbsPos(op.pos, colorMap[othId]);
+          const dist = (othAbs - myAbs + TRACK_LEN) % TRACK_LEN;
+          if (dist > 0 && dist < diceValue) { blocked = true; break; }
+        }
+        if (blocked) break;
+      }
+      if (blocked) continue;
+    }
+
     movable.push(i);
   }
   return movable;

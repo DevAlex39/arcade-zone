@@ -12,131 +12,84 @@
     <template v-else>
       <!-- Info tour -->
       <div class="turn-info">
-        <template v-if="isMyTurn">
-          <span class="my-turn">{{ t('your_turn') }}</span>
-        </template>
-        <template v-else>
-          <span>{{ t('turn_of') }} <strong :style="{ color: colorHex(state.colorMap[currentPlayerId]) }">{{ playerName(currentPlayerId) }}</strong></span>
-        </template>
-        <div class="color-badge" :style="{ background: colorHex(myColor), color: '#fff' }">
-          {{ colorLabel(myColor) }}
-        </div>
+        <span v-if="isMyTurn" class="my-turn">🎯 {{ t('your_turn') }}</span>
+        <span v-else>{{ t('turn_of') }} <strong :style="{ color: colorHex(state.colorMap[currentPlayerId]) }">{{ playerName(currentPlayerId) }}</strong></span>
+        <div class="color-badge" :style="{ background: colorHex(myColor) }">{{ colorLabel(myColor) }}</div>
       </div>
 
       <div class="main-layout">
-        <!-- Plateau SVG -->
-        <svg class="board" :viewBox="`0 0 ${CELL*15} ${CELL*15}`" :width="boardSize" :height="boardSize">
-          <!-- Fond -->
-          <rect width="100%" height="100%" fill="var(--bg-3)"/>
+        <!-- Plateau -->
+        <div class="board-wrap" :style="{ width: boardSize + 'px', height: boardSize + 'px' }">
+          <svg class="board" :viewBox="`0 0 ${boardSize} ${boardSize}`" :width="boardSize" :height="boardSize">
+            <rect :width="boardSize" :height="boardSize" fill="var(--bg-3)" />
 
-          <!-- Zones d'écurie -->
-          <rect x="0" y="0" :width="CELL*6" :height="CELL*6" :fill="stableColor('red')" rx="4"/>
-          <rect :x="CELL*9" y="0" :width="CELL*6" :height="CELL*6" :fill="stableColor('blue')" rx="4"/>
-          <rect :x="CELL*9" :y="CELL*9" :width="CELL*6" :height="CELL*6" :fill="stableColor('green')" rx="4"/>
-          <rect x="0" :y="CELL*9" :width="CELL*6" :height="CELL*6" :fill="stableColor('yellow')" rx="4"/>
+            <!-- Zones d'écurie -->
+            <rect x="2" y="2" :width="CELL*6-4" :height="CELL*6-4" rx="12" :fill="COLOR_HEX.red"    opacity="0.10" />
+            <rect :x="CELL*9+2" y="2" :width="CELL*6-4" :height="CELL*6-4" rx="12" :fill="COLOR_HEX.blue"   opacity="0.10" />
+            <rect :x="CELL*9+2" :y="CELL*9+2" :width="CELL*6-4" :height="CELL*6-4" rx="12" :fill="COLOR_HEX.green"  opacity="0.10" />
+            <rect x="2" :y="CELL*9+2" :width="CELL*6-4" :height="CELL*6-4" rx="12" :fill="COLOR_HEX.yellow" opacity="0.10" />
 
-          <!-- Couloirs d'arrivée colorés -->
-          <rect v-for="c in 6" :key="`hr${c}`" :x="CELL*c" :y="CELL*6" :width="CELL" :height="CELL*3"
-            fill="none"/>
-          <rect v-for="c in 6" :key="`hr2${c}`" :x="CELL*c" :y="CELL*7" :width="CELL" :height="CELL"
-            :fill="COLOR_HEX.red" opacity="0.25"/>
-          <rect v-for="r in 6" :key="`hb${r}`" :x="CELL*7" :y="CELL*r" :width="CELL" :height="CELL"
-            :fill="COLOR_HEX.blue" opacity="0.25"/>
-          <rect v-for="c in 6" :key="`hg${c}`" :x="CELL*(8+c)" :y="CELL*7" :width="CELL" :height="CELL"
-            :fill="COLOR_HEX.green" opacity="0.25"/>
-          <rect v-for="r in 6" :key="`hy${r}`" :x="CELL*7" :y="CELL*(8+r)" :width="CELL" :height="CELL"
-            :fill="COLOR_HEX.yellow" opacity="0.25"/>
+            <!-- Emplacements de pions dans l'écurie -->
+            <circle v-for="(s, i) in stableRings" :key="'sr'+i"
+              :cx="s.x" :cy="s.y" :r="CELL*0.42" fill="none" :stroke="s.color"
+              stroke-width="1.5" stroke-dasharray="3 4" opacity="0.55" />
 
-          <!-- Grille de piste -->
-          <rect
-            v-for="([row,col], ti) in TRACK" :key="`t${ti}`"
-            :x="CELL*col" :y="CELL*row" :width="CELL" :height="CELL"
-            fill="var(--bg-4)" stroke="var(--border)" stroke-width="1"
-          />
+            <!-- Couloirs d'arrivée colorés -->
+            <rect v-for="(c, i) in laneCells" :key="'lc'+i"
+              :x="c.x" :y="c.y" :width="CELL" :height="CELL" rx="4" :fill="c.fill" opacity="0.22" />
 
-          <!-- Cases de départ (couleur) -->
-          <rect :x="CELL*8"  :y="CELL*6"  :width="CELL" :height="CELL" :fill="COLOR_HEX.red"    opacity="0.5"/>
-          <rect :x="CELL*14" :y="CELL*8"  :width="CELL" :height="CELL" :fill="COLOR_HEX.blue"   opacity="0.5"/>
-          <rect :x="CELL*6"  :y="CELL*8"  :width="CELL" :height="CELL" :fill="COLOR_HEX.green"  opacity="0.5"/>
-          <rect :x="CELL*0"  :y="CELL*6"  :width="CELL" :height="CELL" :fill="COLOR_HEX.yellow" opacity="0.5"/>
+            <!-- Grille de piste -->
+            <rect v-for="(c, i) in trackCells" :key="'tc'+i"
+              :x="c.x" :y="c.y" :width="CELL" :height="CELL" rx="5"
+              fill="var(--bg-4)" stroke="var(--border)" stroke-width="1" />
 
-          <!-- Centre -->
-          <circle :cx="CELL*7.5" :cy="CELL*7.5" :r="CELL*2" fill="var(--bg-2)" stroke="var(--border)" stroke-width="2"/>
-          <text :x="CELL*7.5" :y="CELL*7.5+6" text-anchor="middle" font-size="22" fill="var(--text-2)">🏆</text>
+            <!-- Cases de départ (alignées sur l'entrée réelle) -->
+            <template v-for="(s, i) in startCells" :key="'st'+i">
+              <rect :x="s.x" :y="s.y" :width="CELL" :height="CELL" rx="6" :fill="s.color" opacity="0.7" />
+              <circle :cx="s.x + CELL/2" :cy="s.y + CELL/2" r="6.5" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.7" />
+            </template>
+
+            <!-- Centre -->
+            <circle :cx="CELL*7.5" :cy="CELL*7.5" :r="CELL*1.3" fill="var(--bg-2)" stroke="var(--border)" stroke-width="2" />
+            <circle :cx="CELL*7.5" :cy="CELL*7.5" :r="CELL*1.55" fill="none" stroke="var(--cyan)" stroke-width="1" stroke-dasharray="4 8" opacity="0.3" class="ring-spin" />
+            <text :x="CELL*7.5" :y="CELL*7.5 + 10" text-anchor="middle" font-size="30" class="trophy">🏆</text>
+          </svg>
+
+          <!-- Lueur centrale -->
+          <div class="board-glow"></div>
+
+          <!-- Numéros des corridors -->
+          <div v-for="(n, i) in homeNumbers" :key="'hn'+i" class="home-num"
+            :style="{ left: n.left + 'px', top: n.top + 'px', color: n.color }">{{ n.n }}</div>
 
           <!-- Pions -->
-          <template v-for="(pid, pi) in state.playerOrder" :key="`pawns${pi}`">
-            <template v-for="(pion, idx) in state.pawns[pid]" :key="`p${pi}_${idx}`">
-              <circle
-                v-if="pion.pos === POS_STABLE"
-                :cx="CELL * (STABLE_SLOTS[state.colorMap[pid]]?.[idx]?.[1] ?? 3) + CELL*0.5"
-                :cy="CELL * (STABLE_SLOTS[state.colorMap[pid]]?.[idx]?.[0] ?? 3) + CELL*0.5"
-                :r="CELL*0.32"
-                :fill="colorHex(state.colorMap[pid])"
-                :stroke="isMovable(pid, idx) ? 'var(--yellow)' : 'var(--bg)'"
-                :stroke-width="isMovable(pid, idx) ? 2.5 : 1.5"
-                :style="{ cursor: isMovable(pid, idx) ? 'pointer' : 'default', filter: isMovable(pid, idx) ? 'drop-shadow(0 0 6px gold)' : 'none' }"
-                @click="selectPion(pid, idx)"
-              />
-              <circle
-                v-else-if="pion.pos === POS_DONE"
-                :cx="CELL*7.5 + (idx % 3 - 1) * CELL*0.5"
-                :cy="CELL*7.5 + (Math.floor(idx / 3) - 0.5) * CELL*0.5"
-                :r="CELL*0.26"
-                :fill="colorHex(state.colorMap[pid])"
-                stroke="var(--yellow)" stroke-width="1.5"
-              />
-              <circle
-                v-else-if="pionCell(pid, pion)"
-                :cx="CELL * (pionCell(pid, pion)[1] + 0.5) + pionOffset(idx)[0]"
-                :cy="CELL * (pionCell(pid, pion)[0] + 0.5) + pionOffset(idx)[1]"
-                :r="CELL*0.32"
-                :fill="colorHex(state.colorMap[pid])"
-                :stroke="isMovable(pid, idx) ? 'var(--yellow)' : 'var(--bg)'"
-                :stroke-width="isMovable(pid, idx) ? 2.5 : 1.5"
-                :style="{ cursor: isMovable(pid, idx) ? 'pointer' : 'default', filter: isMovable(pid, idx) ? 'drop-shadow(0 0 6px gold)' : 'none' }"
-                @click="selectPion(pid, idx)"
-              />
-            </template>
-          </template>
-        </svg>
+          <div v-for="pw in pawnList" :key="pw.key"
+            class="pawn" :class="{ movable: pw.movable, done: pw.done }"
+            :style="{ left: pw.x + 'px', top: pw.y + 'px', '--pc': pw.color }"
+            @click="selectPion(pw.pid, pw.idx)"></div>
+        </div>
 
         <!-- Panneau droit -->
         <div class="panel">
-
-          <!-- Dé -->
           <div class="dice-box">
-            <div v-if="state.diceValue" class="die-holder">
-              <DieFace :val="state.diceValue" :idx="0" />
+            <div class="die-holder">
+              <DieFace v-if="state.diceValue" :val="state.diceValue" :idx="0" />
+              <div v-else class="die-placeholder">—</div>
             </div>
-            <div v-else class="die-placeholder">—</div>
-            <button
-              class="btn btn-primary btn-full mt-1"
-              :disabled="!isMyTurn || state.hasRolled"
-              @click="roll"
-            >{{ t('pc.roll') }}</button>
+            <button class="btn btn-primary btn-full" :disabled="!isMyTurn || state.hasRolled" @click="roll">
+              {{ t('pc.roll') }}
+            </button>
           </div>
 
-          <!-- Hint -->
-          <div v-if="isMyTurn && state.phase === 'select'" class="hint">
-            {{ t('pc.click_pion') }}
-          </div>
-          <div v-else-if="isMyTurn && !state.hasRolled" class="hint">
-            {{ t('pc.roll_hint') }}
-          </div>
-          <div v-else-if="!isMyTurn" class="hint muted">
-            {{ t('pc.waiting_for', { name: playerName(currentPlayerId) }) }}
-          </div>
+          <div v-if="isMyTurn && state.phase === 'select'" class="hint emph">{{ t('pc.click_pion') }}</div>
+          <div v-else-if="isMyTurn && !state.hasRolled" class="hint">{{ t('pc.roll_hint') }}</div>
+          <div v-else-if="!isMyTurn" class="hint muted">{{ t('pc.waiting_for', { name: playerName(currentPlayerId) }) }}</div>
 
-          <!-- Joueurs -->
           <div class="players-list">
-            <div
-              v-for="(pid, pi) in state.playerOrder"
-              :key="pid"
-              class="player-row"
+            <div v-for="pid in state.playerOrder" :key="pid" class="player-row"
               :class="{ active: pid === currentPlayerId }"
-            >
-              <div class="color-dot" :style="{ background: colorHex(state.colorMap[pid]) }"></div>
+              :style="pid === currentPlayerId ? { boxShadow: 'inset 3px 0 0 ' + colorHex(state.colorMap[pid]) } : {}">
+              <div class="color-dot" :style="{ background: colorHex(state.colorMap[pid]), boxShadow: pid === currentPlayerId ? '0 0 8px ' + colorHex(state.colorMap[pid]) : 'none' }"></div>
               <span class="pname">{{ playerName(pid) }}</span>
               <span v-if="isAIPlayer(pid)" class="badge-ai">IA</span>
               <span class="done-count">{{ doneCount(pid) }}/{{ state.pawns[pid].length }} ✓</span>
@@ -175,18 +128,19 @@ let socket = null;
 const CELL      = 36;
 const boardSize = CELL * 15;
 
-const COLOR_HEX = { red: '#ef4444', blue: '#3b82f6', green: '#22c55e', yellow: '#eab308' };
+// Palette alignée sur le thème cobalt/ember
+const COLOR_HEX = { red: '#ff5d8f', blue: '#46d6ff', green: '#2fe6b0', yellow: '#ffc24b' };
 const COLOR_LABELS = computed(() => ({
   red: t('pc.red'), blue: t('pc.blue'), green: t('pc.green'), yellow: t('pc.yellow'),
 }));
 
 const TRACK = (() => {
-  const t = [];
-  for (let r = 14; r >= 0; r--) t.push([r, 0]);
-  for (let c = 1;  c <= 14; c++) t.push([0, c]);
-  for (let r = 1;  r <= 14; r++) t.push([r, 14]);
-  for (let c = 13; c >= 1;  c--) t.push([14, c]);
-  return t;
+  const arr = [];
+  for (let r = 14; r >= 0; r--) arr.push([r, 0]);
+  for (let c = 1;  c <= 14; c++) arr.push([0, c]);
+  for (let r = 1;  r <= 14; r++) arr.push([r, 14]);
+  for (let c = 13; c >= 1;  c--) arr.push([14, c]);
+  return arr;
 })();
 
 const START_IDX = { red: 8, blue: 22, green: 36, yellow: 50 };
@@ -202,6 +156,7 @@ const STABLE_SLOTS = {
   green:  [[10,10],[10,12],[12,10],[12,12],[11,11]],
   yellow: [[10,2],[10,4],[12,2],[12,4],[11,3]],
 };
+const COLORS_ORDER = ['red', 'blue', 'green', 'yellow'];
 const POS_STABLE = -1;
 const POS_DONE   = 62;
 const TRACK_LEN  = 56;
@@ -209,40 +164,90 @@ const TRACK_LEN  = 56;
 const state    = ref(null);
 const gameOver = ref(null);
 
-const myId             = computed(() => auth.user?.id);
-const myColor          = computed(() => state.value?.colorMap?.[myId.value] ?? 'red');
-const currentPlayerId  = computed(() => state.value?.playerOrder?.[state.value.curPlayer] ?? '');
-const isMyTurn         = computed(() => currentPlayerId.value === myId.value);
+const myId            = computed(() => auth.user?.id);
+const myColor         = computed(() => state.value?.colorMap?.[myId.value] ?? 'red');
+const currentPlayerId = computed(() => state.value?.playerOrder?.[state.value.curPlayer] ?? '');
+const isMyTurn        = computed(() => currentPlayerId.value === myId.value);
 
-function playerName(pid) {
-  return state.value?.players?.find(p => p.id === pid)?.username ?? pid;
-}
-function isAIPlayer(pid) {
-  return state.value?.players?.find(p => p.id === pid)?.isAI ?? false;
-}
+function playerName(pid) { return state.value?.players?.find(p => p.id === pid)?.username ?? pid; }
+function isAIPlayer(pid) { return state.value?.players?.find(p => p.id === pid)?.isAI ?? false; }
 function colorHex(color) { return COLOR_HEX[color] ?? '#888'; }
 function colorLabel(color) { return COLOR_LABELS.value[color] ?? color; }
-function stableColor(color) {
-  const hex = COLOR_HEX[color];
-  return hex + '22'; // très transparent
-}
 function isMovable(pid, idx) {
   return isMyTurn.value && pid === myId.value && state.value?.movablePawns?.includes(idx);
 }
 function doneCount(pid) {
   return state.value?.pawns?.[pid]?.filter(p => p.pos === POS_DONE).length ?? 0;
 }
-function getAbsPos(relPos, color) {
-  return (START_IDX[color] + relPos) % TRACK_LEN;
-}
-function pionCell(pid, pion) {
-  const color = state.value?.colorMap?.[pid];
+function getAbsPos(relPos, color) { return (START_IDX[color] + relPos) % TRACK_LEN; }
+function pionCell(color, pion) {
   if (!color || pion.pos === POS_STABLE || pion.pos === POS_DONE) return null;
   if (pion.pos >= TRACK_LEN) return HOME_PATH[color][pion.pos - TRACK_LEN];
   return TRACK[getAbsPos(pion.pos, color)];
 }
-function pionOffset(idx) {
-  return [idx % 2 === 0 ? -4 : 4, idx < 2 ? -4 : 4];
+function pionOffset(idx) { return [idx % 2 === 0 ? -4 : 4, idx < 2 ? -4 : 4]; }
+
+// ── Géométrie de rendu ─────────────────────────────────────────
+const trackCells = TRACK.map(([r, c]) => ({ x: c * CELL, y: r * CELL }));
+const laneCells = (() => {
+  const out = [];
+  COLORS_ORDER.forEach(color => HOME_PATH[color].forEach(([r, c]) => out.push({ x: c * CELL, y: r * CELL, fill: COLOR_HEX[color] })));
+  return out;
+})();
+const homeNumbers = (() => {
+  const out = [];
+  COLORS_ORDER.forEach(color => HOME_PATH[color].slice(0, 5).forEach(([r, c], i) =>
+    out.push({ n: i + 1, left: c * CELL + CELL / 2, top: r * CELL + CELL / 2, color: COLOR_HEX[color] })));
+  return out;
+})();
+const startCells = COLORS_ORDER.map(color => {
+  const [r, c] = TRACK[START_IDX[color]];
+  return { x: c * CELL, y: r * CELL, color: COLOR_HEX[color] };
+});
+
+const stableRings = computed(() => {
+  if (!state.value) return [];
+  const out = [];
+  state.value.playerOrder.forEach(pid => {
+    const color = state.value.colorMap[pid];
+    const n = state.value.pawns[pid].length;
+    for (let i = 0; i < n; i++) {
+      const slot = STABLE_SLOTS[color][i];
+      if (slot) out.push({ x: slot[1] * CELL + CELL / 2, y: slot[0] * CELL + CELL / 2, color: COLOR_HEX[color] });
+    }
+  });
+  return out;
+});
+
+const pawnList = computed(() => {
+  if (!state.value) return [];
+  const out = [];
+  state.value.playerOrder.forEach(pid => {
+    const color = state.value.colorMap[pid];
+    state.value.pawns[pid].forEach((pion, idx) => {
+      const xy = pawnXY(color, pion, idx);
+      if (!xy) return;
+      out.push({
+        key: pid + '_' + idx, x: xy.x, y: xy.y, color: COLOR_HEX[color],
+        movable: isMovable(pid, idx), done: pion.pos === POS_DONE, pid, idx,
+      });
+    });
+  });
+  return out;
+});
+
+function pawnXY(color, pion, idx) {
+  if (pion.pos === POS_STABLE) {
+    const s = STABLE_SLOTS[color][idx] || STABLE_SLOTS[color][0];
+    return { x: s[1] * CELL + CELL / 2, y: s[0] * CELL + CELL / 2 };
+  }
+  if (pion.pos === POS_DONE) {
+    return { x: CELL * 7.5 + (idx % 3 - 1) * CELL * 0.5, y: CELL * 7.5 + (Math.floor(idx / 3) - 0.5) * CELL * 0.5 };
+  }
+  const cell = pionCell(color, pion);
+  if (!cell) return null;
+  const off = pionOffset(idx);
+  return { x: cell[1] * CELL + CELL / 2 + off[0], y: cell[0] * CELL + CELL / 2 + off[1] };
 }
 
 function selectPion(pid, idx) {
@@ -266,12 +271,9 @@ onUnmounted(() => socket?.disconnect());
 <style scoped>
 .pc-multi { max-width: 1100px; margin: 0 auto; padding: 1rem; color: var(--text); }
 
-.game-bar {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 1rem; gap: .75rem;
-}
+.game-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; gap: .75rem; }
 .game-title { font-family: var(--font-title); font-size: 1.2rem; font-weight: 800; }
-.room-code  { font-size: .85rem; color: var(--text-2); }
+.room-code  { font-size: .85rem; font-weight: 700; letter-spacing: .12em; background: var(--bg-3); color: var(--text-2); padding: .3rem .65rem; border-radius: 6px; }
 .waiting    { text-align: center; padding: 3rem; opacity: .6; }
 
 .turn-info {
@@ -280,32 +282,64 @@ onUnmounted(() => socket?.disconnect());
   padding: .6rem 1rem; margin-bottom: 1rem;
 }
 .my-turn { color: var(--green); font-weight: 700; }
-.color-badge {
-  padding: .2rem .75rem; border-radius: 6px; font-size: .78rem; font-weight: 700;
-  text-transform: capitalize;
-}
+.color-badge { padding: .25rem .75rem; border-radius: 6px; font-size: .78rem; font-weight: 700; color: #fff; }
 
 .main-layout { display: flex; gap: 1.5rem; align-items: flex-start; flex-wrap: wrap; }
-.board { border-radius: var(--radius); flex-shrink: 0; }
+
+/* Plateau */
+.board-wrap { position: relative; flex-shrink: 0; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+.board { display: block; }
+.board-glow {
+  position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen;
+  background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--cyan) 16%, transparent), transparent 52%);
+  animation: pcGlowPulse 4s ease-in-out infinite;
+}
+.ring-spin { transform-box: fill-box; transform-origin: center; animation: pcRingSpin 28s linear infinite; }
+.trophy    { transform-box: fill-box; transform-origin: center; animation: pcBob 3s ease-in-out infinite; }
+
+.home-num {
+  position: absolute; width: 20px; height: 20px; margin: -10px 0 0 -10px;
+  border-radius: 50%; background: rgba(0,0,0,.5);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-title); font-weight: 800; font-size: 12px; line-height: 1;
+  pointer-events: none; z-index: 2;
+}
+
+.pawn {
+  position: absolute; width: 22px; height: 22px; margin: -11px 0 0 -11px;
+  border-radius: 50%; z-index: 3;
+  background: radial-gradient(circle at 35% 28%, rgba(255,255,255,.85), var(--pc) 70%);
+  border: 2px solid rgba(0,0,0,.4);
+  box-shadow: 0 3px 7px rgba(0,0,0,.55);
+  transition: left .17s cubic-bezier(.34,1.4,.5,1), top .17s cubic-bezier(.34,1.4,.5,1), box-shadow .25s;
+}
+.pawn.done { width: 18px; height: 18px; margin: -9px 0 0 -9px; border-color: var(--amber); z-index: 4; }
+.pawn.movable {
+  cursor: pointer; z-index: 6; border-color: #ffc24b;
+  box-shadow: 0 0 0 4px rgba(255,194,75,.35), 0 0 18px rgba(255,194,75,.7);
+  animation: pcBob 1s ease-in-out infinite;
+}
 
 /* Panneau */
-.panel { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: .75rem; }
-
+.panel { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: .85rem; }
 .dice-box {
   background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 1rem; display: flex; flex-direction: column; align-items: center; gap: .5rem;
+  padding: 1.1rem; display: flex; flex-direction: column; align-items: center; gap: .85rem;
 }
-.die-holder { padding: .4rem; }
+.die-holder { padding: .2rem; }
 .die-placeholder {
-  font-size: 2.5rem; font-weight: 900; color: var(--text-3);
+  font-size: 2.2rem; font-weight: 900; color: var(--text-3);
   width: 56px; height: 56px; display: flex; align-items: center; justify-content: center;
-  border: 2px dashed var(--border); border-radius: 11px;
+  border: 2px dashed var(--border); border-radius: 13px;
 }
 
 .hint {
-  font-size: .85rem; background: color-mix(in srgb, var(--yellow) 10%, transparent);
-  border: 1px solid color-mix(in srgb, var(--yellow) 30%, transparent);
-  color: var(--yellow); border-radius: var(--radius-sm); padding: .5rem .75rem; text-align: center;
+  font-size: .82rem; text-align: center; border-radius: var(--radius-sm); padding: .55rem .75rem;
+  background: var(--bg-3); border: 1px solid var(--border); color: var(--text-2);
+}
+.hint.emph {
+  background: color-mix(in srgb, var(--amber) 12%, transparent);
+  border-color: color-mix(in srgb, var(--amber) 32%, transparent); color: var(--amber);
 }
 .hint.muted { background: var(--bg-3); border-color: var(--border); color: var(--text-2); }
 
@@ -313,19 +347,22 @@ onUnmounted(() => socket?.disconnect());
   background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius);
   padding: .75rem; display: flex; flex-direction: column; gap: .4rem;
 }
-.player-row {
-  display: flex; align-items: center; gap: .6rem; padding: .35rem .5rem;
-  border-radius: var(--radius-sm); transition: background .12s;
-}
+.player-row { display: flex; align-items: center; gap: .55rem; padding: .35rem .5rem; border-radius: var(--radius-sm); transition: background .12s; }
 .player-row.active { background: var(--bg-3); }
 .color-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
 .pname { flex: 1; font-weight: 600; font-size: .88rem; }
 .badge-ai {
-  font-size: .65rem; font-weight: 800; letter-spacing: .06em;
-  background: rgba(129,140,248,.15); border: 1px solid rgba(129,140,248,.3);
+  font-size: .62rem; font-weight: 800; letter-spacing: .05em;
+  background: color-mix(in srgb, var(--violet) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--violet) 32%, transparent);
   color: var(--violet); border-radius: 4px; padding: 0 .35rem;
 }
-.done-count { font-size: .8rem; color: var(--text-2); }
+.done-count { font-size: .8rem; color: var(--text-2); font-variant-numeric: tabular-nums; }
 
 .mt-1 { margin-top: .5rem; }
+.mt-2 { margin-top: 1rem; }
+
+@keyframes pcGlowPulse { 0%,100% { opacity: .4; } 50% { opacity: .9; } }
+@keyframes pcRingSpin  { to { transform: rotate(360deg); } }
+@keyframes pcBob       { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 </style>
