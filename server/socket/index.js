@@ -901,9 +901,11 @@ async function startQuizGame(io, room) {
   const categories = s.quizCategories || [];
   const questionTypes = s.questionTypes || 'both';
   const difficulty = s.difficulty || 'mixed';
+  const lang = s.quizLang || 'fr';
+
   // Récupérer les questions depuis la DB
   let catFilter = '';
-  let params = [];
+  let params = [lang];
   if (categories.length > 0) {
     catFilter = `AND qc.id IN (${categories.map(() => '?').join(',')})`;
     params.push(...categories);
@@ -920,7 +922,7 @@ async function startQuizGame(io, room) {
     `SELECT qq.*, qc.name_fr AS category_name, qc.name_en AS category_name_en
      FROM quiz_questions qq
      JOIN quiz_categories qc ON qq.category_id = qc.id
-     WHERE 1=1 ${catFilter} ${typeFilter} ${diffFilter}
+     WHERE qq.lang = ? ${catFilter} ${typeFilter} ${diffFilter}
      ORDER BY RAND() LIMIT ?`,
     [...params, limit]
   );
