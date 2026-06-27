@@ -16,23 +16,56 @@ const CATEGORIES = [
   { id: 27, name_fr: 'Animaux',          name_en: 'Animals',           icon: '🦁' },
 ];
 
+// Codes de retour OpenTDB
+const RC_SUCCESS      = 0;
+const RC_NO_RESULTS   = 1; // pas assez de questions dispo (stock épuisé)
+const RC_TOKEN_EMPTY  = 4; // toutes les questions du token ont été servies
+
 function decode(str) {
   try { return decodeURIComponent(str); } catch { return str; }
 }
 
 function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-async function fetchQuestions(categoryId, type) {
-  const url = `https://opentdb.com/api.php?amount=50&category=${categoryId}&type=${type}&encode=url3986`;
-  try {
-    const res  = await fetch(url);
-    const data = await res.json();
-    if (data.response_code !== 0) return [];
-    return data.results;
-  } catch (e) {
-    console.error(`Erreur fetch cat ${categoryId} type ${type}:`, e.message);
-    return [];
+async function getToken() {
+  const res  = await fetch('https://opentdb.com/api_token.php?command=request');
+  const data = await res.json();
+  return data.token;
+}
+
+// Récupère TOUTES les questions dispo pour une catégorie+type
+// en paginant avec le token de session (max 50/requête)
+async function fetchAll(categoryId, type, token) {
+  const all = [];
+  let page  = 0;
+
+  while (true) {
+    page++;
+    const url = `https://opentdb.com/api.php?amount=50&category=${categoryId}&type=${type}&encode=url3986&token=${token}`;
+    let data;
+    try {
+      const res = await fetch(url);
+      data = await res.json();
+    } catch (e) {
+      console.error(`  ⚠️  Erreur réseau p${page}:`, e.message);
+      break;
+    }
+
+    if (data.response_code === RC_SUCCESS) {
+      all.push(...data.results);
+      // Si on reçoit moins de 50, c'est le dernier lot
+      if (data.results.length < 50) break;
+      await wait(5500); // respect rate limit entre pages
+    } else if (data.response_code === RC_TOKEN_EMPTY || data.response_code === RC_NO_RESULTS) {
+      // Plus rien à récupérer
+      break;
+    } else {
+      console.error(`  ⚠️  code ${data.response_code} p${page}`);
+      break;
+    }
   }
+
+  return all;
 }
 
 async function main() {
@@ -44,7 +77,11 @@ async function main() {
     database: process.env.DB_NAME || 'plateforme_jeux',
   });
 
-  console.log('📚 Seed Quiz Zone — Open Trivia DB\n');
+  console.log('📚 Seed Quiz Zone — Open Trivia DB (mode exhaustif)\n');
+
+  // Vider les questions existantes pour un re-seed propre
+  await pool.query('DELETE FROM quiz_questions');
+  console.log('🗑️  Questions existantes supprimées\n');
 
   for (const cat of CATEGORIES) {
     await pool.query(
@@ -54,14 +91,20 @@ async function main() {
   }
   console.log('✅ Catégories insérées\n');
 
-  let total = 0;
+  let grandTotal = 0;
+
   for (const cat of CATEGORIES) {
     const [[row]] = await pool.query('SELECT id FROM quiz_categories WHERE opentdb_id=?', [cat.id]);
     const catId = row.id;
 
     for (const type of ['multiple', 'boolean']) {
+      // Token frais par combo catégorie/type pour un max de questions
+      const token = await getToken();
+      await wait(1000);
+
       process.stdout.write(`  ${cat.icon} ${cat.name_en} [${type}]... `);
-      const questions = await fetchQuestions(cat.id, type);
+      const questions = await fetchAll(cat.id, type, token);
+
       let inserted = 0;
       for (const q of questions) {
         try {
@@ -70,15 +113,15 @@ async function main() {
             [catId, q.type, q.difficulty, decode(q.question), decode(q.correct_answer), JSON.stringify(q.incorrect_answers.map(decode))]
           );
           inserted++;
-          total++;
+          grandTotal++;
         } catch {}
       }
       console.log(`${inserted} questions`);
-      await wait(5500); // Rate limit OpenTDB
+      await wait(5500);
     }
   }
 
-  console.log(`\n✅ ${total} questions importées au total !`);
+  console.log(`\n✅ ${grandTotal} questions importées au total !`);
   process.exit(0);
 }
 
