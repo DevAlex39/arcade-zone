@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Petits Chevaux</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════ CONFIG -->
+  <div class="screen" id="screenConfig">
+    <h1 class="title">🐴 Petits Chevaux</h1>
+    <div class="player-count-row">
+      <span class="label">Nombre de joueurs</span>
+      <div class="stepper">
+        <button class="btn-step" id="btnPlayerMinus">−</button>
+        <span id="playerCountVal">2</span>
+        <button class="btn-step" id="btnPlayerPlus">+</button>
+      </div>
+    </div>
+    <div id="playerSetup"></div>
+    <div class="config-footer">
+      <button class="btn btn-options-cfg" id="btnOpenOptionsCfg">⚙️ Options</button>
+      <button class="btn btn-start" id="btnStartGame">Lancer la partie →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ JEU -->
+  <div class="screen hidden" id="screenGame">
+    <div id="boardWrap">
+      <canvas id="board" width="600" height="600"></canvas>
+    </div>
+    <div id="sidebar">
+      <div id="turnInfo">
+        <div class="turn-label">Au tour de</div>
+        <div id="currentPlayer"></div>
+        <canvas id="diceCanvas" width="80" height="80" style="cursor:pointer;margin:0 auto;display:block"></canvas>
+        <button class="btn btn-roll" id="btnRoll">Lancer le dé</button>
+        <div class="hint" id="hint">Lance le dé pour commencer</div>
+      </div>
+      <div id="playerList"></div>
+      <button class="btn btn-options-game" id="btnOpenOptionsGame">⚙️ Options</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ VICTOIRE -->
+  <div class="screen hidden" id="screenWin">
+    <div class="win-card">
+      <div id="winnerEmoji" style="font-size:4rem">🏆</div>
+      <h2>Victoire !</h2>
+      <div id="winnerName" style="font-size:1.8rem;font-weight:700;margin:.5rem 0">—</div>
+      <p style="color:#94a3b8;margin-bottom:1.5rem">a ramené tous ses pions à la maison !</p>
+      <button class="btn btn-start" id="btnPlayAgain">Rejouer</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ MODAL OPTIONS -->
+  <div class="modal-overlay hidden" id="optionsModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>⚙️ Options</h3>
+        <button class="modal-close" id="btnCloseOptions">✕</button>
+      </div>
+
+      <div class="option-row">
+        <label class="option-label">🔊 Volume</label>
+        <div class="option-control">
+          <input type="range" id="optVolume" min="0" max="100" value="70" class="slider" />
+          <span id="optVolumeVal">70%</span>
+        </div>
+      </div>
+
+      <div class="option-row">
+        <label class="option-label">⏱️ Vitesse du dé</label>
+        <div class="option-control speed-btns">
+          <button class="speed-btn" data-speed="slow">Lent</button>
+          <button class="speed-btn active" data-speed="normal">Normal</button>
+          <button class="speed-btn" data-speed="fast">Rapide</button>
+        </div>
+      </div>
+
+      <div class="option-row">
+        <label class="option-label">🤖 Mode automatique
+          <span class="option-hint">Déplace les pions de façon logique. Sur un 6, laisse le choix si nécessaire.</span>
+        </label>
+        <div class="option-control">
+          <label class="toggle">
+            <input type="checkbox" id="optAutoMode" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div style="border-top:1px solid var(--border);padding-top:.4rem;margin-top:.2rem">
+        <div style="font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem">Règles de jeu</div>
+        <div class="option-row">
+          <label class="option-label">🎲 Rejouer sur 6
+            <span class="option-hint">Le joueur rejoue immédiatement après avoir fait un 6.</span>
+          </label>
+          <div class="option-control">
+            <label class="toggle">
+              <input type="checkbox" id="ruleRejouer6" checked />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+        <div class="option-row">
+          <label class="option-label">🐴 Autoriser le dépassement
+            <span class="option-hint">Un pion peut sauter par-dessus un pion adverse sur la piste.</span>
+          </label>
+          <div class="option-control">
+            <label class="toggle">
+              <input type="checkbox" id="ruleAllowOvertake" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+        <div class="option-row">
+          <label class="option-label">🏁 Corridor simplifié
+            <span class="option-hint">Dans le couloir final, tout dé est valide. Sinon, le dé doit être exactement la distance restante jusqu'au centre.</span>
+          </label>
+          <div class="option-control">
+            <label class="toggle">
+              <input type="checkbox" id="ruleCorridorSimplifie" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-start" id="btnCloseOptionsSave" style="margin-top:.5rem">Fermer</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ MODAL CHOIX (6 + pions des 2 côtés) -->
+  <div class="modal-overlay hidden" id="sixChoiceModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>🎲 Six !</h3>
+      </div>
+      <p style="color:#94a3b8;margin-bottom:1.2rem">
+        <span id="sixChoiceName" style="font-weight:700"></span>, que veux-tu faire ?
+      </p>
+      <div style="display:flex;flex-direction:column;gap:.7rem">
+        <button class="btn btn-roll" id="btnChoiceExit">🐴 Sortir un nouveau pion</button>
+        <button class="btn" style="background:#2a2a4a;color:#e2e8f0" id="btnChoiceMove">➡️ Déplacer un pion existant</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

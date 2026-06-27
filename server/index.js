@@ -24,7 +24,7 @@ app.use(express.json());
 app.use(passport.initialize());
 
 // ─── Jeux solo — servir les fichiers statiques ────────────────────────────────
-const GAMES_BASE = path.resolve(__dirname, '..', '..'); // → Site web/
+const GAMES_BASE = path.resolve(__dirname, '..', 'games'); // → arcade-zone/games/
 app.use('/solo/yahtzee-rogue',  express.static(path.join(GAMES_BASE, 'Yahtzee_Rogue')));
 app.use('/solo/yahtzee',        express.static(path.join(GAMES_BASE, 'Yahtzee')));
 app.use('/solo/motus',          express.static(path.join(GAMES_BASE, 'Motus')));
