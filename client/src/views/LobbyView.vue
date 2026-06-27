@@ -319,7 +319,7 @@ onUnmounted(() => socket?.disconnect());
   font-family: var(--font-title); font-size: 2.6rem; font-weight: 800; letter-spacing: .22em;
   color: var(--cyan); text-shadow: 0 0 24px color-mix(in srgb, var(--cyan) 45%, transparent); padding-left: .22em;
 }
-.qr-wrap { background: #fff; border-radius: var(--radius); padding: 14px; display: flex; align-items: center; justify-content: center; }
+.qr-wrap { background: #ffffff; border-radius: var(--radius); padding: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 4px #ffffff, 0 4px 24px rgba(0,0,0,.5); }
 .qr-img { width: 100%; max-width: 160px; border-radius: 4px; }
 .share-hint { font-size: .74rem; color: var(--text-3); line-height: 1.5; }
 

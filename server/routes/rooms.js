@@ -48,7 +48,7 @@ router.post('/', optionalAuth, async (req, res) => {
   }
 
   const joinUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/join/${code}`;
-  const qr = await QRCode.toDataURL(joinUrl, { color: { dark: '#e2e4ef', light: '#00000000' } });
+  const qr = await QRCode.toDataURL(joinUrl, { color: { dark: '#000000', light: '#ffffff' }, margin: 1 });
 
   res.status(201).json({ code, roomId, joinUrl, qr });
 });
@@ -72,7 +72,7 @@ router.get('/:code', optionalAuth, async (req, res) => {
     WHERE rp.room_id=?`, [room.id]);
 
   const joinUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/join/${room.code}`;
-  const qr = await QRCode.toDataURL(joinUrl, { color: { dark: '#e2e4ef', light: '#00000000' } });
+  const qr = await QRCode.toDataURL(joinUrl, { color: { dark: '#000000', light: '#ffffff' }, margin: 1 });
 
   res.json({ ...room, settings: room.settings || {}, players, joinUrl, qr });
 });
