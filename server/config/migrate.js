@@ -91,6 +91,7 @@ const TABLES = [
     category_id       INT NOT NULL,
     type              ENUM('multiple','boolean') NOT NULL,
     difficulty        ENUM('easy','medium','hard') NOT NULL,
+    lang              VARCHAR(2) NOT NULL DEFAULT 'en',
     question          TEXT NOT NULL,
     correct_answer    VARCHAR(500) NOT NULL,
     incorrect_answers JSON NOT NULL,

@@ -149,6 +149,14 @@
             <h3 class="settings-title">{{ t('lobby.settings') }}</h3>
 
             <div class="setting-row">
+              <span class="toggle-label">Langue des questions</span>
+              <div class="lang-switch">
+                <button class="lang-btn" :class="{ active: settings.quizLang === 'fr' }" @click="settings.quizLang = 'fr'">🇫🇷 Français</button>
+                <button class="lang-btn" :class="{ active: settings.quizLang === 'en' }" @click="settings.quizLang = 'en'">🇬🇧 English</button>
+              </div>
+            </div>
+
+            <div class="setting-row">
               <span class="toggle-label">{{ t('quiz.mode') }}</span>
               <div class="lang-switch">
                 <button class="lang-btn" :class="{ active: settings.quizMode === 1 }" @click="settings.quizMode = 1">⚡ {{ t('quiz.mode1') }}</button>
@@ -283,7 +291,7 @@ const settings = ref({
   categories: ['tous'], aiCount: 0,
   pionsPerPlayer: 2, rejouerSur6: true, allowOvertake: false, corridorSimplifie: false,
   quizMode: 1, timer: 15, targetScore: 100, questionCount: 20, lives: 5,
-  questionTypes: 'both', difficulty: 'mixed', quizCategories: [],
+  questionTypes: 'both', difficulty: 'mixed', quizCategories: [], quizLang: 'fr',
 });
 let socket = null;
 const quizCategories = ref([]);

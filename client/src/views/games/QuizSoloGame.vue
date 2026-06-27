@@ -10,6 +10,14 @@
 
         <div class="config-fields">
           <div class="field-group">
+            <label>Langue des questions</label>
+            <div class="count-row">
+              <button class="btn-chip" :class="{ active: cfg.lang === 'fr' }" @click="cfg.lang = 'fr'">🇫🇷 Français</button>
+              <button class="btn-chip" :class="{ active: cfg.lang === 'en' }" @click="cfg.lang = 'en'">🇬🇧 English</button>
+            </div>
+          </div>
+
+          <div class="field-group">
             <label>Vies de départ</label>
             <div class="lives-picker">
               <button class="btn-icon" @click="cfg.lives = Math.max(1, cfg.lives - 1)">−</button>
@@ -213,7 +221,7 @@ import { useAuthStore } from '@/stores/auth.js';
 const auth = useAuthStore();
 
 // ── Config ──────────────────────────────────────────────────────────────────
-const cfg = reactive({ lives: 5, count: 20, timer: 15, difficulty: 'mixed', types: 'both', categories: [] });
+const cfg = reactive({ lang: 'fr', lives: 5, count: 20, timer: 15, difficulty: 'mixed', types: 'both', categories: [] });
 const difficulties = [
   { v: 'mixed', l: 'Mixte' }, { v: 'easy', l: 'Facile' },
   { v: 'medium', l: 'Moyen' }, { v: 'hard', l: 'Difficile' },
@@ -318,6 +326,7 @@ async function startGame() {
       count:      cfg.count,
       difficulty: cfg.difficulty,
       types:      cfg.types,
+      lang:       cfg.lang,
     });
     if (cfg.categories.length) params.set('categories', cfg.categories.join(','));
 

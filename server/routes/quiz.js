@@ -18,6 +18,8 @@ router.get('/questions', async (req, res) => {
     let where = [];
     let params = [];
 
+    const lang = req.query.lang || 'fr';
+    where.push('q.lang = ?'); params.push(lang);
     if (difficulty !== 'mixed') { where.push('q.difficulty = ?'); params.push(difficulty); }
     if (types === 'multiple')   { where.push("q.type = 'multiple'"); }
     if (types === 'boolean')    { where.push("q.type = 'boolean'"); }
