@@ -31,6 +31,11 @@
       <PetitsChevauxMultiGame :room-code="roomCode" :game="game" />
     </template>
 
+    <!-- JEU SOLO Quiz Zone -->
+    <template v-else-if="game?.id === 'quiz' && !roomCode">
+      <QuizSoloGame />
+    </template>
+
     <!-- JEU MULTI Quiz Zone -->
     <template v-else-if="game?.id === 'quiz' && roomCode">
       <QuizMultiGame :room-code="roomCode" :game="game" />
@@ -63,6 +68,7 @@ import YahtzeeMultiGame from '@/views/games/YahtzeeMultiGame.vue';
 import SkyjoMultiGame from '@/views/games/SkyjoMultiGame.vue';
 import PetitsChevauxMultiGame from '@/views/games/PetitsChevauxMultiGame.vue';
 import QuizMultiGame from '@/views/games/QuizMultiGame.vue';
+import QuizSoloGame from '@/views/games/QuizSoloGame.vue';
 
 const route    = useRoute();
 const platform = usePlatformStore();

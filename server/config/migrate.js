@@ -96,6 +96,19 @@ const TABLES = [
     incorrect_answers JSON NOT NULL,
     FOREIGN KEY (category_id) REFERENCES quiz_categories(id)
   ) CHARACTER SET utf8mb4`,
+
+  `CREATE TABLE IF NOT EXISTS quiz_solo_results (
+    id              INT PRIMARY KEY AUTO_INCREMENT,
+    username        VARCHAR(50) NOT NULL,
+    user_id         INT NULL,
+    lives_start     INT NOT NULL DEFAULT 5,
+    lives_remaining INT NOT NULL DEFAULT 0,
+    correct         INT NOT NULL DEFAULT 0,
+    total           INT NOT NULL DEFAULT 0,
+    difficulty      VARCHAR(20) DEFAULT 'mixed',
+    played_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_lives (lives_remaining DESC, correct DESC)
+  ) CHARACTER SET utf8mb4`,
 ];
 
 const GAMES_SEED = [
