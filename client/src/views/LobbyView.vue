@@ -144,6 +144,83 @@
             </div>
           </div>
 
+          <!-- Paramètres Quiz Zone -->
+          <div class="card lobby-settings" v-if="isHost && room.game_id === 'quiz'">
+            <h3 class="settings-title">{{ t('lobby.settings') }}</h3>
+
+            <div class="setting-row">
+              <span class="toggle-label">{{ t('quiz.mode') }}</span>
+              <div class="lang-switch">
+                <button class="lang-btn" :class="{ active: settings.quizMode === 1 }" @click="settings.quizMode = 1">⚡ {{ t('quiz.mode1') }}</button>
+                <button class="lang-btn" :class="{ active: settings.quizMode === 2 }" @click="settings.quizMode = 2">🎭 {{ t('quiz.mode2') }}</button>
+                <button class="lang-btn" :class="{ active: settings.quizMode === 3 }" @click="settings.quizMode = 3">❤️ {{ t('quiz.mode3') }}</button>
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <label>{{ t('quiz.timer') }}</label>
+              <div class="lang-switch">
+                <button v-for="s in [10,15,20,30]" :key="s" class="lang-btn" :class="{ active: settings.timer === s }" @click="settings.timer = s">{{ s }}s</button>
+              </div>
+            </div>
+
+            <div class="setting-row" v-if="settings.quizMode === 1">
+              <label>{{ t('quiz.target_score') }}</label>
+              <div class="stepper">
+                <button @click="settings.targetScore = Math.max(20, settings.targetScore - 10)">−</button>
+                <span>{{ settings.targetScore }}</span>
+                <button @click="settings.targetScore = Math.min(500, settings.targetScore + 10)">+</button>
+              </div>
+            </div>
+
+            <div class="setting-row" v-if="settings.quizMode === 2">
+              <label>{{ t('quiz.question_count') }}</label>
+              <div class="stepper">
+                <button @click="settings.questionCount = Math.max(5, settings.questionCount - 5)">−</button>
+                <span>{{ settings.questionCount }}</span>
+                <button @click="settings.questionCount = Math.min(50, settings.questionCount + 5)">+</button>
+              </div>
+            </div>
+
+            <div class="setting-row" v-if="settings.quizMode === 3">
+              <label>{{ t('quiz.lives') }}</label>
+              <div class="stepper">
+                <button @click="settings.lives = Math.max(1, settings.lives - 1)">−</button>
+                <span>{{ settings.lives }}</span>
+                <button @click="settings.lives = Math.min(10, settings.lives + 1)">+</button>
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <label>{{ t('quiz.question_types') }}</label>
+              <div class="lang-switch">
+                <button class="lang-btn" :class="{ active: settings.questionTypes === 'both' }" @click="settings.questionTypes = 'both'">{{ t('quiz.types_both') }}</button>
+                <button class="lang-btn" :class="{ active: settings.questionTypes === 'multiple' }" @click="settings.questionTypes = 'multiple'">QCM</button>
+                <button class="lang-btn" :class="{ active: settings.questionTypes === 'boolean' }" @click="settings.questionTypes = 'boolean'">Vrai/Faux</button>
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <label>{{ t('quiz.difficulty') }}</label>
+              <div class="lang-switch">
+                <button class="lang-btn" :class="{ active: settings.difficulty === 'mixed' }" @click="settings.difficulty = 'mixed'">{{ t('quiz.diff_mixed') }}</button>
+                <button class="lang-btn" :class="{ active: settings.difficulty === 'easy' }" @click="settings.difficulty = 'easy'">{{ t('quiz.diff_easy') }}</button>
+                <button class="lang-btn" :class="{ active: settings.difficulty === 'medium' }" @click="settings.difficulty = 'medium'">{{ t('quiz.diff_medium') }}</button>
+                <button class="lang-btn" :class="{ active: settings.difficulty === 'hard' }" @click="settings.difficulty = 'hard'">{{ t('quiz.diff_hard') }}</button>
+              </div>
+            </div>
+
+            <div class="setting-block">
+              <label class="setting-label">{{ t('quiz.categories') }}</label>
+              <div class="cat-grid">
+                <button class="cat-chip" :class="{ active: !settings.quizCategories?.length }" @click="settings.quizCategories = []">🌍 {{ t('quiz.cat_all') }}</button>
+                <button v-for="cat in quizCategories" :key="cat.id" class="cat-chip"
+                  :class="{ active: settings.quizCategories?.includes(cat.id) }"
+                  @click="toggleQuizCat(cat.id)">{{ cat.icon }} {{ platform.lang === 'fr' ? cat.name_fr : cat.name_en }}</button>
+              </div>
+            </div>
+          </div>
+
           <!-- Liste des joueurs -->
           <div class="card lobby-players">
             <h3 class="settings-title">{{ t('lobby.players') }} ({{ (room.players?.length || 0) + (settings.aiCount || 0) }} / {{ room.max_players }})</h3>
@@ -205,8 +282,11 @@ const settings = ref({
   minLetters: 5, maxLetters: 6, lang: platform.lang, changeOnFind: false,
   categories: ['tous'], aiCount: 0,
   pionsPerPlayer: 2, rejouerSur6: true, allowOvertake: false, corridorSimplifie: false,
+  quizMode: 1, timer: 15, targetScore: 100, questionCount: 20, lives: 5,
+  questionTypes: 'both', difficulty: 'mixed', quizCategories: [],
 });
 let socket = null;
+const quizCategories = ref([]);
 
 const CATEGORY_LIST = computed(() => [
   { id: 'tous',       icon: '📚', label: t('lobby.cat_all') },
@@ -219,6 +299,12 @@ const CATEGORY_LIST = computed(() => [
   { id: 'corps',      icon: '🫀', label: t('lobby.cat_body') },
   { id: 'transport',  icon: '🚗', label: t('lobby.cat_transport') },
 ]);
+
+function toggleQuizCat(id) {
+  const cats = settings.value.quizCategories || [];
+  if (cats.includes(id)) settings.value.quizCategories = cats.filter(c => c !== id);
+  else settings.value.quizCategories = [...cats, id];
+}
 
 function isCatActive(id) { return settings.value.categories.includes(id); }
 function toggleCat(id) {
@@ -246,6 +332,10 @@ async function loadRoom() {
     const data = await platform.fetchRoom(route.params.code);
     room.value = data;
     if (data.settings) settings.value = { ...settings.value, ...data.settings };
+    if (data.game_id === 'quiz') {
+      const res = await fetch('/api/quiz/categories');
+      if (res.ok) quizCategories.value = await res.json();
+    }
     connectSocket();
   } catch {
     platform.showToast('Salle introuvable', 'error');

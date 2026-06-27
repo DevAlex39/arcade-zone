@@ -4,6 +4,8 @@ const { fetchWord, validateWord, computeResult, computeDamage } = require('../ga
 const yahtzee = require('../games/yahtzee');
 const skyjo   = require('../games/skyjo');
 const pc      = require('../games/petits-chevaux');
+const quiz    = require('../games/quiz');
+const { pool } = require('../config/db');
 
 const rooms           = new Map();
 const disconnectTimers = new Map();
@@ -111,6 +113,38 @@ function initSocket(io) {
         startSkyjoGame(io, room);
       } else if (room.gameId === 'petits-chevaux') {
         startPCGame(io, room);
+      } else if (room.gameId === 'quiz') {
+        startQuizGame(io, room);
+      }
+    });
+
+    // ─── Actions Quiz ────────────────────────────────────────────────
+    socket.on('quiz_answer', ({ code, answer }) => {
+      const room = rooms.get(code?.toUpperCase());
+      if (!room || room.status !== 'playing' || room.gameId !== 'quiz') return;
+      const gs = room.gameState;
+      if (!gs || gs.phase !== 'question') return;
+      if (gs.eliminated.includes(user.id)) return;
+      if (gs.answers[user.id]) return; // déjà répondu
+
+      const elapsed = Date.now() - gs.questionStart;
+      const q = gs.questions[gs.currentIdx];
+      const isCorrect = answer === q.correct_answer;
+      const answersCount = Object.keys(gs.answers).length;
+      const points = gs.mode === 1 ? quiz.calcSpeedPoints(elapsed, gs.settings.timer * 1000, isCorrect) : (isCorrect ? 1 : 0);
+
+      gs.answers[user.id] = { answer, elapsed, correct: isCorrect, points };
+
+      // Notifier que le joueur a répondu (sans révéler la réponse)
+      io.to(code).emit('quiz_player_answered', { playerId: user.id });
+
+      // Si tout le monde a répondu → résultat immédiat
+      const activePlayers = gs.playerIds.filter(id => !gs.eliminated.includes(id));
+      const allAnswered = activePlayers.every(id => gs.answers[id]);
+      if (allAnswered) {
+        clearTimeout(gs.timer);
+        gs.timer = null;
+        resolveQuizQuestion(io, code, room, gs);
       }
     });
 
@@ -824,6 +858,16 @@ function resendGameState(socket, room) {
     socket.emit('skyjo_state', publicSkyjoState(room.gameState));
   } else if (room.gameId === 'petits-chevaux' && room.gameState) {
     socket.emit('pc_state', publicPCState(room.gameState));
+  } else if (room.gameId === 'quiz' && room.gameState) {
+    const gs = room.gameState;
+    const q = gs.questions[gs.currentIdx];
+    socket.emit('quiz_question', {
+      question: quiz.publicQuestion(q, gs.currentIdx, gs.questions.length, gs.settings.timer),
+      scores: gs.mode !== 2 ? gs.scores : null,
+      lives: gs.lives,
+      eliminated: gs.eliminated,
+      players: gs.players,
+    });
   }
 }
 
@@ -842,6 +886,174 @@ function sanitizeRoom(room) {
       lives: p.lives, combo: p.combo, eliminated: p.eliminated, online: !!p.socketId,
     })),
   };
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// QUIZ
+// ═══════════════════════════════════════════════════════════════════════
+async function startQuizGame(io, room) {
+  const s = room.settings;
+  const mode = parseInt(s.quizMode || 1);
+  const timer = parseInt(s.timer || 15);
+  const targetScore = parseInt(s.targetScore || 100);
+  const questionCount = parseInt(s.questionCount || 20);
+  const lives = parseInt(s.lives || 5);
+  const categories = s.quizCategories || [];
+  const questionTypes = s.questionTypes || 'both';
+  const difficulty = s.difficulty || 'mixed';
+
+  // Récupérer les questions depuis la DB
+  let catFilter = '';
+  let params = [];
+  if (categories.length > 0) {
+    catFilter = `AND qc.id IN (${categories.map(() => '?').join(',')})`;
+    params = [...categories];
+  }
+  let typeFilter = '';
+  if (questionTypes === 'multiple') typeFilter = `AND qq.type = 'multiple'`;
+  else if (questionTypes === 'boolean') typeFilter = `AND qq.type = 'boolean'`;
+
+  let diffFilter = '';
+  if (difficulty !== 'mixed') diffFilter = `AND qq.difficulty = '${difficulty}'`;
+
+  const limit = mode === 1 ? 999 : questionCount; // mode 1 : illimité jusqu'au score cible
+  const [rows] = await pool.query(
+    `SELECT qq.*, qc.name_fr AS category_name, qc.name_en AS category_name_en
+     FROM quiz_questions qq
+     JOIN quiz_categories qc ON qq.category_id = qc.id
+     WHERE 1=1 ${catFilter} ${typeFilter} ${diffFilter}
+     ORDER BY RAND() LIMIT ?`,
+    [...params, limit]
+  );
+
+  if (rows.length === 0) {
+    io.to(room.code).emit('error', 'Aucune question trouvée avec ces paramètres.');
+    return;
+  }
+
+  const settings = { mode, timer, targetScore, questionCount: rows.length, lives };
+  room.status    = 'playing';
+  room.gameState = quiz.initGame(room.players, settings, rows);
+  sendQuizQuestion(io, room.code, room);
+}
+
+function sendQuizQuestion(io, code, room) {
+  const gs = room.gameState;
+  gs.phase         = 'question';
+  gs.answers       = {};
+  gs.questionStart = Date.now();
+
+  const q = gs.questions[gs.currentIdx];
+  const publicQ = quiz.publicQuestion(q, gs.currentIdx, gs.questions.length, gs.settings.timer);
+
+  io.to(code).emit('quiz_question', {
+    question: publicQ,
+    scores:   gs.mode !== 2 ? gs.scores : null,
+    lives:    gs.lives,
+    eliminated: gs.eliminated,
+    players:  gs.players,
+  });
+
+  // Timer serveur
+  gs.timer = setTimeout(() => {
+    gs.timer = null;
+    resolveQuizQuestion(io, code, room, gs);
+  }, gs.settings.timer * 1000 + 500); // +500ms de marge réseau
+}
+
+function resolveQuizQuestion(io, code, room, gs) {
+  const q = gs.questions[gs.currentIdx];
+  const activePlayers = gs.playerIds.filter(id => !gs.eliminated.includes(id));
+
+  // Appliquer les résultats
+  const results = {};
+  activePlayers.forEach(id => {
+    const ans = gs.answers[id];
+    const isCorrect = ans?.correct || false;
+    const points    = ans?.points  || 0;
+
+    if (gs.mode === 1 || gs.mode === 2) {
+      gs.scores[id] = (gs.scores[id] || 0) + points;
+    } else if (gs.mode === 3) {
+      if (!isCorrect) {
+        gs.lives[id] = Math.max(0, (gs.lives[id] || 0) - 1);
+        if (gs.lives[id] <= 0 && !gs.eliminated.includes(id)) {
+          gs.eliminated.push(id);
+        }
+      }
+    }
+    results[id] = { correct: isCorrect, answer: ans?.answer || null, points, elapsed: ans?.elapsed || null };
+  });
+
+  io.to(code).emit('quiz_result', {
+    correctAnswer: q.correct_answer,
+    results,
+    scores: gs.scores,
+    lives:  gs.lives,
+    eliminated: gs.eliminated,
+  });
+
+  // Vérifier fin de partie
+  setTimeout(() => {
+    if (room.status !== 'playing') return;
+
+    const stillAlive = gs.playerIds.filter(id => !gs.eliminated.includes(id));
+
+    // Mode 1 : quelqu'un a atteint le score cible ?
+    if (gs.mode === 1) {
+      const winner = gs.playerIds.find(id => gs.scores[id] >= gs.settings.targetScore);
+      if (winner) { endQuizGame(io, code, room, gs); return; }
+    }
+
+    // Mode 3 : plus qu'un seul joueur en vie ?
+    if (gs.mode === 3 && stillAlive.length <= 1) {
+      endQuizGame(io, code, room, gs); return;
+    }
+
+    // Mode 2 : toutes les questions épuisées ?
+    if (gs.mode === 2 && gs.currentIdx >= gs.questions.length - 1) {
+      endQuizGame(io, code, room, gs); return;
+    }
+
+    // Mode 1 : plus de questions (sécurité)
+    if (gs.mode === 1 && gs.currentIdx >= gs.questions.length - 1) {
+      endQuizGame(io, code, room, gs); return;
+    }
+
+    // Question suivante
+    gs.currentIdx++;
+    sendQuizQuestion(io, code, room);
+  }, 4000); // 4s pour voir le résultat avant la prochaine question
+}
+
+function endQuizGame(io, code, room, gs) {
+  gs.phase    = 'end';
+  room.status = 'finished';
+
+  // Classement final
+  const rankings = gs.playerIds
+    .map(id => ({
+      id,
+      username: gs.players.find(p => p.id === id)?.username || id,
+      score:    gs.scores[id] || 0,
+      lives:    gs.lives[id] || 0,
+      eliminated: gs.eliminated.includes(id),
+    }))
+    .sort((a, b) => {
+      if (gs.mode === 3) {
+        // Survivant d'abord, puis par vies restantes
+        if (!a.eliminated && b.eliminated) return -1;
+        if (a.eliminated && !b.eliminated) return 1;
+        return b.lives - a.lives;
+      }
+      return b.score - a.score;
+    });
+
+  const winner = rankings[0] ? room.players.find(p => p.id === rankings[0].id) || rankings[0] : null;
+
+  io.to(code).emit('quiz_end', { rankings, mode: gs.mode, winner });
+  io.to(code).emit('game_over', { winner });
+  rooms.delete(code);
 }
 
 module.exports = { initSocket };

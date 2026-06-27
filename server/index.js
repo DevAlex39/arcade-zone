@@ -38,6 +38,7 @@ app.use('/api/games',  require('./routes/games'));
 app.use('/api/rooms',  require('./routes/rooms'));
 app.use('/api/admin',  require('./routes/admin'));
 app.use('/api/motus',  require('./routes/motus'));
+app.use('/api/quiz',   require('./routes/quiz'));
 
 app.get('/api/health', (_, res) => res.json({ ok: true, ts: Date.now() }));
 

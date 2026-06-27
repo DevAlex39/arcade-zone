@@ -77,6 +77,25 @@ const TABLES = [
     metadata  JSON,
     played_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   ) CHARACTER SET utf8mb4`,
+
+  `CREATE TABLE IF NOT EXISTS quiz_categories (
+    id         INT PRIMARY KEY AUTO_INCREMENT,
+    opentdb_id INT UNIQUE,
+    name_fr    VARCHAR(100) NOT NULL,
+    name_en    VARCHAR(100) NOT NULL,
+    icon       VARCHAR(10) DEFAULT '❓'
+  ) CHARACTER SET utf8mb4`,
+
+  `CREATE TABLE IF NOT EXISTS quiz_questions (
+    id                INT PRIMARY KEY AUTO_INCREMENT,
+    category_id       INT NOT NULL,
+    type              ENUM('multiple','boolean') NOT NULL,
+    difficulty        ENUM('easy','medium','hard') NOT NULL,
+    question          TEXT NOT NULL,
+    correct_answer    VARCHAR(500) NOT NULL,
+    incorrect_answers JSON NOT NULL,
+    FOREIGN KEY (category_id) REFERENCES quiz_categories(id)
+  ) CHARACTER SET utf8mb4`,
 ];
 
 const GAMES_SEED = [
@@ -86,6 +105,7 @@ const GAMES_SEED = [
   ['skyjo',          'Cell Number',         'Jeu de cartes inspiré de Skyjo — minimise ton score, solo ou multi',         '🃏', '#4ade80', 1, 8, 1, 1, '/solo/skyjo/',         5],
   ['petits-chevaux', 'Petits Chevaux',      'Le grand classique du plateau — 1 à 4 joueurs',                              '🐴', '#a78bfa', 1, 4, 1, 1, '/solo/petits-chevaux/',6],
   ['escape',         'Escape',              'Jeu d\'évasion textuel — résous les énigmes pour t\'échapper',               '🔐', '#fbbf24', 1, 1, 1, 0, '/solo/escape/',        7],
+  ['quiz',           'Quiz Zone',           'Testez vos connaissances — solo ou multi jusqu\'à 8 joueurs',                 '🧠', '#8b5cf6', 1, 8, 1, 1, null,                  8],
 ];
 
 async function migrate() {
