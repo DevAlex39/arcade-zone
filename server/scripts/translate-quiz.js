@@ -15,6 +15,13 @@ const SEP        = ' ||| '; // séparateur pour grouper les textes
 
 function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+function parseAnswers(raw) {
+  try { return JSON.parse(raw || '[]'); } catch {
+    // Fallback: valeur CSV brute
+    return (raw || '').split(',').map(s => s.trim()).filter(Boolean);
+  }
+}
+
 function chunk(arr, size) {
   const out = [];
   for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
@@ -71,7 +78,7 @@ async function main() {
     for (const q of batch) {
       textsToTranslate.push(q.question);
       textsToTranslate.push(q.correct_answer);
-      const incorrects = JSON.parse(q.incorrect_answers || '[]');
+      const incorrects = parseAnswers(q.incorrect_answers);
       incorrects.forEach(a => textsToTranslate.push(a));
       // Padding : pour boolean on ajoute des placeholders pour que l'index soit prévisible
       if (q.type === 'boolean') {
@@ -88,7 +95,7 @@ async function main() {
       for (const q of batch) {
         const qFr       = translated[idx++];
         const correctFr = translated[idx++];
-        const incorrects = JSON.parse(q.incorrect_answers || '[]');
+        const incorrects = parseAnswers(q.incorrect_answers);
         const incorrectsFr = incorrects.map(() => translated[idx++]);
         if (q.type === 'boolean') idx += 3; // skip pads
 
