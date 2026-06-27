@@ -5,7 +5,7 @@
     <div class="card-top">
       <span class="card-icon">{{ game.icon }}</span>
       <div class="card-badges">
-        <span v-if="game.solo_url" class="badge badge-cyan">Solo</span>
+        <span v-if="game.solo_url || game.min_players === 1" class="badge badge-cyan">Solo</span>
         <span v-if="game.has_multiplayer" class="badge badge-rose">Multi</span>
         <span v-if="game.max_players > 1" class="badge badge-violet">
           {{ game.min_players === game.max_players ? game.min_players : `${game.min_players}–${game.max_players}` }} joueurs
@@ -17,7 +17,7 @@
     <p class="card-desc">{{ game.description }}</p>
 
     <div class="card-actions">
-      <button v-if="game.solo_url" class="btn btn-secondary btn-sm btn-full" @click="$emit('play', game)">
+      <button v-if="game.solo_url || game.min_players === 1" class="btn btn-secondary btn-sm btn-full" @click="$emit('play', game)">
         Jouer seul →
       </button>
       <div v-if="game.has_multiplayer" class="actions-multi">

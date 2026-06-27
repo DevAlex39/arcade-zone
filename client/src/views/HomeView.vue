@@ -127,7 +127,7 @@ const activeGames = computed(() => platform.games.filter(g => g.is_active));
 
 const filteredGames = computed(() => {
   return activeGames.value.filter(g => {
-    if (activeFilter.value === 'solo')  return g.solo_url;
+    if (activeFilter.value === 'solo')  return g.solo_url || g.min_players === 1;
     if (activeFilter.value === 'multi') return g.has_multiplayer;
     return true;
   });
