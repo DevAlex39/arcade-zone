@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="cobalt">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cell Number</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+</head>
+<body>
+
+  <!-- ══ TOP CONTROLS : thème ══ -->
+  <div class="top-controls">
+    <div class="seg" id="themeSeg" role="group">
+      <button class="seg-btn active" data-theme-val="cobalt"><span class="dot-sw" style="background:linear-gradient(135deg,#46d6ff,#8b7bff)"></span>Cobalt</button>
+      <button class="seg-btn" data-theme-val="ember"><span class="dot-sw" style="background:linear-gradient(135deg,#ff8a3d,#2fd0c4)"></span>Ember</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ CONFIG -->
+  <div class="screen" id="screenConfig">
+    <h1 class="title"><i class="fa-solid fa-border-all"></i>Cell Number</h1>
+    <div class="player-count-row">
+      <span class="label">Nombre de joueurs</span>
+      <div class="stepper">
+        <button class="btn-step" id="btnMinus">−</button>
+        <span id="playerCountVal">2</span>
+        <button class="btn-step" id="btnPlus">+</button>
+      </div>
+    </div>
+    <div id="playerSetup"></div>
+    <button class="btn btn-start" id="btnStart"><i class="fa-solid fa-play"></i> Lancer la partie</button>
+  </div>
+
+  <!-- ═══════════════════ JEU -->
+  <div class="screen hidden" id="screenGame">
+    <div id="tableCenter">
+      <div id="deckZone">
+        <div id="deckCard" class="card card-back">?</div>
+        <div id="deckCount" class="zone-label"></div>
+      </div>
+      <div id="discardZone">
+        <div id="discardTop" class="card"></div>
+        <div class="zone-label">Défausse</div>
+      </div>
+      <div id="heldZone" class="hidden">
+        <div id="heldCard" class="card"></div>
+        <div class="zone-label">En main</div>
+        <button class="btn btn-sm" id="btnDiscardHeld"><i class="fa-solid fa-right-from-bracket"></i> Défausser + révéler</button>
+      </div>
+    </div>
+    <div id="gameHint"></div>
+    <div id="playersWrap"></div>
+  </div>
+
+  <!-- ═══════════════════ SCORE MANCHE -->
+  <div class="screen hidden" id="screenScore">
+    <h2 class="title" style="font-size:1.8rem" id="scoreTitle"></h2>
+    <div id="scoreTable"></div>
+    <button class="btn btn-start" id="btnNextRound"><i class="fa-solid fa-forward"></i> Manche suivante</button>
+  </div>
+
+  <!-- ═══════════════════ VICTOIRE -->
+  <div class="screen hidden" id="screenWin">
+    <div class="win-card">
+      <div class="win-emoji"><i class="fa-solid fa-trophy"></i></div>
+      <h2 id="winnerName"></h2>
+      <p>a remporté la partie !</p>
+      <div id="winScores" style="margin-bottom:1.5rem"></div>
+      <button class="btn btn-start" id="btnReplay"><i class="fa-solid fa-rotate-left"></i> Rejouer</button>
+    </div>
+  </div>
+
+<script>
+  /* ── Switcher de thème ── */
+  document.querySelectorAll('#themeSeg .seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.documentElement.setAttribute('data-theme', btn.dataset.themeVal);
+      document.querySelectorAll('#themeSeg .seg-btn').forEach(b => b.classList.toggle('active', b === btn));
+    });
+  });
+</script>
+<script src="game.js"></script>
+</body>
+</html>

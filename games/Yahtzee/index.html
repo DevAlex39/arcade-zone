@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Roll the Dice</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+  <!-- ══════════════════ ÉCRAN SETUP ══════════════════ -->
+  <div class="screen" id="screenSetup">
+    <div class="setup-card">
+      <div class="setup-dice-row">
+        <div class="setup-die">⚀</div>
+        <div class="setup-die">⚄</div>
+        <div class="setup-die">⚂</div>
+      </div>
+      <h1 class="setup-title">ROLL THE DICE</h1>
+      <p class="setup-sub">Le jeu des combinaisons de dés</p>
+
+      <div class="setup-section">
+        <label class="setup-label">Nombre de joueurs</label>
+        <div class="player-count-btns" id="playerCountBtns">
+          <button class="pcb active" data-n="1">1</button>
+          <button class="pcb" data-n="2">2</button>
+          <button class="pcb" data-n="3">3</button>
+          <button class="pcb" data-n="4">4</button>
+        </div>
+      </div>
+
+      <div class="setup-section" id="playerNamesSection">
+        <label class="setup-label">Noms des joueurs</label>
+        <div id="playerNameInputs"></div>
+      </div>
+
+      <button class="btn btn-primary btn-lg" id="btnStart">Commencer la partie →</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════ ÉCRAN JEU ══════════════════ -->
+  <div class="screen hidden" id="screenGame">
+
+    <!-- Header -->
+    <header class="game-header">
+      <button class="btn-ghost" id="btnBackSetup">← Quitter</button>
+      <div class="turn-info">
+        <span class="turn-player" id="turnPlayer">Joueur 1</span>
+        <span class="turn-sub" id="turnSub">Manche 1 / 13</span>
+      </div>
+      <div class="roll-counter">
+        <span id="rollIndicator" class="roll-pips">
+          <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+        </span>
+      </div>
+    </header>
+
+    <div class="game-body">
+
+      <!-- ─── COLONNE GAUCHE : dés + actions ─── -->
+      <div class="game-left">
+
+        <!-- Zone des dés -->
+        <div class="dice-area">
+          <div class="dice-row" id="diceRow">
+            <!-- 5 dés générés en JS -->
+          </div>
+          <div class="dice-hint" id="diceHint">Appuyez sur Lancer pour commencer</div>
+        </div>
+
+        <!-- Bouton lancer -->
+        <div class="roll-area">
+          <button class="btn btn-roll" id="btnRoll">
+            <span class="roll-icon">🎲</span>
+            <span id="btnRollLabel">Lancer les dés</span>
+          </button>
+          <div class="roll-count-display" id="rollCountDisplay"></div>
+        </div>
+
+        <!-- Prévisualisation des scores -->
+        <div class="preview-panel" id="previewPanel">
+          <div class="preview-title">
+            <span>✨ Combinaisons possibles</span>
+            <span class="preview-hint">Cliquez pour scorer</span>
+          </div>
+          <div class="preview-grid" id="previewGrid"></div>
+        </div>
+
+      </div>
+
+      <!-- ─── COLONNE DROITE : tableau des scores ─── -->
+      <div class="game-right">
+        <div class="scoreboard" id="scoreboard"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════ MODAL FIN ══════════════════ -->
+  <div class="modal-overlay hidden" id="endModal">
+    <div class="modal end-modal">
+      <div class="podium" id="podium"></div>
+      <h2 id="endTitle"></h2>
+      <div class="final-scores" id="finalScores"></div>
+      <button class="btn btn-primary" id="btnReplay">Rejouer</button>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

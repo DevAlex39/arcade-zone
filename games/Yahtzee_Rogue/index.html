@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="cobalt">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Roll the Dice Rogue</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"/>
+</head>
+<body>
+
+  <!-- ══ TOP CONTROLS : thème + langue ══ -->
+  <div class="top-controls">
+    <div class="seg" id="themeSeg" role="group">
+      <button class="seg-btn active" data-theme-val="cobalt"><span class="dot-sw" style="background:linear-gradient(135deg,#46d6ff,#8b7bff)"></span>Cobalt</button>
+      <button class="seg-btn" data-theme-val="ember"><span class="dot-sw" style="background:linear-gradient(135deg,#ff8a3d,#2fd0c4)"></span>Ember</button>
+    </div>
+    <div class="seg" id="langSeg" role="group">
+      <button class="seg-btn active" data-lang-val="fr">FR</button>
+      <button class="seg-btn" data-lang-val="en">EN</button>
+    </div>
+  </div>
+
+  <!-- ══ ÉCRAN TITRE ══ -->
+  <div class="screen" id="screenTitle">
+    <div class="title-bg"></div>
+    <div class="title-content">
+      <div class="title-dice-row">
+        <i class="fa-solid fa-dice-five td"></i>
+        <i class="fa-solid fa-dice-one td"></i>
+        <i class="fa-solid fa-dice-six td"></i>
+        <i class="fa-solid fa-dice-three td"></i>
+      </div>
+      <h1 class="game-title">ROLL THE DICE<br/><span class="title-rogue">ROGUE</span></h1>
+      <p class="title-sub" data-i18n="tagline">Un roguelike de dés</p>
+      <div class="seed-input-wrap">
+        <input class="seed-input" id="seedInput" type="text" maxlength="8" data-i18n-ph="seedPlaceholder" placeholder="Seed (optionnel)" autocomplete="off" spellcheck="false"/>
+        <span class="seed-input-hint" data-i18n="seedHint"># laissez vide pour un seed aléatoire</span>
+      </div>
+      <button class="btn btn-start" id="btnStart" data-i18n="startGame">Commencer la partie</button>
+      <div class="title-hint" data-i18n="titleHint">Battez les blinds · achetez des jokers · survivez au boss</div>
+    </div>
+  </div>
+
+  <!-- ══ ANNONCE BLIND ══ -->
+  <div class="screen hidden" id="screenBlindIntro">
+    <div class="blind-intro-card" id="blindIntroCard">
+      <div class="bi-label" id="biLabel">Petite Blind</div>
+      <div class="bi-icon" id="biIcon">🎯</div>
+      <div class="bi-name" id="biName"></div>
+      <div class="bi-target-row">
+        <span class="bi-target-label" data-i18n="targetScore">Score cible</span>
+        <span class="bi-target-val" id="biTarget"></span>
+      </div>
+      <div class="bi-effect hidden" id="biEffectBox">
+        <div class="bi-effect-label"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n="bossEffect">Effet Boss</span></div>
+        <div class="bi-effect-text" id="biEffectText"></div>
+      </div>
+      <div class="bi-hands-row">
+        <span data-i18n="handsAvailable">Mains disponibles</span>
+        <span class="bi-hands-val" id="biHands"></span>
+      </div>
+      <button class="btn btn-start bi-btn" id="btnPlayBlind" data-i18n="play">Jouer</button>
+    </div>
+  </div>
+
+  <!-- ══ ÉCRAN JEU ══ -->
+  <div class="screen hidden" id="screenGame">
+
+    <header class="game-header">
+      <div class="hdr-left">
+        <div class="ante-display">
+          <span class="ante-label" data-i18n="ante">Ante</span>
+          <span class="ante-val" id="anteVal">1</span>
+        </div>
+        <div class="blind-display">
+          <span class="blind-tag" id="blindTag">Petite Blind</span>
+          <span class="blind-effect-mini" id="blindEffectMini"></span>
+        </div>
+      </div>
+      <div class="hdr-center">
+        <div class="score-display">
+          <div class="score-block">
+            <span class="score-label" data-i18n="score">Score</span>
+            <span class="score-current" id="scoreCurrent">0</span>
+          </div>
+          <div class="score-sep">/</div>
+          <div class="score-block">
+            <span class="score-label" data-i18n="target">Cible</span>
+            <span class="score-target" id="scoreTarget">0</span>
+          </div>
+        </div>
+        <div class="score-bar-wrap">
+          <div class="score-bar-bg"><div class="score-bar-fill" id="scoreBarFill"></div></div>
+        </div>
+      </div>
+      <div class="hdr-right">
+        <div class="pip-group">
+          <span class="pip-label" data-i18n="hands">Mains</span>
+          <div class="pip-row" id="handsPips"></div>
+        </div>
+        <div class="pip-group">
+          <span class="pip-label" data-i18n="rolls">Lancers</span>
+          <div class="pip-row" id="rollsPips"></div>
+        </div>
+      </div>
+    </header>
+
+    <div class="game-body">
+
+      <!-- Jokers -->
+      <div class="col-side col-left">
+        <div class="panel-label"><i class="fa-solid fa-layer-group"></i> <span data-i18n="jokers">Jokers</span></div>
+        <div class="jokers-slot" id="jokersSlot">
+          <div class="slot-empty" data-i18n="buyJokers">Achetez des jokers<br/>en boutique</div>
+        </div>
+        <div class="panel-label" style="margin-top:1rem"><i class="fa-solid fa-bolt-lightning"></i> <span data-i18n="consumables">Consommables</span></div>
+        <div class="consumables-slot" id="consumablesSlot">
+          <div class="slot-empty">—</div>
+        </div>
+        <button class="btn-encyclo" id="btnEncyclo"><i class="fa-solid fa-book-open"></i> <span data-i18n="encyclopedia">Encyclopédie</span></button>
+      </div>
+
+      <!-- Dés + actions -->
+      <div class="col-main">
+        <div class="dice-area">
+          <div class="fog-overlay hidden" id="fogOverlay"><i class="fa-solid fa-eye-slash"></i> <span data-i18n="fogOverlay">La Brume — dés cachés jusqu'à la soumission</span></div>
+          <div class="dice-row" id="diceRow"></div>
+          <div class="dice-hint" id="diceHint">Cliquez sur Lancer pour commencer</div>
+        </div>
+
+        <div class="hand-score-panel" id="handScorePanel">
+          <div class="hsp-combo" id="hspCombo">—</div>
+          <div class="hsp-formula" id="hspFormula"></div>
+          <div class="hsp-joker-line" id="hspJokerLine"></div>
+        </div>
+
+        <div class="actions-row">
+          <button class="btn btn-roll" id="btnRoll">
+            <i class="fa-solid fa-dice"></i><span id="btnRollLabel">Lancer les dés</span>
+          </button>
+        </div>
+
+        <div class="combos-panel">
+          <div class="combos-title" data-i18n="chooseCombo">Choisissez une combinaison à jouer</div>
+          <div class="combos-grid" id="combosGrid"></div>
+        </div>
+      </div>
+
+      <!-- Or + stats -->
+      <div class="col-side col-right">
+        <div class="panel-label"><i class="fa-solid fa-coins"></i> <span data-i18n="gold">Or</span></div>
+        <div class="gold-display" id="goldDisplay">4</div>
+        <div class="panel-label" style="margin-top:1rem"><i class="fa-solid fa-chart-simple"></i> <span data-i18n="run">Run</span></div>
+        <div class="run-stats" id="runStats"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ BOUTIQUE ══ -->
+  <div class="screen hidden" id="screenShop">
+    <div class="shop-wrap">
+      <div class="shop-header">
+        <div>
+          <h2 class="shop-title"><i class="fa-solid fa-store"></i> <span data-i18n="shop">Boutique</span></h2>
+          <p class="shop-sub" id="shopSub"></p>
+        </div>
+        <div class="shop-gold-badge"><i class="fa-solid fa-coins"></i> <span id="shopGold">4</span></div>
+      </div>
+      <div class="shop-section-label"><i class="fa-solid fa-layer-group"></i> <span data-i18n="jokers">Jokers</span></div>
+      <div class="shop-items" id="shopJokers"></div>
+      <div class="shop-section-label" id="shopConsuLabel"><i class="fa-solid fa-bolt-lightning"></i> <span data-i18n="consumables">Consommables</span></div>
+      <div class="shop-items" id="shopConsumables"></div>
+      <div class="shop-section-label hidden" id="shopBoosterLabel"><i class="fa-solid fa-box-open"></i> <span data-i18n="boxes">Boîtes</span></div>
+      <div class="shop-items hidden" id="shopBoosters"></div>
+
+      <div class="shop-divider"><i class="fa-solid fa-tag"></i> <span data-i18n="sellItems">Vendre mes articles</span></div>
+      <div class="shop-items sell-grid" id="ownedJokers"></div>
+      <div class="shop-items sell-grid" id="ownedConsumables"></div>
+
+      <div class="shop-footer">
+        <button class="btn btn-reroll" id="btnRerollShop"><i class="fa-solid fa-rotate"></i> <span data-i18n="rerollShop">Relancer boutique</span> <span class="reroll-cost">(2<i class="fa-solid fa-coins"></i>)</span></button>
+        <button class="btn btn-next" id="btnNextBlind" data-i18n="nextBlind">Prochaine blind →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ GAME OVER ══ -->
+  <div class="screen screen-end hidden" id="screenGameOver">
+    <div class="end-card">
+      <div class="end-emoji"><i class="fa-solid fa-skull"></i></div>
+      <h2 data-i18n="gameOver">Game Over</h2>
+      <p id="goSub"></p>
+      <div class="end-stats" id="goStats"></div>
+      <button class="btn btn-start" id="btnRestart" data-i18n="restart">Recommencer</button>
+    </div>
+  </div>
+
+  <!-- ══ VICTOIRE ══ -->
+  <div class="screen screen-end hidden" id="screenWin">
+    <div class="end-card win-card">
+      <div class="end-emoji"><i class="fa-solid fa-trophy"></i></div>
+      <h2 data-i18n="victory">Victoire !</h2>
+      <p id="winSub" data-i18n="victorySub">Vous avez battu tous les antes !</p>
+      <div class="end-stats" id="winStats"></div>
+      <button class="btn btn-start" id="btnWinRestart" data-i18n="replay">Rejouer</button>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Hold-R restart -->
+  <div class="hold-restart hidden" id="holdRestart">
+    <i class="fa-solid fa-rotate-left"></i>
+    <span data-i18n="restarting">Recommencer…</span>
+    <div class="hold-restart-track"><div class="hold-restart-fill" id="holdRestartFill"></div></div>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>

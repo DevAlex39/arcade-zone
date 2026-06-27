@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trouve le Mot</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-inner">
+      <h1 class="logo">TROUVE LE MOT</h1>
+      <div class="header-right">
+        <div class="score-box">
+          <span class="score-label">Score</span>
+          <span class="score-val" id="score">0</span>
+        </div>
+        <button class="btn-icon" id="btnNew" title="Nouveau mot">↺</button>
+        <button class="btn-icon" id="btnHelp" title="Aide">?</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- STATUS BAR -->
+    <div class="status-bar" id="statusBar">
+      <span id="statusText">Chargement du mot…</span>
+      <span class="word-length-badge" id="wordLengthBadge"></span>
+    </div>
+
+    <!-- GRID -->
+    <div class="grid-wrapper">
+      <div class="grid" id="grid"></div>
+    </div>
+
+    <!-- CLAVIER -->
+    <div class="keyboard" id="keyboard">
+      <div class="kb-row" id="kbRow1"></div>
+      <div class="kb-row" id="kbRow2"></div>
+      <div class="kb-row" id="kbRow3"></div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="actions">
+      <button class="btn btn-submit" id="btnSubmit" disabled>Valider</button>
+    </div>
+
+  </main>
+
+  <!-- MODAL AIDE -->
+  <div class="modal-overlay hidden" id="helpModal">
+    <div class="modal">
+      <button class="modal-close" id="closeHelp">✕</button>
+      <h2>Comment jouer ?</h2>
+      <p>Trouvez le mot mystère en <strong>6 essais</strong>. La <strong>première lettre</strong> est toujours révélée.</p>
+      <div class="legend">
+        <div class="legend-item">
+          <div class="cell cell-correct">A</div>
+          <span>Lettre bien placée</span>
+        </div>
+        <div class="legend-item">
+          <div class="cell cell-present">B</div>
+          <span>Lettre présente, mal placée</span>
+        </div>
+        <div class="legend-item">
+          <div class="cell cell-absent">C</div>
+          <span>Lettre absente</span>
+        </div>
+      </div>
+      <p class="small">Le mot est récupéré aléatoirement. Seuls les mots du dictionnaire sont acceptés.</p>
+    </div>
+  </div>
+
+  <!-- MODAL FIN -->
+  <div class="modal-overlay hidden" id="endModal">
+    <div class="modal">
+      <div class="end-emoji" id="endEmoji"></div>
+      <h2 id="endTitle"></h2>
+      <p id="endSub"></p>
+      <div class="end-word" id="endWord"></div>
+      <button class="btn btn-submit" id="btnNewEnd">Nouveau mot →</button>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
