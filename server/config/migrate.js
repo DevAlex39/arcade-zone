@@ -81,7 +81,7 @@ const TABLES = [
 
 const GAMES_SEED = [
   ['yahtzee-rogue',  'Roll the Dice Rogue', 'Rogue-like de dés — combine les meilleures mains pour progresser',          '🎲', '#fb923c', 1, 1, 1, 0, '/solo/yahtzee-rogue/', 1],
-  ['yahtzee',        'Yahtzee',             'Le grand classique des dés — solo ou multijoueur jusqu\'à 6',                '🎯', '#f59e0b', 1, 6, 1, 1, '/solo/yahtzee/',       2],
+  ['yahtzee',        'Roll the Dice',       'Le grand classique des dés — solo ou multijoueur jusqu\'à 6',                '🎯', '#f59e0b', 1, 6, 1, 1, '/solo/yahtzee/',       2],
   ['motus',          'Trouve le Mot',       'Trouve le mot mystère — solo ou multijoueur avec vies et combos',            '🔤', '#38bdf8', 1, 8, 1, 1, '/solo/motus/',         3],
   ['skyjo',          'Cell Number',         'Jeu de cartes inspiré de Skyjo — minimise ton score, solo ou multi',         '🃏', '#4ade80', 1, 8, 1, 1, '/solo/skyjo/',         5],
   ['petits-chevaux', 'Petits Chevaux',      'Le grand classique du plateau — 1 à 4 joueurs',                              '🐴', '#a78bfa', 1, 4, 1, 1, '/solo/petits-chevaux/',6],
