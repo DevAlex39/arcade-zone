@@ -16,9 +16,9 @@ const SEP        = ' ||| '; // séparateur pour grouper les textes
 function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 function parseAnswers(raw) {
+  if (Array.isArray(raw)) return raw; // mysql2 retourne déjà un tableau pour les colonnes JSON
   try { return JSON.parse(raw || '[]'); } catch {
-    // Fallback: valeur CSV brute
-    return (raw || '').split(',').map(s => s.trim()).filter(Boolean);
+    return String(raw || '').split(',').map(s => s.trim()).filter(Boolean);
   }
 }
 
