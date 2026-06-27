@@ -21,15 +21,6 @@
           </div>
 
           <div class="field-group">
-            <label>Nombre de questions</label>
-            <div class="count-row">
-              <button v-for="n in [10,20,30,50]" :key="n"
-                class="btn-chip" :class="{ active: cfg.count === n }"
-                @click="cfg.count = n">{{ n }}</button>
-            </div>
-          </div>
-
-          <div class="field-group">
             <label>Temps par question</label>
             <div class="count-row">
               <button v-for="s in [10,15,20,30]" :key="s"
@@ -80,7 +71,7 @@
 
       <div class="quiz-header">
         <router-link to="/" class="btn-back">← Menu</router-link>
-        <span class="q-counter">{{ qIdx + 1 }} / {{ questions.length }}</span>
+        <span class="q-counter">Question {{ totalAnswered + 1 }}</span>
         <div class="lives-display">
           <transition-group name="heart-pop">
             <span v-for="l in livesLeft" :key="'h'+l" class="heart">❤️</span>
@@ -153,7 +144,7 @@
         <div class="fs-main">
           <span class="fs-num">{{ correctCount }}</span>
           <span class="fs-sep">/</span>
-          <span class="fs-total">{{ questions.length }}</span>
+          <span class="fs-total">{{ totalAnswered }}</span>
         </div>
         <div class="fs-pct">{{ pct }}% de bonnes réponses</div>
         <div class="fs-lives">
@@ -213,7 +204,8 @@ import { useAuthStore } from '@/stores/auth.js';
 const auth = useAuthStore();
 
 // ── Config ──────────────────────────────────────────────────────────────────
-const cfg = reactive({ lang: 'fr', lives: 5, count: 20, timer: 15, difficulty: 'mixed', types: 'both', categories: [] });
+const cfg = reactive({ lives: 5, timer: 15, difficulty: 'mixed', types: 'both', categories: [] });
+const PAGE_SIZE = 50; // questions chargées par batch
 const difficulties = [
   { v: 'mixed', l: 'Mixte' }, { v: 'easy', l: 'Facile' },
   { v: 'medium', l: 'Moyen' }, { v: 'hard', l: 'Difficile' },
@@ -225,16 +217,19 @@ const categories = ref([]);
 const loading    = ref(false);
 
 // ── Game state ──────────────────────────────────────────────────────────────
-const phase         = ref('config');
-const questions     = ref([]);
-const qIdx          = ref(0);
-const myAnswer      = ref(null);
-const lastCorrect   = ref(false);
-const livesLeft     = ref(5);
-const correctCount  = ref(0);
+const phase           = ref('config');
+const questions       = ref([]);   // buffer de questions en attente
+const seenIds         = ref(new Set());
+const totalAnswered   = ref(0);
+const qIdx            = ref(0);
+const myAnswer        = ref(null);
+const lastCorrect     = ref(false);
+const livesLeft       = ref(5);
+const correctCount    = ref(0);
 const shuffledAnswers = ref([]);
-const leaderboard   = ref([]);
-const myEntryId     = ref(null);
+const leaderboard     = ref([]);
+const myEntryId       = ref(null);
+const loadingMore     = ref(false);
 
 const answerLetters = ['A', 'B', 'C', 'D'];
 
@@ -250,7 +245,7 @@ const timerClass = computed(() => {
 });
 
 const currentQ = computed(() => questions.value[qIdx.value] || null);
-const pct      = computed(() => questions.value.length ? Math.round(correctCount.value / questions.value.length * 100) : 0);
+const pct      = computed(() => totalAnswered.value ? Math.round(correctCount.value / totalAnswered.value * 100) : 0);
 
 function displayAnswer(ans) {
   if (ans === 'True')  return 'Vrai';
@@ -311,28 +306,42 @@ function startTimer() {
   }, 100);
 }
 
-async function startGame() {
-  loading.value = true;
+async function fetchQuestions() {
+  if (loadingMore.value) return;
+  loadingMore.value = true;
   try {
-    const params = new URLSearchParams({
-      count:      cfg.count,
-      difficulty: cfg.difficulty,
-      types:      cfg.types,
-      lang:       cfg.lang,
-    });
+    const params = new URLSearchParams({ count: PAGE_SIZE, difficulty: cfg.difficulty, types: cfg.types });
     if (cfg.categories.length) params.set('categories', cfg.categories.join(','));
+    // Exclure les questions déjà vues
+    if (seenIds.value.size) params.set('exclude', [...seenIds.value].join(','));
 
     const res  = await fetch(`/api/quiz/questions?${params}`);
     const data = await res.json();
-    if (!data.length) { alert('Aucune question trouvée avec ces paramètres.'); return; }
+    // Filtrer côté client aussi pour être sûr (l'API ne supporte pas encore exclude)
+    const fresh = data.filter(q => !seenIds.value.has(q.id));
+    fresh.forEach(q => seenIds.value.add(q.id));
+    questions.value.push(...fresh);
+  } finally {
+    loadingMore.value = false;
+  }
+}
 
-    questions.value    = data;
+async function startGame() {
+  loading.value = true;
+  try {
+    seenIds.value      = new Set();
+    questions.value    = [];
     qIdx.value         = 0;
     myAnswer.value     = null;
     livesLeft.value    = cfg.lives;
     correctCount.value = 0;
+    totalAnswered.value = 0;
     myEntryId.value    = null;
-    phase.value        = 'playing';
+
+    await fetchQuestions();
+    if (!questions.value.length) { alert('Aucune question trouvée avec ces paramètres.'); return; }
+
+    phase.value = 'playing';
     prepareAnswers(questions.value[0]);
     startTimer();
   } finally {
@@ -347,22 +356,30 @@ function pickAnswer(ans) {
 
   const correct = ans === currentQ.value?.correct_answer;
   lastCorrect.value = correct;
+  totalAnswered.value++;
   if (correct) correctCount.value++;
   else          livesLeft.value = Math.max(0, livesLeft.value - 1);
 
   phase.value = 'result_q';
 
-  // Délai avant question suivante (ou fin)
+  // Précharger si on approche de la fin du buffer
+  const remaining = questions.value.length - 1 - qIdx.value;
+  if (remaining <= 10 && !loadingMore.value) fetchQuestions();
+
   const delay = livesLeft.value === 0 ? 1500 : 2000;
   setTimeout(() => nextQuestion(), delay);
 }
 
 function nextQuestion() {
-  if (livesLeft.value === 0 || qIdx.value >= questions.value.length - 1) {
+  if (livesLeft.value === 0) { endGame(); return; }
+
+  const nextIdx = qIdx.value + 1;
+  if (nextIdx >= questions.value.length) {
+    // Plus de questions en buffer — fin (stock épuisé)
     endGame();
     return;
   }
-  qIdx.value++;
+  qIdx.value     = nextIdx;
   myAnswer.value = null;
   phase.value    = 'playing';
   prepareAnswers(questions.value[qIdx.value]);
@@ -382,7 +399,7 @@ async function endGame() {
       lives_start:    cfg.lives,
       lives_remaining: livesLeft.value,
       correct:        correctCount.value,
-      total:          questions.value.length,
+      total:          totalAnswered.value,
       difficulty:     cfg.difficulty,
     };
     const res  = await fetch('/api/quiz/solo-result', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
