@@ -146,7 +146,7 @@
 
           <!-- Liste des joueurs -->
           <div class="card lobby-players">
-            <h3 class="settings-title">{{ t('lobby.players') }} ({{ room.players?.length || 0 }} / {{ room.max_players }})</h3>
+            <h3 class="settings-title">{{ t('lobby.players') }} ({{ (room.players?.length || 0) + (settings.aiCount || 0) }} / {{ room.max_players }})</h3>
             <div class="player-list">
               <div v-for="p in room.players" :key="p.id" class="player-row">
                 <div class="player-avatar">{{ p.username[0].toUpperCase() }}</div>
@@ -156,7 +156,12 @@
                 <span v-else class="badge" style="color:var(--text-3)">{{ t('lobby.disconnected') }}</span>
                 <button v-if="isHost && p.id !== room.host_id" class="btn-kick" title="Exclure ce joueur" @click="kickPlayer(p.id)">✕</button>
               </div>
-              <div v-if="(room.players?.length || 0) < room.max_players" class="player-row placeholder">
+              <div v-for="i in (settings.aiCount || 0)" :key="'ai-' + i" class="player-row">
+                <div class="player-avatar" style="background:var(--cyan);color:#000">🤖</div>
+                <span class="player-name">{{ t('lobby.ai_players') }} {{ i }}</span>
+                <span class="badge" style="background:rgba(6,182,212,.15);color:var(--cyan)">IA</span>
+              </div>
+              <div v-if="(room.players?.length || 0) + (settings.aiCount || 0) < room.max_players" class="player-row placeholder">
                 <div class="player-avatar ghost">?</div>
                 <span class="text-muted">{{ t('lobby.waiting_slot') }}</span>
               </div>
