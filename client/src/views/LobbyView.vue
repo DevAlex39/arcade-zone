@@ -366,10 +366,12 @@ function connectSocket() {
 
   socket.on('room_update', (data) => { room.value = { ...room.value, ...data }; });
 
-  socket.on('round_start',   () => router.push(`/game/${room.value.game_id}?room=${room.value.code}`));
-  socket.on('yahtzee_state', () => router.push(`/game/${room.value.game_id}?room=${room.value.code}`));
-  socket.on('skyjo_state',   () => router.push(`/game/${room.value.game_id}?room=${room.value.code}`));
-  socket.on('pc_state',      () => router.push(`/game/${room.value.game_id}?room=${room.value.code}`));
+  const goToGame = () => router.push(`/game/${room.value.game_id}?room=${room.value.code}`);
+  socket.on('round_start',    goToGame);
+  socket.on('yahtzee_state',  goToGame);
+  socket.on('skyjo_state',    goToGame);
+  socket.on('pc_state',       goToGame);
+  socket.on('quiz_question',  goToGame);
 
   socket.on('kicked', () => {
     platform.showToast('Vous avez été exclu de la salle par l\'hôte', 'error');
