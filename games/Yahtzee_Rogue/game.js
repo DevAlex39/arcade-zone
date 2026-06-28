@@ -275,6 +275,30 @@ const JOKER_POOL = [
   { id:'marathonien',    rarity:'uncommon', name:'Le Marathonien', name_en:'The Marathoner', fa:'fa-solid fa-stopwatch',     icon:'🏅',  cost:5,
     desc:'+2 lancers supplémentaires par main', desc_en:'+2 extra rolls per hand',
     apply:(id,chips,mult)=> [chips,mult] },
+
+  // ── NOUVEAUX JOKERS ─────────────────────────────────────────────
+  { id:'doyen',          rarity:'uncommon', name:'Le Doyen', name_en:'The Elder', fa:'fa-solid fa-graduation-cap',   icon:'🎓',  cost:4,
+    desc:'Chaque 1 dans la combo jouée ajoute +5 Chips', desc_en:'Each 1 in the played combo adds +5 Chips',
+    apply:(id,chips,mult,dice)=> [chips + dice.filter(d=>d===1).length*5, mult] },
+  { id:'equilibriste',   rarity:'rare',     name:"L'Équilibriste", name_en:'The Acrobat', fa:'fa-solid fa-scale-balanced',    icon:'⚖️',  cost:6,
+    desc:'Si tous les dés retenus ont la même valeur → +5 Mult supplémentaire', desc_en:'If all kept dice share the same value → +5 extra Mult',
+    apply:(id,chips,mult)=> {
+      const kVals = G.kept ? G.dice.filter((_,i)=>G.kept[i]) : [];
+      const uniq  = [...new Set(kVals)];
+      return (kVals.length >= 2 && uniq.length === 1) ? [chips, mult+5] : [chips,mult];
+    }},
+  { id:'collectionneur',  rarity:'rare',    name:'Le Collectionneur', name_en:'The Collector', fa:'fa-solid fa-boxes-stacked',    icon:'📦', cost:7,
+    desc:'Gagne +1 Mult permanent pour chaque joker possédé (max +4)', desc_en:'Gains +1 permanent Mult per joker owned (max +4)',
+    apply:(id,chips,mult)=> [chips, mult + Math.min(4, Math.max(0, G.jokers.length - 1))] },
+  { id:'jumeaux',         rarity:'uncommon', name:'Les Jumeaux', name_en:'The Twins', fa:'fa-solid fa-users',           icon:'👥',  cost:5,
+    desc:'Paire dans la combo → +15 Chips +1 Mult', desc_en:'Pair in the combo → +15 Chips +1 Mult',
+    apply:(id,chips,mult,dice)=> {
+      const c = dice.reduce((a,d)=>{a[d]=(a[d]||0)+1;return a;},{});
+      return Object.values(c).some(v=>v>=2) ? [chips+15, mult+1] : [chips,mult];
+    }},
+  { id:'ascete',          rarity:'legendary',name:"L'Ascète", name_en:'The Ascetic', fa:'fa-solid fa-person-praying',    icon:'🧘',  cost:9,
+    desc:'Si aucun dé n\'est retenu → Mult ×2', desc_en:'If no dice are kept → Mult ×2',
+    apply:(id,chips,mult,dice,kept)=> kept === 0 ? [chips, mult*2] : [chips,mult] },
 ];
 
 // ══════════════════════════════════════════════════════════════════
@@ -330,16 +354,18 @@ const BOSS_BLINDS = [
   { id:'brume',   name:'La Brume', name_en:'The Mist',    icon:'🌫️',  desc:'Les valeurs des dés sont cachées jusqu\'à la soumission d\'une combinaison.', desc_en:'Dice values are hidden until you submit a combination.',                effect:'fog'       },
   { id:'gouffre', name:'Le Gouffre', name_en:'The Abyss',  icon:'🕳️',  desc:'Le score cible est multiplié par 1.8.', desc_en:'The target score is multiplied by 1.8.',                                                      effect:'bigTarget' },
   { id:'miroir',  name:'Le Miroir', name_en:'The Mirror',   icon:'🪞',  desc:'Les dés impairs (1,3,5) sont transformés en leur miroir (6,4,2) après le lancer.', desc_en:'Odd dice (1,3,5) are transformed into their mirror (6,4,2) after the roll.',           effect:'mirror'    },
-  { id:'parasite',name:'Le Parasite', name_en:'The Parasite', icon:'🦠',  desc:'Un joker aléatoire est neutralisé avant chaque lancer. Il se réactive après.', desc_en:'A random joker is disabled before each roll. It reactivates afterwards.',               effect:'parasite'  },
+  { id:'parasite',  name:'Le Parasite', name_en:'The Parasite',   icon:'🦠',  desc:'Un joker aléatoire est neutralisé avant chaque lancer. Il se réactive après.', desc_en:'A random joker is disabled before each roll. It reactivates afterwards.',         effect:'parasite'  },
+  { id:'avare',     name:"L'Avare",     name_en:'The Miser Boss',  icon:'💀',  desc:'Vous ne récupérez que 2 or après une blind battue au lieu de 4.', desc_en:'You only gain 2 gold after beating a blind instead of 4.',                            effect:'lowGold'   },
+  { id:'fantome',   name:'Le Fantôme',  name_en:'The Ghost',       icon:'👻',  desc:'Vous commencez avec seulement 3 mains au lieu de 4.', desc_en:'You start with only 3 hands instead of 4.',                                                     effect:'lessHands' },
 ];
 
-// Cibles par ante [petite, grande, boss]
+// Cibles par ante [petite, grande, boss] — équilibre revu (difficulté rehaussée)
 const ANTE_TARGETS = [
-  [  300,   600,  1000],
-  [  800,  1600,  2800],
-  [ 2000,  4000,  7000],
-  [ 5000, 10000, 18000],
-  [12000, 25000, 45000],
+  [  450,   900,  1600],
+  [ 1200,  2400,  4200],
+  [ 3000,  6000, 10500],
+  [ 7500, 15000, 27000],
+  [18000, 38000, 68000],
 ];
 
 const MAX_JOKERS  = 5;
@@ -392,6 +418,7 @@ function shuffleArray(arr) {
 let audioCtx  = null;
 let musicNodes = null;
 let melodyTimer = null;
+let masterVolume = 0.6; // 0–1
 
 function getCtx() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -406,7 +433,7 @@ function startMusic() {
   musicNodes = {};
 
   const master = ctx.createGain();
-  master.gain.setValueAtTime(0.13, ctx.currentTime);
+  master.gain.setValueAtTime(0.13 * masterVolume, ctx.currentTime);
   master.connect(ctx.destination);
   musicNodes.master = master;
 
@@ -487,7 +514,7 @@ function playRollSound() {
   const ctx  = getCtx();
   const now  = ctx.currentTime;
   const master = ctx.createGain();
-  master.gain.setValueAtTime(0.9, now);
+  master.gain.setValueAtTime(0.9 * masterVolume, now);
   master.connect(ctx.destination);
 
   // Simuler 5 dés qui roulent et frappent le plateau à des moments décalés
@@ -558,7 +585,7 @@ function playScoreSound() {
     const g   = ctx.createGain();
     osc.type = 'sine';
     osc.frequency.setValueAtTime(freq, now + delay);
-    g.gain.setValueAtTime(0.18, now + delay);
+    g.gain.setValueAtTime(0.18 * masterVolume, now + delay);
     g.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.35);
     osc.connect(g); g.connect(ctx.destination);
     osc.start(now + delay);
@@ -610,7 +637,23 @@ function resetGame(seedStr) {
 //  NAVIGATION ÉCRANS
 // ══════════════════════════════════════════════════════════════════
 const SCREENS = ['screenTitle','screenBlindIntro','screenGame','screenShop','screenGameOver','screenWin'];
-function showScreen(id) { SCREENS.forEach(s => document.getElementById(s).classList.toggle('hidden', s !== id)); }
+
+function showScreen(id) {
+  const prev = SCREENS.find(s => { const el = document.getElementById(s); return el && !el.classList.contains('hidden'); });
+  SCREENS.forEach(s => {
+    const el = document.getElementById(s);
+    if (!el) return;
+    if (s === id) {
+      el.classList.remove('hidden');
+      el.classList.remove('screen-enter');
+      void el.offsetWidth; // reflow pour reset animation
+      el.classList.add('screen-enter');
+    } else {
+      el.classList.add('hidden');
+      el.classList.remove('screen-enter');
+    }
+  });
+}
 
 // ══════════════════════════════════════════════════════════════════
 //  DÉMARRAGE
@@ -712,7 +755,7 @@ document.getElementById('btnPlayBlind').addEventListener('click', startBlind);
 
 function startBlind() {
   G.score      = 0;
-  G.handsLeft  = BASE_HANDS;
+  G.handsLeft  = G.bossEffect === 'lessHands' ? Math.max(1, BASE_HANDS - 1) : BASE_HANDS;
   G.rollsLeft  = getMaxRolls();
   G.hasRolled  = false;
   const n      = getDiceCount();
@@ -1257,6 +1300,8 @@ async function playCombo(id) {
   playScoreSound();
   showScorePopup(`+${nf(res.total)}`);
   toast(t('comboPlayed', {name: cn(id), score: nf(res.total)}), 'gold');
+  if (id === 'yahtzee') spawnComboParticles('yahtzee');
+  else if (res.total >= 2000) spawnComboParticles('legendary');
   G.jokers.forEach(j => { if (j.onCombo) j.onCombo(id, G.dice); });
 
   renderScore();
@@ -1287,8 +1332,9 @@ async function playCombo(id) {
 //  FIN DE BLIND / GAME OVER / WIN
 // ══════════════════════════════════════════════════════════════════
 function winBlind() {
+  const goldGain = G.bossEffect === 'lowGold' ? 2 : 4;
   toast(t('blindBeaten'), 'green');
-  G.gold += 4;
+  G.gold += goldGain;
   G.jokers.forEach(j => { if (j.onWinBlind) j.onWinBlind(j); });
   openShop();
 }
@@ -1378,8 +1424,7 @@ function generateShopItems() {
 }
 
 function renderShop() {
-  const nextLabels = ['Grande Blind','Boss Blind','Ante suivante'];
-  document.getElementById('shopSub').textContent = `Ante ${G.ante} — ${nextLabels[G.blindIdx] ?? 'Prochaine blind'} vous attend. · Seed : #${G.seed}`;
+  document.getElementById('shopSub').textContent = t('shopSub', {n: G.ante, next: [t('bigBlind'), t('bossBlind'), t('nextAnte')][G.blindIdx] ?? t('nextAnte'), seed: G.seed});
   document.getElementById('shopGold').textContent = G.gold;
   const costEl = document.querySelector('#btnRerollShop .reroll-cost');
   if (costEl) costEl.textContent = `(${G.shopRerollCost}💰)`;
@@ -1867,6 +1912,32 @@ function spawnStars(container) {
   }
 }
 
+function spawnComboParticles(type) {
+  const colors = type === 'yahtzee'
+    ? ['#ffc24b','#ffd887','#fff','#ffec8b','#ff5d8f']
+    : ['#b3a6ff','#8b7bff','#fff','#46d6ff','#ffc24b'];
+  const emojis = type === 'yahtzee'
+    ? ['🎲','✨','⭐','💥','🎯']
+    : ['💎','✨','🌟','💫','⚡'];
+  const ref = document.getElementById('scoreCurrent');
+  const rect = ref ? ref.getBoundingClientRect() : { left: window.innerWidth/2, top: window.innerHeight/2 };
+  const cx = rect.left + rect.width/2;
+  const cy = rect.top  + rect.height/2;
+  const count = type === 'yahtzee' ? 32 : 18;
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'combo-particle';
+    const angle = Math.random() * 360;
+    const dist  = 60 + Math.random() * 160;
+    const tx    = Math.cos(angle * Math.PI/180) * dist;
+    const ty    = Math.sin(angle * Math.PI/180) * dist - 40;
+    p.style.cssText = `left:${cx}px;top:${cy}px;--tx:${tx}px;--ty:${ty}px;color:${colors[i % colors.length]};animation-delay:${Math.random()*150}ms;`;
+    p.textContent = Math.random() < 0.5 ? emojis[Math.floor(Math.random()*emojis.length)] : '✦';
+    document.body.appendChild(p);
+    p.addEventListener('animationend', () => p.remove());
+  }
+}
+
 function applyConstellation(con, overlay) {
   if (!G.comboBoosts[con.combo]) G.comboBoosts[con.combo] = { chips:0, mult:0 };
   G.comboBoosts[con.combo].chips += con.bonus.chips;
@@ -2155,5 +2226,21 @@ function setLang(lang) {
     b.addEventListener('click', () => setTheme(b.dataset.themeVal)));
   document.querySelectorAll('#langSeg .seg-btn').forEach(b =>
     b.addEventListener('click', () => setLang(b.dataset.langVal)));
+
+  // Volume
+  const volSlider = document.getElementById('volSlider');
+  const volIcon   = document.getElementById('volIcon');
+  try { masterVolume = parseFloat(localStorage.getItem('rtd_vol') ?? '0.6'); } catch(e){}
+  if (volSlider) {
+    volSlider.value = Math.round(masterVolume * 100);
+    volSlider.addEventListener('input', () => {
+      masterVolume = volSlider.value / 100;
+      try { localStorage.setItem('rtd_vol', masterVolume); } catch(e){}
+      if (musicNodes?.master) musicNodes.master.gain.setValueAtTime(0.13 * masterVolume, audioCtx.currentTime);
+      volIcon.textContent = masterVolume === 0 ? '🔇' : masterVolume < 0.4 ? '🔉' : '🔊';
+    });
+    volIcon.textContent = masterVolume === 0 ? '🔇' : masterVolume < 0.4 ? '🔉' : '🔊';
+  }
+
   applyI18n();
 })();
