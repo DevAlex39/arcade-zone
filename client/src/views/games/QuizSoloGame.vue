@@ -353,6 +353,7 @@ async function startGame() {
     phase.value = 'playing';
     prepareAnswers(questions.value[0]);
     startTimer();
+    startMusic();
   } finally {
     loading.value = false;
   }
@@ -366,8 +367,8 @@ function pickAnswer(ans) {
   const correct = ans === currentQ.value?.correct_answer;
   lastCorrect.value = correct;
   totalAnswered.value++;
-  if (correct) correctCount.value++;
-  else          livesLeft.value = Math.max(0, livesLeft.value - 1);
+  if (correct) { correctCount.value++; playCorrect(); }
+  else          { livesLeft.value = Math.max(0, livesLeft.value - 1); if (ans) playWrong(); }
 
   phase.value = 'result_q';
 
@@ -398,6 +399,7 @@ function nextQuestion() {
 async function endGame() {
   phase.value = 'end';
   clearInterval(timerInterval);
+  stopMusic();
 
   // Sauvegarder le résultat
   try {
@@ -452,7 +454,126 @@ const myRankInfo = computed(() => {
 });
 
 function restart() {
+  stopMusic();
   phase.value = 'config';
+}
+
+// ── Audio ────────────────────────────────────────────────────────────────────
+let _ac = null;
+let musicNodes = null;
+
+function getAC() {
+  if (!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)();
+  if (_ac.state === 'suspended') _ac.resume();
+  return _ac;
+}
+
+function startMusic() {
+  stopMusic();
+  const ac = getAC();
+  const master = ac.createGain(); master.gain.value = 0.07; master.connect(ac.destination);
+
+  // Progression festive en boucle : C G Am F (style quiz show)
+  const CHORDS = [
+    [261.63, 329.63, 392.00], // C maj
+    [196.00, 246.94, 293.66], // G maj
+    [220.00, 261.63, 329.63], // A min
+    [174.61, 220.00, 261.63], // F maj
+  ];
+  const BPM = 118;
+  const BEAT = 60 / BPM;
+  const CHORD_DUR = BEAT * 4;
+
+  let chordIdx = 0;
+  const oscs = [];
+
+  function scheduleChord(when) {
+    const chord = CHORDS[chordIdx % CHORDS.length];
+    chord.forEach(freq => {
+      const o = ac.createOscillator();
+      const g = ac.createGain();
+      o.type = 'triangle';
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(0, when);
+      g.gain.linearRampToValueAtTime(0.28, when + 0.03);
+      g.gain.setValueAtTime(0.28, when + CHORD_DUR - 0.1);
+      g.gain.linearRampToValueAtTime(0, when + CHORD_DUR);
+      o.connect(g); g.connect(master);
+      o.start(when); o.stop(when + CHORD_DUR + 0.1);
+      oscs.push(o);
+    });
+    // Mélodie simple sur le premier temps
+    const mel = ac.createOscillator();
+    const melG = ac.createGain();
+    mel.type = 'sine';
+    const melNote = chord[2] * 2; // octave haute
+    mel.frequency.value = melNote;
+    melG.gain.setValueAtTime(0, when);
+    melG.gain.linearRampToValueAtTime(0.18, when + 0.02);
+    melG.gain.setValueAtTime(0.18, when + BEAT - 0.05);
+    melG.gain.linearRampToValueAtTime(0, when + BEAT);
+    mel.connect(melG); melG.connect(master);
+    mel.start(when); mel.stop(when + BEAT + 0.05);
+    oscs.push(mel);
+
+    chordIdx++;
+  }
+
+  // Séquencer en avance
+  let nextTime = ac.currentTime + 0.05;
+  scheduleChord(nextTime);
+  nextTime += CHORD_DUR;
+
+  const interval = setInterval(() => {
+    if (!musicNodes) { clearInterval(interval); return; }
+    while (nextTime < ac.currentTime + 0.5) {
+      scheduleChord(nextTime);
+      nextTime += CHORD_DUR;
+    }
+  }, 200);
+
+  musicNodes = { master, interval, oscs };
+}
+
+function stopMusic() {
+  if (!musicNodes) return;
+  clearInterval(musicNodes.interval);
+  try { musicNodes.master.gain.linearRampToValueAtTime(0, _ac.currentTime + 0.3); } catch(e) {}
+  musicNodes = null;
+}
+
+function playCorrect() {
+  const ac = getAC();
+  const t = ac.currentTime;
+  // Arpège montant joyeux : do mi sol do
+  [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.type = 'sine';
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(0, t + i * 0.07);
+    g.gain.linearRampToValueAtTime(0.22, t + i * 0.07 + 0.02);
+    g.gain.linearRampToValueAtTime(0, t + i * 0.07 + 0.18);
+    o.connect(g); g.connect(ac.destination);
+    o.start(t + i * 0.07); o.stop(t + i * 0.07 + 0.2);
+  });
+}
+
+function playWrong() {
+  const ac = getAC();
+  const t = ac.currentTime;
+  // Descente grave : deux tons descendants
+  [220, 185].forEach((freq, i) => {
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(freq, t + i * 0.18);
+    o.frequency.linearRampToValueAtTime(freq * 0.75, t + i * 0.18 + 0.15);
+    g.gain.setValueAtTime(0.18, t + i * 0.18);
+    g.gain.linearRampToValueAtTime(0, t + i * 0.18 + 0.18);
+    o.connect(g); g.connect(ac.destination);
+    o.start(t + i * 0.18); o.stop(t + i * 0.18 + 0.2);
+  });
 }
 
 onMounted(async () => {
@@ -460,7 +581,10 @@ onMounted(async () => {
   categories.value = await res.json();
 });
 
-onUnmounted(() => clearInterval(timerInterval));
+onUnmounted(() => {
+  clearInterval(timerInterval);
+  stopMusic();
+});
 </script>
 
 <style scoped>
