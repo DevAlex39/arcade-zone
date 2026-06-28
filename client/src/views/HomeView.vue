@@ -6,21 +6,21 @@
       <div class="hero-grid" aria-hidden="true"></div>
       <div class="hero-halo" aria-hidden="true"></div>
       <div class="hero-inner">
-        <div class="hero-badge">🎮 Plateforme de jeux</div>
+        <div class="hero-badge">{{ t('home.badge') }}</div>
         <h1 class="hero-title">ARCADE<span class="gradient-text">ZONE</span></h1>
-        <p class="hero-sub">Joue seul ou affronte tes amis en temps réel — chacun sur son écran.</p>
+        <p class="hero-sub">{{ t('home.tagline') }}</p>
         <div class="hero-actions">
           <template v-if="!auth.isLoggedIn">
-            <router-link to="/register" class="btn btn-primary btn-lg">Créer un compte →</router-link>
-            <router-link to="/login"    class="btn btn-secondary btn-lg">Connexion</router-link>
+            <router-link to="/register" class="btn btn-primary btn-lg">{{ t('home.register') }}</router-link>
+            <router-link to="/login"    class="btn btn-secondary btn-lg">{{ t('home.login') }}</router-link>
           </template>
           <template v-else>
             <span class="hero-welcome">
-              Bienvenue, <strong>{{ auth.user.username }}</strong>
+              {{ t('home.welcome') }} <strong>{{ auth.user.username }}</strong>
               <span v-if="auth.isGuest" class="badge badge-amber" style="margin-left:.5rem; font-size:.7rem;">Invité</span>
               👋
             </span>
-            <button v-if="auth.isGuest" class="btn btn-ghost btn-sm" @click="auth.logout()">Changer de pseudo</button>
+            <button v-if="auth.isGuest" class="btn btn-ghost btn-sm" @click="auth.logout()">{{ t('home.change_pseudo') }}</button>
           </template>
         </div>
       </div>
@@ -29,11 +29,11 @@
     <!-- JOIN BAR -->
     <section class="join-bar">
       <div class="join-bar-inner">
-        <span class="text-muted">Tu as un code de partie ?</span>
+        <span class="text-muted">{{ t('home.join_hint') }}</span>
         <div class="join-input-wrap">
           <input v-model="joinCode" placeholder="Ex: XKTP42" maxlength="6"
                  @keydown.enter="handleJoin" style="text-transform:uppercase; letter-spacing:.15em; font-weight:700;" />
-          <button class="btn btn-primary btn-sm" @click="handleJoin" :disabled="joinCode.length < 6">Rejoindre →</button>
+          <button class="btn btn-primary btn-sm" @click="handleJoin" :disabled="joinCode.length < 6">{{ t('home.join_btn') }}</button>
         </div>
       </div>
     </section>
@@ -42,14 +42,14 @@
     <section class="games-section">
       <div class="section-inner">
         <div class="section-header">
-          <h2 class="section-title">Les jeux</h2>
+          <h2 class="section-title">{{ t('home.games_title') }}</h2>
           <div class="filter-tabs">
             <button v-for="f in filters" :key="f.value" class="filter-tab"
-              :class="{ active: activeFilter === f.value }" @click="activeFilter = f.value">{{ f.label }}</button>
+              :class="{ active: activeFilter === f.value }" @click="activeFilter = f.value">{{ t(f.labelKey) }}</button>
           </div>
         </div>
 
-        <div v-if="platform.games.length === 0" class="loading-row"><span class="spin">⟳</span> Chargement…</div>
+        <div v-if="platform.games.length === 0" class="loading-row"><span class="spin">⟳</span> {{ t('home.loading') }}</div>
 
         <div class="games-grid">
           <GameCard v-for="g in filteredGames" :key="g.id" :game="g"
@@ -58,20 +58,20 @@
             @join="(game) => requireIdentity(game, 'join')" />
         </div>
 
-        <p v-if="filteredGames.length === 0 && platform.games.length > 0" class="no-results">Aucun jeu dans cette catégorie.</p>
+        <p v-if="filteredGames.length === 0 && platform.games.length > 0" class="no-results">{{ t('home.no_games') }}</p>
       </div>
     </section>
 
     <!-- Modal: rejoindre partie multi -->
     <div v-if="joinModalGame" class="modal-backdrop" @click.self="joinModalGame = null">
       <div class="modal-box">
-        <h3>Rejoindre — {{ joinModalGame.name }}</h3>
-        <p class="text-muted mt-1 mb-2">Entre le code de la salle partagé par ton ami :</p>
+        <h3>{{ t('home.join_modal_title') }} {{ joinModalGame.name }}</h3>
+        <p class="text-muted mt-1 mb-2">{{ t('home.join_modal_hint') }}</p>
         <input v-model="joinCodeModal" placeholder="Ex: XKTP42" maxlength="6"
                style="text-transform:uppercase; letter-spacing:.15em; font-weight:700; font-size:1.2rem; text-align:center;" />
         <div class="flex gap-1 mt-2">
-          <button class="btn btn-secondary btn-full" @click="joinModalGame = null">Annuler</button>
-          <button class="btn btn-primary btn-full" @click="handleJoinModal" :disabled="joinCodeModal.length < 6">Rejoindre →</button>
+          <button class="btn btn-secondary btn-full" @click="joinModalGame = null">{{ t('home.cancel') }}</button>
+          <button class="btn btn-primary btn-full" @click="handleJoinModal" :disabled="joinCodeModal.length < 6">{{ t('home.join_btn') }}</button>
         </div>
       </div>
     </div>
@@ -79,16 +79,16 @@
     <!-- Modal: invité -->
     <div v-if="guestModal.open" class="modal-backdrop" @click.self="guestModal.open = false">
       <div class="modal-box">
-        <h3>Choisir un pseudo</h3>
-        <p class="text-muted mt-1 mb-2">Tu joues sans compte — entre un pseudo pour cette session :</p>
+        <h3>{{ t('home.guest_title') }}</h3>
+        <p class="text-muted mt-1 mb-2">{{ t('home.guest_hint') }}</p>
         <input v-model="guestModal.name" placeholder="Pseudo" maxlength="20" @keydown.enter="confirmGuest"
                style="font-size:1rem; text-align:center;" ref="guestInput" />
         <p class="text-muted" style="font-size:.75rem; margin-top:.4rem;">
-          Ou <router-link to="/login" style="color:var(--cyan)">connecte-toi</router-link> pour sauvegarder tes stats.
+          {{ t('home.guest_or') }} <router-link to="/login" style="color:var(--cyan)">{{ t('home.guest_login') }}</router-link> {{ t('home.guest_save') }}
         </p>
         <div class="flex gap-1 mt-2">
-          <button class="btn btn-secondary btn-full" @click="guestModal.open = false">Annuler</button>
-          <button class="btn btn-primary btn-full" @click="confirmGuest" :disabled="!guestModal.name.trim()">Continuer →</button>
+          <button class="btn btn-secondary btn-full" @click="guestModal.open = false">{{ t('home.cancel') }}</button>
+          <button class="btn btn-primary btn-full" @click="confirmGuest" :disabled="!guestModal.name.trim()">{{ t('home.continue') }}</button>
         </div>
         <div v-if="guestModal.error" class="text-error mt-1">{{ guestModal.error }}</div>
       </div>
@@ -103,10 +103,12 @@ import { useRouter } from 'vue-router';
 import GameCard from '@/components/GameCard.vue';
 import { useAuthStore } from '@/stores/auth.js';
 import { usePlatformStore } from '@/stores/platform.js';
+import { useI18n } from '@/composables/useI18n.js';
 
 const auth     = useAuthStore();
 const platform = usePlatformStore();
 const router   = useRouter();
+const { t }    = useI18n();
 
 const joinCode      = ref('');
 const joinModalGame = ref(null);
@@ -115,9 +117,9 @@ const guestInput    = ref(null);
 const activeFilter  = ref('all');
 
 const filters = [
-  { value: 'all',   label: 'Tout' },
-  { value: 'solo',  label: 'Solo' },
-  { value: 'multi', label: 'Multi' },
+  { value: 'all',   labelKey: 'home.filter_all' },
+  { value: 'solo',  labelKey: 'home.filter_solo' },
+  { value: 'multi', labelKey: 'home.filter_multi' },
 ];
 
 const pendingAction = ref(null);

@@ -25,7 +25,9 @@
           <div class="user-pill">
             <router-link to="/profile" class="user-avatar" :title="auth.user.username">{{ initials }}</router-link>
             <router-link to="/profile" class="user-name">{{ auth.user.username }}</router-link>
-            <button class="btn btn-ghost btn-sm" @click="handleLogout">Déco</button>
+            <button class="logout-btn" @click="handleLogout" title="Se déconnecter">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            </button>
           </div>
         </template>
         <template v-else>
@@ -105,4 +107,14 @@ function handleLogout() {
   text-decoration: none;
 }
 .user-name { font-size: .82rem; font-weight: 700; color: var(--text); text-decoration: none; }
+
+.logout-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 6px;
+  background: transparent; border: none; cursor: pointer;
+  color: rgba(255,255,255,0.45); transition: color .15s, background .15s;
+  padding: 0;
+}
+.logout-btn svg { width: 15px; height: 15px; }
+.logout-btn:hover { color: #f87171; background: rgba(248,113,113,.12); }
 </style>
