@@ -420,6 +420,9 @@ function endGame() {
   `).join('');
 
   document.getElementById('endModal').classList.remove('hidden');
+  try {
+    window.parent.postMessage({ type: 'GAME_OVER', game: 'yahtzee', winner: winner.name, isAI: winner.ia || false }, '*');
+  } catch(e) {}
 }
 
 document.getElementById('btnReplay').addEventListener('click', () => {

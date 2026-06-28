@@ -60,9 +60,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { usePlatformStore } from '@/stores/platform.js';
+import { useAuthStore } from '@/stores/auth.js';
+import { useXpStore } from '@/stores/xp.js';
+import axios from 'axios';
 import MotusMultiGame from '@/views/games/MotusMultiGame.vue';
 import YahtzeeMultiGame from '@/views/games/YahtzeeMultiGame.vue';
 import SkyjoMultiGame from '@/views/games/SkyjoMultiGame.vue';
@@ -72,9 +75,27 @@ import QuizSoloGame from '@/views/games/QuizSoloGame.vue';
 
 const route    = useRoute();
 const platform = usePlatformStore();
+const auth     = useAuthStore();
+const xpStore  = useXpStore();
 
 const game     = computed(() => platform.games.find(g => g.id === route.params.gameId));
 const roomCode = computed(() => route.query.room || null);
+
+async function handleIframeMessage(event) {
+  if (!event.data || event.data.type !== 'GAME_OVER') return;
+  if (!auth.isLoggedIn || auth.user?.isGuest) return;
+  try {
+    const res = await axios.post('/api/xp/solo-result', {
+      game_id: event.data.game,
+      won: !event.data.isAI,
+    });
+    if (res.data?.xpGained) xpStore.showXpToast('Partie terminée', res.data.xpGained);
+    await xpStore.fetchMe();
+  } catch(e) { /* silencieux */ }
+}
+
+onMounted(() => window.addEventListener('message', handleIframeMessage));
+onUnmounted(() => window.removeEventListener('message', handleIframeMessage));
 </script>
 
 <style scoped>

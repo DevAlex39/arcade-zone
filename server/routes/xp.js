@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const jwt    = require('jsonwebtoken');
 const { pool } = require('../config/db');
-const { awardXp, claimDailyBonus, levelProgress, getTodayChallenge, todayStr } = require('../services/xp');
+const { awardXp, claimDailyBonus, levelProgress, getTodayChallenge, todayStr, updateChallenge, recordGame } = require('../services/xp');
 
 function authMiddleware(req, res, next) {
   const header = req.headers.authorization;
@@ -82,6 +82,29 @@ router.post('/daily-bonus', authMiddleware, async (req, res) => {
   try {
     const result = await claimDailyBonus(req.user.id);
     res.json(result || { already: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/xp/solo-result — fin de partie solo (iframe postMessage)
+router.post('/solo-result', authMiddleware, async (req, res) => {
+  if (req.user.isGuest) return res.json({ ok: true });
+  const uid = req.user.id;
+  const { game_id, won } = req.body;
+  if (!game_id) return res.status(400).json({ error: 'game_id requis' });
+  try {
+    await recordGame(uid, game_id, won ? 'win' : 'loss', null, 1, null);
+    let xpGained = 0;
+    xpGained += 10; await awardXp(uid, 10, 'game_played', game_id);
+    if (won) { xpGained += 50; await awardXp(uid, 50, 'game_won', game_id); }
+    await updateChallenge(uid, 'play', game_id);
+    await updateChallenge(uid, 'play_distinct', game_id);
+    if (won) {
+      await updateChallenge(uid, 'win', game_id);
+      await updateChallenge(uid, 'win_any', game_id);
+    }
+    res.json({ ok: true, xpGained });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

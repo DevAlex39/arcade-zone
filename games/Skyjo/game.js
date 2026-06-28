@@ -859,6 +859,9 @@ function showWinner() {
     </div>`).join('');
 
   showScreen('screenWin');
+  try {
+    window.parent.postMessage({ type: 'GAME_OVER', game: 'skyjo', winner: winner.name, isAI: winner.ia || false }, '*');
+  } catch(e) {}
 }
 
 // ═══════════════════════════════════════════════════════════════════

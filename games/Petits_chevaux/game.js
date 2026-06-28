@@ -1089,6 +1089,9 @@ function showWinner() {
   $('winnerEmoji').textContent = '🏆';
   $('winnerName').style.color  = COLOR_HEX[p.color];
   showScreen('screenWin');
+  try {
+    window.parent.postMessage({ type: 'GAME_OVER', game: 'petits-chevaux', winner: p.name, isAI: p.ia || false }, '*');
+  } catch(e) {}
 }
 
 $('btnPlayAgain').addEventListener('click', () => { showScreen('screenConfig'); renderConfig(); });
