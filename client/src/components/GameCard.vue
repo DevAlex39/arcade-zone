@@ -8,7 +8,7 @@
         <span v-if="game.solo_url || game.min_players === 1" class="badge badge-cyan">Solo</span>
         <span v-if="game.has_multiplayer" class="badge badge-rose">Multi</span>
         <span v-if="game.max_players > 1" class="badge badge-violet">
-          {{ game.min_players === game.max_players ? game.min_players : `${game.min_players}–${game.max_players}` }} joueurs
+          {{ game.min_players === game.max_players ? game.min_players : `${game.min_players}–${game.max_players}` }} {{ t('gc.players') }}
         </span>
       </div>
     </div>
@@ -18,19 +18,21 @@
 
     <div class="card-actions">
       <button v-if="game.solo_url || game.min_players === 1" class="btn btn-secondary btn-sm btn-full" @click="$emit('play', game)">
-        Jouer seul →
+        {{ t('gc.play_solo') }}
       </button>
       <div v-if="game.has_multiplayer" class="actions-multi">
-        <button class="btn btn-primary btn-sm" @click="$emit('create', game)">Créer une salle</button>
-        <button class="btn btn-secondary btn-sm" @click="$emit('join', game)">Rejoindre</button>
+        <button class="btn btn-primary btn-sm" @click="$emit('create', game)">{{ t('gc.create') }}</button>
+        <button class="btn btn-secondary btn-sm" @click="$emit('join', game)">{{ t('gc.join') }}</button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
+import { useI18n } from '@/composables/useI18n.js';
 defineProps({ game: Object });
 defineEmits(['play', 'create', 'join']);
+const { t } = useI18n();
 </script>
 
 <style scoped>

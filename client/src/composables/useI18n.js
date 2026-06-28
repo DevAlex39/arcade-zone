@@ -111,6 +111,12 @@ const T = {
   'quiz.mode2_hint':    { fr: 'Les scores sont secrets jusqu\'à la fin…', en: 'Scores are hidden until the end…' },
   'quiz.mode3_hint':    { fr: 'Une mauvaise réponse = une vie perdue !', en: 'Wrong answer = one life lost!' },
 
+  // GameCard
+  'gc.play_solo':  { fr: 'Jouer seul →',    en: 'Play solo →' },
+  'gc.create':     { fr: 'Créer une salle',  en: 'Create a room' },
+  'gc.join':       { fr: 'Rejoindre',        en: 'Join' },
+  'gc.players':    { fr: 'joueurs',          en: 'players' },
+
   // Home
   'home.tagline':       { fr: 'Joue seul ou affronte tes amis en temps réel — chacun sur son écran.', en: 'Play solo or challenge your friends in real time — everyone on their own screen.' },
   'home.register':      { fr: 'Créer un compte →', en: 'Create an account →' },
