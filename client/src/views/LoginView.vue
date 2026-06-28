@@ -43,10 +43,12 @@
 import { ref } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth.js';
+import { useXpStore } from '@/stores/xp.js';
 
-const auth   = useAuthStore();
-const router = useRouter();
-const route  = useRoute();
+const auth    = useAuthStore();
+const xpStore = useXpStore();
+const router  = useRouter();
+const route   = useRoute();
 
 const form    = ref({ login: '', password: '' });
 const error   = ref('');
@@ -58,7 +60,11 @@ async function submit() {
   error.value = '';
   loading.value = true;
   try {
-    await auth.login(form.value.login, form.value.password);
+    const data = await auth.login(form.value.login, form.value.password);
+    await xpStore.fetchMe();
+    if (data?.dailyBonus && !data.dailyBonus.already) {
+      xpStore.showXpToast('Bonus connexion journalier !', data.dailyBonus.bonus || 25);
+    }
     router.push(route.query.redirect || '/');
   } catch (e) {
     error.value = e.response?.data?.error || 'Erreur de connexion';

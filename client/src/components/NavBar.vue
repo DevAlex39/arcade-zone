@@ -20,10 +20,11 @@
         </div>
 
         <template v-if="auth.isLoggedIn">
+          <XpBar v-if="!auth.user?.isGuest && xpStore.loaded" />
           <router-link v-if="auth.isAdmin" to="/admin" class="btn btn-ghost btn-sm">⚙ Admin</router-link>
           <div class="user-pill">
-            <span class="user-avatar">{{ initials }}</span>
-            <span class="user-name">{{ auth.user.username }}</span>
+            <router-link to="/profile" class="user-avatar" :title="auth.user.username">{{ initials }}</router-link>
+            <router-link to="/profile" class="user-name">{{ auth.user.username }}</router-link>
             <button class="btn btn-ghost btn-sm" @click="handleLogout">Déco</button>
           </div>
         </template>
@@ -41,9 +42,12 @@ import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth.js';
 import { usePlatformStore } from '@/stores/platform.js';
+import { useXpStore } from '@/stores/xp.js';
+import XpBar from '@/components/XpBar.vue';
 
 const auth     = useAuthStore();
 const platform = usePlatformStore();
+const xpStore  = useXpStore();
 const router   = useRouter();
 
 const initials = computed(() => {
@@ -98,6 +102,7 @@ function handleLogout() {
   background: linear-gradient(135deg, var(--cyan), var(--violet));
   color: var(--bg); font-size: .7rem; font-weight: 800;
   display: flex; align-items: center; justify-content: center;
+  text-decoration: none;
 }
-.user-name { font-size: .82rem; font-weight: 700; color: var(--text); }
+.user-name { font-size: .82rem; font-weight: 700; color: var(--text); text-decoration: none; }
 </style>

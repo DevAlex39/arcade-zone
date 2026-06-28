@@ -6,9 +6,39 @@ const skyjo   = require('../games/skyjo');
 const pc      = require('../games/petits-chevaux');
 const quiz    = require('../games/quiz');
 const { pool } = require('../config/db');
+const { awardXp, updateChallenge, recordGame } = require('../services/xp');
 
 const rooms           = new Map();
 const disconnectTimers = new Map();
+
+// Attribuer XP à tous les joueurs à la fin d'une partie multijoueur
+async function handleGameOver(room, winnerId, gameSpecificScore) {
+  const gameId = room.gameId;
+  const players = room.players || [];
+  const realPlayers = players.filter(p => p.id && !String(p.id).startsWith('guest') && !String(p.id).startsWith('AI_'));
+
+  for (const player of realPlayers) {
+    const uid = player.id;
+    const isWinner = String(uid) === String(winnerId);
+    const result = isWinner ? 'win' : 'loss';
+    const score = gameSpecificScore?.[uid] ?? null;
+
+    try {
+      await recordGame(uid, gameId, result, score, players.length, null);
+      await awardXp(uid, 10, 'game_played', gameId);
+      if (isWinner) {
+        await awardXp(uid, 50, 'game_won', gameId);
+        await updateChallenge(uid, 'win', gameId);
+        await updateChallenge(uid, 'win_any', gameId);
+        await updateChallenge(uid, 'win_multi', gameId);
+      }
+      await updateChallenge(uid, 'play', gameId);
+      await updateChallenge(uid, 'play_distinct', gameId);
+    } catch (e) {
+      console.error('[XP] handleGameOver error:', e.message);
+    }
+  }
+}
 
 function clearDisconnectTimer(code, userId) {
   const key = `${code}_${userId}`;
@@ -231,6 +261,9 @@ function initSocket(io) {
           room.status = 'finished';
           io.to(code).emit('yahtzee_state', publicYahtzeeState(gs));
           io.to(code).emit('game_over', { winner: room.players.find(p => p.id === winner.id) || null });
+          const yahtzeeScores = {};
+          gs.playerOrder.forEach(pid => { yahtzeeScores[pid] = gs.scores[pid]?.total || 0; });
+          handleGameOver(room, winner.id, yahtzeeScores);
           rooms.delete(code);
           return;
         }
@@ -439,6 +472,7 @@ async function endMotusRound(io, room) {
   if (alive.length <= 1) {
     room.status = 'finished';
     io.to(room.code).emit('game_over', { winner: alive[0] || null });
+    handleGameOver(room, alive[0]?.id ?? null, null);
     rooms.delete(room.code);
   } else {
     room.status = 'waiting';
@@ -487,6 +521,7 @@ async function endMotusRoundChangeOnFind(io, room, finderId) {
   if (alive.length <= 1) {
     room.status = 'finished';
     io.to(room.code).emit('game_over', { winner: alive[0] || null });
+    handleGameOver(room, alive[0]?.id ?? null, null);
     rooms.delete(room.code);
   } else {
     room.status = 'waiting';
@@ -585,6 +620,9 @@ function advanceSkyjoTurn(io, code, room, gs) {
 
       io.to(code).emit('skyjo_state', publicSkyjoState(gs));
       io.to(code).emit('game_over', { winner, scores });
+      const skyjoScores = {};
+      sorted.forEach(s => { skyjoScores[s.id] = s.score; });
+      handleGameOver(room, winner?.id ?? null, skyjoScores);
       rooms.delete(code);
       return;
     }
@@ -821,6 +859,7 @@ function applyPCMove(io, code, room, gs, pionIdx) {
     room.status = 'finished';
     io.to(code).emit('pc_state', publicPCState(gs));
     io.to(code).emit('game_over', { winner: gs.players.find(p => p.id === winner) || null });
+    handleGameOver(room, winner, null);
     rooms.delete(code);
     return;
   }
@@ -1054,6 +1093,21 @@ function endQuizGame(io, code, room, gs) {
 
   io.to(code).emit('quiz_end', { rankings, mode: gs.mode, winner });
   io.to(code).emit('game_over', { winner });
+
+  const quizScores = {};
+  rankings.forEach(r => { quizScores[r.id] = r.score; });
+  handleGameOver(room, winner?.id ?? null, quizScores);
+
+  // Tracking défi quiz_correct (multi)
+  const realPlayers = (room.players || []).filter(p => p.id && !String(p.id).startsWith('guest') && !String(p.id).startsWith('AI_'));
+  for (const player of realPlayers) {
+    const uid = player.id;
+    const correctCount = quizScores[uid] || 0;
+    if (correctCount > 0) {
+      updateChallenge(uid, 'correct', 'quiz', correctCount).catch(() => {});
+    }
+  }
+
   rooms.delete(code);
 }
 

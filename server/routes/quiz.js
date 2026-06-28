@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const { pool } = require('../config/db');
+const { awardXp, updateChallenge, recordGame } = require('../services/xp');
 
 // GET /api/quiz/categories
 router.get('/categories', async (req, res) => {
@@ -51,6 +52,20 @@ router.post('/solo-result', async (req, res) => {
       'INSERT INTO quiz_solo_results (username, user_id, lives_start, lives_remaining, correct, total, difficulty) VALUES (?,?,?,?,?,?,?)',
       [username || 'Anonyme', user_id || null, lives_start || 5, lives_remaining || 0, correct || 0, total || 0, difficulty || 'mixed']
     );
+
+    // XP pour les utilisateurs connectés (pas les invités)
+    const uid = user_id ? parseInt(user_id) : null;
+    if (uid && !isNaN(uid)) {
+      const survived = (lives_remaining || 0) > 0;
+      await recordGame(uid, 'quiz', 'solo', correct || 0, 1, { lives_start, lives_remaining, total });
+      await awardXp(uid, 10, 'game_played', 'quiz');
+      if (survived) await awardXp(uid, 30, 'quiz_solo_survived', 'quiz');
+      await updateChallenge(uid, 'play', 'quiz');
+      await updateChallenge(uid, 'play_distinct', 'quiz');
+      await updateChallenge(uid, 'win_solo', 'quiz', survived ? 1 : 0);
+      if (correct > 0) await updateChallenge(uid, 'correct', 'quiz', correct);
+    }
+
     res.json({ id: result.insertId });
   } catch (err) {
     res.status(500).json({ error: err.message });

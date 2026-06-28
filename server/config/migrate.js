@@ -98,6 +98,40 @@ const TABLES = [
     FOREIGN KEY (category_id) REFERENCES quiz_categories(id)
   ) CHARACTER SET utf8mb4`,
 
+  `CREATE TABLE IF NOT EXISTS xp_log (
+    id         INT PRIMARY KEY AUTO_INCREMENT,
+    user_id    INT NOT NULL,
+    amount     INT NOT NULL,
+    reason     VARCHAR(100) NOT NULL,
+    game_id    VARCHAR(50) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user (user_id),
+    INDEX idx_date (created_at)
+  ) CHARACTER SET utf8mb4`,
+
+  `CREATE TABLE IF NOT EXISTS game_history (
+    id            INT PRIMARY KEY AUTO_INCREMENT,
+    user_id       INT NOT NULL,
+    game_id       VARCHAR(50) NOT NULL,
+    result        ENUM('win','loss','draw','solo') NOT NULL,
+    score         INT NULL,
+    players_count INT DEFAULT 1,
+    details       JSON NULL,
+    played_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user_date (user_id, played_at)
+  ) CHARACTER SET utf8mb4`,
+
+  `CREATE TABLE IF NOT EXISTS user_daily_challenges (
+    id             INT PRIMARY KEY AUTO_INCREMENT,
+    user_id        INT NOT NULL,
+    challenge_date DATE NOT NULL,
+    challenge_id   INT NOT NULL,
+    progress       INT DEFAULT 0,
+    completed      BOOLEAN DEFAULT FALSE,
+    completed_at   TIMESTAMP NULL,
+    UNIQUE KEY uk_user_date (user_id, challenge_date)
+  ) CHARACTER SET utf8mb4`,
+
   `CREATE TABLE IF NOT EXISTS quiz_solo_results (
     id              INT PRIMARY KEY AUTO_INCREMENT,
     username        VARCHAR(50) NOT NULL,
@@ -149,6 +183,17 @@ async function migrate() {
   }
 
   // 4. Mettre à jour les jeux existants qui ont changé
+  // Colonnes XP sur users
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS xp INT DEFAULT 0").catch(() =>
+    pool.query("ALTER TABLE users ADD COLUMN xp INT DEFAULT 0").catch(() => {})
+  );
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS level INT DEFAULT 1").catch(() =>
+    pool.query("ALTER TABLE users ADD COLUMN level INT DEFAULT 1").catch(() => {})
+  );
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_daily_bonus DATE NULL").catch(() =>
+    pool.query("ALTER TABLE users ADD COLUMN last_daily_bonus DATE NULL").catch(() => {})
+  );
+
   await pool.query(`UPDATE games SET has_multiplayer=1, min_players=1, max_players=8 WHERE id='skyjo'`);
   await pool.query(`UPDATE games SET has_multiplayer=1, min_players=1, max_players=4 WHERE id='petits-chevaux'`);
   // Supprimer les anciennes entrées motus séparées si elles existent encore

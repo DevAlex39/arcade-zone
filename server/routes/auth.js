@@ -4,6 +4,7 @@ const jwt       = require('jsonwebtoken');
 const passport  = require('passport');
 const { Strategy: GoogleStrategy } = require('passport-google-oauth20');
 const { pool }  = require('../config/db');
+const { claimDailyBonus } = require('../services/xp');
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function makeToken(user) {
@@ -55,7 +56,8 @@ router.post('/login', async (req, res) => {
     if (!ok) return res.status(401).json({ error: 'Identifiants incorrects' });
 
     await pool.query('UPDATE users SET last_login=NOW() WHERE id=?', [user.id]);
-    res.json({ token: makeToken(user), user: safeUser(user) });
+    const bonusResult = await claimDailyBonus(user.id).catch(() => null);
+    res.json({ token: makeToken(user), user: safeUser(user), dailyBonus: bonusResult });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

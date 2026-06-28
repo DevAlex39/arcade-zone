@@ -13,21 +13,36 @@
       {{ platform.toast.msg }}
     </div>
   </transition>
+
+  <XpToast />
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { onMounted, watch } from 'vue';
 import NavBar from '@/components/NavBar.vue';
+import XpToast from '@/components/XpToast.vue';
 import { useAuthStore } from '@/stores/auth.js';
 import { usePlatformStore } from '@/stores/platform.js';
+import { useXpStore } from '@/stores/xp.js';
 
 const auth     = useAuthStore();
 const platform = usePlatformStore();
+const xpStore  = useXpStore();
 
 onMounted(async () => {
   platform.applyTheme();
   await auth.init();
   await platform.fetchGames();
+  if (auth.isLoggedIn && !auth.user?.isGuest) {
+    await xpStore.fetchMe();
+  }
+});
+
+// Re-fetch XP si l'utilisateur se connecte après le mount
+watch(() => auth.isLoggedIn, async (loggedIn) => {
+  if (loggedIn && !auth.user?.isGuest) {
+    await xpStore.fetchMe();
+  }
 });
 </script>
 
