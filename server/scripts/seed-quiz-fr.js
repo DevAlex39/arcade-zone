@@ -3,7 +3,8 @@
  * Importe ~300 questions françaises natives en DB.
  * Usage : node server/scripts/seed-quiz-fr.js
  */
-require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
+require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
+if (!process.env.DB_USER) require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 const mysql = require('mysql2/promise');
 
 const QUESTIONS = [
