@@ -289,7 +289,8 @@ function toggleCat(id) {
 
 function prepareAnswers(q) {
   if (!q) return;
-  const incorrect = JSON.parse(q.incorrect_answers || '[]');
+  const raw = q.incorrect_answers;
+  const incorrect = Array.isArray(raw) ? raw : JSON.parse(raw || '[]');
   if (q.type === 'boolean') {
     shuffledAnswers.value = ['True', 'False'];
   } else {
