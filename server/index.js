@@ -23,6 +23,9 @@ app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173', creden
 app.use(express.json());
 app.use(passport.initialize());
 
+// ─── Images statiques ─────────────────────────────────────────────────────────
+app.use('/images', express.static(path.join(__dirname, 'public', 'images')));
+
 // ─── Jeux solo — servir les fichiers statiques ────────────────────────────────
 const GAMES_BASE = path.resolve(__dirname, '..', 'games'); // → arcade-zone/games/
 app.use('/solo/yahtzee-rogue',  express.static(path.join(GAMES_BASE, 'Yahtzee_Rogue')));

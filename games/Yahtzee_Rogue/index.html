@@ -13,20 +13,6 @@
 <body>
 
   <!-- ══ TOP CONTROLS : thème + langue ══ -->
-  <div class="top-controls">
-    <div class="seg" id="themeSeg" role="group">
-      <button class="seg-btn active" data-theme-val="cobalt"><span class="dot-sw" style="background:linear-gradient(135deg,#46d6ff,#8b7bff)"></span>Cobalt</button>
-      <button class="seg-btn" data-theme-val="ember"><span class="dot-sw" style="background:linear-gradient(135deg,#ff8a3d,#2fd0c4)"></span>Ember</button>
-    </div>
-    <div class="seg" id="langSeg" role="group">
-      <button class="seg-btn active" data-lang-val="fr">FR</button>
-      <button class="seg-btn" data-lang-val="en">EN</button>
-    </div>
-    <div class="vol-control" title="Volume">
-      <span class="vol-icon" id="volIcon">🔊</span>
-      <input type="range" id="volSlider" min="0" max="100" value="60" class="vol-slider" />
-    </div>
-  </div>
 
   <!-- ══ ÉCRAN TITRE ══ -->
   <div class="screen" id="screenTitle">
@@ -109,6 +95,20 @@
         <div class="pip-group">
           <span class="pip-label" data-i18n="rolls">Lancers</span>
           <div class="pip-row" id="rollsPips"></div>
+        </div>
+        <div class="top-controls">
+          <div class="seg" id="themeSeg" role="group">
+            <button class="seg-btn active" data-theme-val="cobalt"><span class="dot-sw" style="background:linear-gradient(135deg,#46d6ff,#8b7bff)"></span>Cobalt</button>
+            <button class="seg-btn" data-theme-val="ember"><span class="dot-sw" style="background:linear-gradient(135deg,#ff8a3d,#2fd0c4)"></span>Ember</button>
+          </div>
+          <div class="seg" id="langSeg" role="group">
+            <button class="seg-btn active" data-lang-val="fr">FR</button>
+            <button class="seg-btn" data-lang-val="en">EN</button>
+          </div>
+          <div class="vol-control" title="Volume">
+            <span class="vol-icon" id="volIcon">🔊</span>
+            <input type="range" id="volSlider" min="0" max="100" value="60" class="vol-slider" />
+          </div>
         </div>
       </div>
     </header>

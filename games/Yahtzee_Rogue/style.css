@@ -127,7 +127,6 @@ body::after {
    TOP CONTROLS — theme + language toggles
    ════════════════════════════════════════════════════════════════ */
 .top-controls {
-  position: fixed; top: 14px; right: 16px; z-index: 9998;
   display: flex; gap: .5rem; align-items: center;
 }
 .seg {
@@ -322,6 +321,20 @@ body::after {
   transition: transform .15s, box-shadow .15s, border-color .15s;
   min-height: 84px; overflow: hidden;
 }
+/* Jokers panel : image pleine largeur */
+.panel-card[data-rarity] { padding: 0 0 .5rem; }
+.panel-card[data-rarity] .pc-icon {
+  width: 100%; height: 110px; border-radius: 10px 10px 0 0;
+  background: rgba(0,0,0,.2); border: none; margin: 0; align-self: stretch;
+}
+.panel-card[data-rarity] .pc-icon .card-art {
+  width: 100%; height: 100%; object-fit: cover; max-height: none;
+  filter: drop-shadow(0 3px 8px rgba(0,0,0,.6));
+}
+.panel-card[data-rarity] .pc-name { display: none; }
+.panel-card[data-rarity] .pc-rar  { margin-top: .3rem; }
+.panel-card[data-rarity] .pc-desc { padding: 0 .4rem; }
+.panel-card[data-rarity] .joker-move-row { margin-bottom: .2rem; }
 .panel-card:not(.empty-slot):hover { transform: translateY(-3px); box-shadow: 0 8px 22px -6px rgba(0,0,0,.6); }
 .panel-card.joker-active { outline: 2px solid var(--gold); box-shadow: 0 0 22px -2px var(--gold); animation: jokerPulse .35s ease; z-index:10; }
 @keyframes jokerPulse { 0%{transform:scale(1)} 50%{transform:scale(1.08)} 100%{transform:scale(1)} }
@@ -514,6 +527,8 @@ body::after {
 .shop-items { display:flex; gap:.75rem; flex-wrap:wrap; min-height:40px; }
 
 .shop-item { background:var(--bg-3); border:1.5px solid var(--border-2); border-radius:14px; padding:1rem; width:195px; display:flex; flex-direction:column; gap:.5rem; transition:border-color .15s,transform .15s,box-shadow .15s; position: relative; overflow: hidden; }
+.shop-item[data-rarity] { width:175px; padding:.85rem; }
+.shop-item[data-rarity] .si-name { display: none; }
 .shop-item:not(.sold):hover { border-color:var(--gold); transform:translateY(-3px); box-shadow: 0 12px 26px -10px rgba(0,0,0,.6); }
 .shop-item.sold { opacity:.4; }
 .si-icon  { font-size:2rem; width: 2.6rem; height: 2.6rem; display:flex; align-items:center; justify-content:center; border-radius: 12px; background: rgba(255,255,255,.05); border:1px solid var(--border); }
@@ -572,7 +587,7 @@ body::after {
 .hold-restart-fill  { height: 100%; width: 0%; background: var(--red); border-radius: 99px; transition: width linear; }
 
 @media (max-width:900px) { .game-body{grid-template-columns:1fr} .col-side{position:static} }
-@media (max-width:600px) { .game-header{grid-template-columns:1fr;gap:.5rem} .combos-grid{grid-template-columns:1fr 1fr} .top-controls{top:auto;bottom:14px} }
+@media (max-width:600px) { .game-header{grid-template-columns:1fr;gap:.5rem} .combos-grid{grid-template-columns:1fr 1fr} .hdr-right{flex-wrap:wrap;justify-content:flex-end} }
 
 /* ════════════════════════════════════════════════════════════════
    RARETÉ — labels
@@ -674,6 +689,7 @@ body::after {
 @keyframes cardReveal { 0%{transform:scale(0) rotate(180deg);opacity:0} 70%{transform:scale(1.07) rotate(-5deg);opacity:1} 100%{transform:scale(1) rotate(0deg);opacity:1} }
 .booster-card:hover { transform:translateY(-5px) scale(1.04); border-color:color-mix(in oklab, var(--blue) 55%, transparent); box-shadow:0 10px 26px -8px var(--blue); }
 .bc-icon  { font-size:2rem; }
+.card-art { width:100%; max-height:90px; object-fit:contain; display:block; margin:0 auto .2rem; image-rendering:auto; filter:drop-shadow(0 2px 6px rgba(0,0,0,.5)); }
 .bc-name  { font-size:.82rem; font-weight:800; color:var(--blue); }
 .joker-booster-card[data-rarity="common"]    { border-color:color-mix(in oklab, #4ade80 40%, transparent); background: linear-gradient(165deg, rgba(74,222,128,.08), var(--bg-3) 60%); }
 .joker-booster-card[data-rarity="common"] .bc-name { color: #4ade80; }
@@ -895,90 +911,26 @@ body::after {
 
 
 /* ════════════════════════════════════════════════════════════════
-   BOÎTE 3D — ouverture des boosters (constellation / joker)
+   BOÎTE — ouverture des boosters (constellation / joker)
    ════════════════════════════════════════════════════════════════ */
-.box3d {
-  width: 132px; height: 132px; perspective: 720px; perspective-origin: 50% 36%;
-  cursor: pointer; position: relative; margin: 14px auto 22px;
-  --bx: #46d6ff; --bx2: #8b7bff;
+.booster-box-img {
+  position: relative; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  width: 200px; height: 200px; margin: 0 auto;
+  animation: boxFloat 3.5s ease-in-out infinite;
+  filter: drop-shadow(0 8px 24px rgba(0,0,0,.7));
+  transition: transform .15s;
 }
-.box3d.gold { --bx: #ffc24b; --bx2: #ff7a3d; }
-
-.box3d-inner {
-  position: absolute; inset: 0; transform-style: preserve-3d;
-  transform: rotateX(-22deg) rotateY(-30deg);
-  animation: boxIdle 6.5s ease-in-out infinite;
-  transition: transform .7s cubic-bezier(.2,.8,.3,1);
+.booster-box-img:hover { transform: scale(1.05); }
+.booster-box-img.open  { animation: boxPop .35s cubic-bezier(.3,1.8,.4,1) forwards; }
+.booster-box-art { width: 180px; height: 180px; object-fit: contain; position: relative; z-index: 2; }
+.booster-box-glow {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 60%, rgba(80,160,255,.35), transparent 68%);
+  filter: blur(14px); animation: boxGlowPulse 2.5s ease-in-out infinite; z-index: 1;
 }
-@keyframes boxIdle {
-  0%,100% { transform: rotateX(-22deg) rotateY(-34deg) translateY(0); }
-  50%     { transform: rotateX(-22deg) rotateY(-14deg) translateY(-5px); }
-}
-.box3d:hover .box3d-inner { animation-play-state: paused; }
-.box3d.open .box3d-inner { animation: none; transform: rotateX(-28deg) rotateY(-22deg) translateY(-8px); }
-
-.box3d .bf {
-  position: absolute; width: 132px; height: 132px; left: 0; top: 0;
-  background: linear-gradient(150deg, color-mix(in oklab, var(--bx) 22%, #141925), #0c1018 80%);
-  border: 1.5px solid color-mix(in oklab, var(--bx) 65%, transparent);
-  box-shadow: inset 0 2px 0 rgba(255,255,255,.08), inset 0 0 26px -10px var(--bx);
-  backface-visibility: hidden;
-}
-.box3d .bf-front  { transform: translateZ(66px); display: flex; align-items: center; justify-content: center; }
-.box3d .bf-back   { transform: rotateY(180deg) translateZ(66px); }
-.box3d .bf-right  { transform: rotateY(90deg)  translateZ(66px); }
-.box3d .bf-left   { transform: rotateY(-90deg) translateZ(66px); }
-.box3d .bf-bottom { transform: rotateX(-90deg) translateZ(66px); }
-.box-sym { font-size: 2.7rem; filter: drop-shadow(0 2px 8px rgba(0,0,0,.6)); transition: opacity .3s; }
-.box3d.open .box-sym { opacity: 0; }
-
-/* lueur intérieure révélée à l'ouverture */
-.box-core {
-  position: absolute; left: 50%; top: 50%; width: 120px; height: 120px;
-  transform: translate(-50%,-50%) rotateX(74deg);
-  background: radial-gradient(circle at 50% 50%, #fff, var(--bx) 38%, transparent 72%);
-  border-radius: 50%; filter: blur(2px); opacity: 0; display: none; transition: opacity .45s .2s;
-}
-.box3d.open .box-core { display: block; opacity: .95; animation: coreGlow 1.5s ease-in-out infinite; }
-@keyframes coreGlow { 0%,100% { filter: blur(2px) brightness(1); } 50% { filter: blur(4px) brightness(1.35); } }
-
-/* faisceau de lumière vertical */
-.box-beam {
-  position: absolute; left: 50%; bottom: 52%; width: 64px; height: 150px;
-  transform: translateX(-50%); transform-origin: bottom center;
-  background: linear-gradient(to top, color-mix(in oklab,var(--bx) 80%, transparent), transparent 85%);
-  filter: blur(7px); opacity: 0; pointer-events: none; border-radius: 50% 50% 0 0 / 80% 80% 0 0;
-}
-.box3d.open .box-beam { opacity: .55; animation: beamRise .9s ease-out forwards; }
-@keyframes beamRise { 0% { transform: translateX(-50%) scaleY(.3); opacity: 0; } 40% { opacity: .6; } 100% { transform: translateX(-50%) scaleY(1.15); opacity: .35; } }
-
-/* couvercle articulé (charnière sur l'arête avant-haute du cube) */
-.box3d .lid-pivot {
-  position: absolute; left: 0; top: 0; width: 132px; height: 132px;
-  transform-style: preserve-3d;
-}
-.box3d .lid {
-  position: absolute; left: 0; top: 0; width: 132px; height: 132px;
-  transform-style: preserve-3d;
-  transform-origin: 50% 50%;
-  transform: translateY(-66px) rotateX(-90deg);
-  transition: transform .85s cubic-bezier(.5,-.12,.25,1.3);
-  background: linear-gradient(150deg, color-mix(in oklab, var(--bx) 45%, #11151f), #0a0d14 84%);
-  border: 1.5px solid color-mix(in oklab, var(--bx) 75%, transparent);
-  box-shadow: inset 0 2px 0 rgba(255,255,255,.12), inset 0 0 34px -8px var(--bx), 0 0 22px -6px var(--bx);
-  display: flex; align-items: center; justify-content: center;
-}
-.box3d.open .lid { transform: translateY(-150px) rotateX(-158deg); }
-.lid-grip { width: 42px; height: 8px; border-radius: 6px; background: color-mix(in oklab, var(--bx) 60%, #0a0d14); box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 0 10px -3px var(--bx); }
-
-/* halo de fond pulsant sous la boîte */
-.box3d::after {
-  content: ''; position: absolute; left: 50%; top: 58%; width: 150px; height: 60px;
-  transform: translate(-50%,-50%); border-radius: 50%;
-  background: radial-gradient(ellipse, color-mix(in oklab,var(--bx) 50%, transparent), transparent 70%);
-  filter: blur(10px); z-index: -1; opacity: .5; transition: opacity .4s;
-}
-.box3d.open::after { opacity: .9; animation: coreGlow 1.6s ease-in-out infinite; }
+@keyframes boxFloat      { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+@keyframes boxPop        { 0%{transform:scale(1)} 50%{transform:scale(1.18)} 100%{transform:scale(0) translateY(-40px);opacity:0} }
+@keyframes boxGlowPulse  { 0%,100%{opacity:.6} 50%{opacity:1} }
 
 
 /* reveal robuste (transition au lieu d'animation : état final garanti visible) */
@@ -997,20 +949,15 @@ body::after {
 .panel-card[data-rarity="rare"],     .shop-item[data-rarity="rare"],     .encyclo-row[data-rarity="rare"],     .joker-booster-card[data-rarity="rare"]     { --rc:#ffd887; }
 .panel-card[data-rarity="legendary"],.shop-item[data-rarity="legendary"],.encyclo-row[data-rarity="legendary"],.joker-booster-card[data-rarity="legendary"]{ --rc:#ff8a9e; }
 
-/* disque sombre rond + lueur de rareté */
+/* disque sombre rond + lueur de rareté — panel jokers (pas la boutique) */
 .panel-card[data-rarity] .pc-icon,
-.shop-item[data-rarity] .si-icon,
-.joker-booster-card .bc-icon,
 .encyclo-row[data-rarity] .er-icon {
   position: relative; border-radius: 50%; overflow: visible;
   background: radial-gradient(circle at 50% 38%, #1a2030, #0b0e16);
   border: 1px solid color-mix(in oklab, var(--rc) 42%, transparent);
   box-shadow: inset 0 0 16px -6px var(--rc), 0 0 12px -7px var(--rc);
 }
-/* glyphe rempli d'un dégradé de rareté */
 .panel-card[data-rarity] .pc-icon i,
-.shop-item[data-rarity] .si-icon i,
-.joker-booster-card .bc-icon i,
 .encyclo-row[data-rarity] .er-icon i {
   position: relative; z-index: 3;
   background: linear-gradient(145deg, color-mix(in oklab, var(--rc) 65%, #fff), var(--rc) 55%, color-mix(in oklab, var(--rc) 55%, #000));
@@ -1018,10 +965,7 @@ body::after {
   color: transparent; -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 1px 2px rgba(0,0,0,.5));
 }
-/* anneau d'énergie qui tourne autour du disque */
 .panel-card[data-rarity] .pc-icon::before,
-.shop-item[data-rarity] .si-icon::before,
-.joker-booster-card .bc-icon::before,
 .encyclo-row[data-rarity] .er-icon::before {
   content: ''; position: absolute; inset: -4px; border-radius: 50%; z-index: 2; pointer-events: none;
   background: conic-gradient(from 0deg, transparent 0deg, var(--rc) 70deg, #fff 90deg, var(--rc) 110deg, transparent 200deg);
@@ -1030,6 +974,27 @@ body::after {
   animation: jokerRing 3s linear infinite;
 }
 @keyframes jokerRing { to { transform: rotate(360deg); } }
+
+/* Cartes joker boutique : image pleine largeur, pas de cercle */
+.shop-item[data-rarity] .si-icon {
+  width: calc(100% + 1.7rem); margin-left: -.85rem; margin-right: -.85rem; margin-top: -.85rem;
+  height: 155px; border-radius: 12px 12px 0 0;
+  background: rgba(0,0,0,.2); border: none; box-shadow: none;
+  display: flex; align-items: flex-end; justify-content: center; overflow: hidden;
+}
+.shop-item[data-rarity] .si-icon .card-art {
+  width: 100%; height: 100%; object-fit: contain; max-height: none;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,.6));
+}
+/* booster modal jokers : idem */
+.joker-booster-card .bc-icon {
+  width: 100%; height: 100px; border-radius: 10px; background: none; border: none; box-shadow: none;
+  display: flex; align-items: center; justify-content: center;
+}
+.joker-booster-card .bc-icon .card-art {
+  max-height: 96px; width: 100%; object-fit: contain;
+  filter: drop-shadow(0 3px 10px rgba(0,0,0,.6));
+}
 
 
 /* ════════════════════════════════════════════════════════════════

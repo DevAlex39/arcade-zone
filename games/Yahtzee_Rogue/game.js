@@ -139,7 +139,10 @@ function jn(o) { return o ? (LANG === 'en' && o.name_en != null ? o.name_en : o.
 function jd(o) { return o ? (LANG === 'en' && o.desc_en != null ? o.desc_en : o.desc) : ''; }
 function cn(id) { const c = COMBOS.find(x => x.id === id); return c ? jn(c) : ''; }
 function nf(n) { return Number(n).toLocaleString(LANG === 'en' ? 'en-US' : 'fr'); }
-function jicon(o) { return o && o.fa ? '<i class="' + o.fa + '"></i>' : (o && o.icon ? o.icon : ''); }
+function jicon(o) {
+  if (o && o.img) return `<img src="${o.img}" class="card-art" alt="" loading="lazy">`;
+  return o && o.fa ? '<i class="' + o.fa + '"></i>' : (o && o.icon ? o.icon : '');
+}
 function modIconBadge(m) { return m ? '<span class="mod-badge" style="color:' + m.color + '">' + m.icon + '</span>' : ''; }
 function modTipHTML(m) { return m ? '<div class="mod-tip" style="--mc:' + m.color + '"><b>' + m.icon + ' ' + modLabel(m) + '</b><span>' + modifierDesc(m.id) + '</span></div>' : ''; }
 function applyI18n(root) {
@@ -177,128 +180,151 @@ const COMBOS = [
 ];
 
 // rarity: 'common' | 'uncommon' | 'rare' | 'legendary'
+const IMG = (cat, file) => `assets/cards/${cat}/${file}`;
+
 const JOKER_POOL = [
   // ── COMMUNS ─────────────────────────────────────────────────────
-  { id:'briscard',       rarity:'common',   name:'Le Briscard', name_en:'The Veteran', fa:'fa-solid fa-shield-halved',        icon:'⚔️',  cost:3,
+  { id:'briscard',   rarity:'common', name:'Le Briscard',  name_en:'The Veteran',    img:IMG('jokers-communs','le-briscard.png'),  cost:3,
     desc:'Brelan → +3 Mult', desc_en:'Three of a Kind → +3 Mult',
     apply:(id,chips,mult)=> id==='threeKind' ? [chips, mult+3] : [chips,mult] },
-  { id:'cariste',        rarity:'common',   name:'Le Cariste', name_en:'The Forklift', fa:'fa-solid fa-helmet-safety',         icon:'🏗️',  cost:3,
+  { id:'cariste',    rarity:'common', name:'Le Cariste',   name_en:'The Forklift',   img:IMG('jokers-communs','le-cariste.png'),   cost:3,
     desc:'Carré → +50 Chips', desc_en:'Four of a Kind → +50 Chips',
     apply:(id,chips,mult)=> id==='fourKind' ? [chips+50, mult] : [chips,mult] },
-  { id:'pleiniste',      rarity:'common',   name:'Le Pleiniste', name_en:'The Full Feast', fa:'fa-solid fa-pizza-slice',       icon:'🍕',  cost:3,
+  { id:'pleiniste',  rarity:'common', name:'Le Pleiniste', name_en:'The Full Feast', img:IMG('jokers-communs','le-pleiniste.png'), cost:3,
     desc:'Full House → +4 Mult', desc_en:'Full House → +4 Mult',
     apply:(id,chips,mult)=> id==='fullHouse' ? [chips, mult+4] : [chips,mult] },
-  { id:'coureur',        rarity:'common',   name:'Le Coureur', name_en:'The Runner', fa:'fa-solid fa-person-running',         icon:'🏃',  cost:3,
+  { id:'coureur',    rarity:'common', name:'Le Coureur',   name_en:'The Runner',     img:IMG('jokers-communs','le-coureur.png'),   cost:3,
     desc:'Grande suite → +80 Chips', desc_en:'Large Straight → +80 Chips',
     apply:(id,chips,mult)=> id==='lgStr' ? [chips+80, mult] : [chips,mult] },
-  { id:'chanceux',       rarity:'common',   name:'Le Chanceux', name_en:'The Lucky One', fa:'fa-solid fa-clover',        icon:'🍀',  cost:3,
+  { id:'chanceux',   rarity:'common', name:'Le Chanceux',  name_en:'The Lucky One',  img:IMG('jokers-communs','le-chanceux.png'),  cost:3,
     desc:'Petite Suite → +3 Mult', desc_en:'Small Straight → +3 Mult',
     apply:(id,chips,mult)=> id==='smStr' ? [chips, mult+3] : [chips,mult] },
-  { id:'avare',          rarity:'common',   name:"L'Avare", name_en:'The Miser', fa:'fa-solid fa-gem',            icon:'💎',  cost:3,
+  { id:'avare',      rarity:'common', name:"L'Avare",      name_en:'The Miser',      img:IMG('jokers-communs','lavare.png'),       cost:3,
     desc:'+3 Chips par dé conservé', desc_en:'+3 Chips per kept die',
     apply:(id,chips,mult,dice,kept)=> [chips + kept*3, mult] },
-  { id:'fortune',        rarity:'common',   name:'La Fortune', name_en:'Fortune', fa:'fa-solid fa-coins',         icon:'🪙',  cost:3,
+  { id:'fortune',    rarity:'common', name:'La Fortune',   name_en:'Fortune',        img:IMG('jokers-communs','la-fortune.png'),   cost:3,
     desc:'+5 Chips sur chaque combinaison jouée', desc_en:'+5 Chips on every combo played',
     apply:(id,chips,mult)=> [chips+5, mult] },
-
-  // ── PEU COMMUNS ─────────────────────────────────────────────────
-  { id:'relanceur',      rarity:'uncommon', name:'Le Relanceur', name_en:'The Re-Roller', fa:'fa-solid fa-arrows-rotate',       icon:'🔄',  cost:4,
-    desc:'+1 lancer par main', desc_en:'+1 roll per hand',
-    apply:(id,chips,mult)=> [chips,mult] },
-  { id:'orfevre',        rarity:'uncommon', name:"L'Orfèvre", name_en:'The Goldsmith', fa:'fa-solid fa-ring',          icon:'✨',  cost:4,
-    desc:'Chaque 6 dans la combo +8 Chips', desc_en:'Each 6 in the combo +8 Chips',
-    apply:(id,chips,mult,dice)=> [chips + dice.filter(d=>d===6).length*8, mult] },
-  { id:'doubleur',       rarity:'uncommon', name:'Le Doubleur', name_en:'The Doubler', fa:'fa-solid fa-clone',        icon:'🔢',  cost:5,
-    desc:'Petite suite → Mult ×2 · Grande suite → Mult ×3', desc_en:'Small Straight → Mult ×2 · Large Straight → Mult ×3',
-    apply:(id,chips,mult)=> id==='smStr' ? [chips, mult*2] : id==='lgStr' ? [chips, mult*3] : [chips,mult] },
-  { id:'alchimiste',     rarity:'uncommon', name:"L'Alchimiste", name_en:'The Alchemist', fa:'fa-solid fa-flask',       icon:'⚗️',  cost:5,
-    desc:'Convertit 10 Chips en +1 Mult (si Chips ≥ 10)', desc_en:'Converts 10 Chips into +1 Mult (if Chips ≥ 10)',
-    apply:(id,chips,mult)=> chips >= 10 ? [chips-10, mult+1] : [chips,mult] },
-  { id:'serie',          rarity:'uncommon', name:'La Série', name_en:'The Series', fa:'fa-solid fa-layer-group',           icon:'🎯',  cost:4,
-    desc:'Catégorie (As/Deux…Six) → +2 Mult', desc_en:'Number category (Aces/Twos…Sixes) → +2 Mult',
-    apply:(id,chips,mult)=> ['ones','twos','threes','fours','fives','sixes'].includes(id) ? [chips, mult+2] : [chips,mult] },
-
-  // ── RARES ───────────────────────────────────────────────────────
-  { id:'maniaque',       rarity:'rare',     name:'Yahtzee Maniaque', name_en:'Yahtzee Maniac', fa:'fa-solid fa-volcano',   icon:'🌋',  cost:7,
-    desc:'Yahtzee → Mult ×3', desc_en:'Yahtzee → Mult ×3',
-    apply:(id,chips,mult)=> id==='yahtzee' ? [chips, mult*3] : [chips,mult] },
-  { id:'paireroyale',    rarity:'rare',     name:'La Paire Royale', name_en:'The Royal Pair', fa:'fa-solid fa-crown',    icon:'👑',  cost:6,
-    desc:'Full House compte comme 60 Chips × 5 Mult', desc_en:'Full House counts as 60 Chips × 5 Mult',
-    apply:(id,chips,mult)=> id==='fullHouse' ? [60, 5] : [chips,mult] },
-  { id:'accumulateur',   rarity:'rare',     name:"L'Accumulateur", name_en:'The Accumulator', fa:'fa-solid fa-arrow-trend-up',     icon:'📈',  cost:6,
-    desc:'Mult ×1.5 sur toutes les combos', desc_en:'Mult ×1.5 on all combos',
-    apply:(id,chips,mult)=> [chips, Math.round(mult*1.5)] },
-  { id:'perfectionniste',rarity:'rare',     name:'Le Perfectionniste', name_en:'The Perfectionist', fa:'fa-solid fa-medal', icon:'🎖️',  cost:6,
-    desc:'Carré ou Yahtzee → +4 Mult supplémentaire', desc_en:'Four of a Kind or Yahtzee → +4 extra Mult',
-    apply:(id,chips,mult)=> (id==='fourKind'||id==='yahtzee') ? [chips, mult+4] : [chips,mult] },
-
-  // ── RARES ─ (suite) ─────────────────────────────────────────────
-  { id:'rentier',        rarity:'common',   name:'Le Rentier', name_en:'The Landlord', fa:'fa-solid fa-house',         icon:'🏠',  cost:3,
+  { id:'rentier',    rarity:'common', name:'Le Rentier',   name_en:'The Landlord',   img:IMG('jokers-communs','le-rentier.png'),   cost:3,
     desc:'+1 or à chaque blind battue', desc_en:'+1 gold per blind beaten',
     onWinBlind:(j)=>{ G.gold+=1; toast(t('tRentier'),'gold'); },
     apply:(id,chips,mult)=> [chips,mult] },
-  { id:'banquier',       rarity:'uncommon', name:'Le Banquier', name_en:'The Banker', fa:'fa-solid fa-building-columns',        icon:'🏦',  cost:5,
+
+  // ── PEU COMMUNS ─────────────────────────────────────────────────
+  { id:'relanceur',    rarity:'uncommon', name:'Le Relanceur',   name_en:'The Re-Roller',  img:IMG('jokers-peu-communs','le-relanceur.png'),   cost:4,
+    desc:'+1 lancer par main', desc_en:'+1 roll per hand',
+    apply:(id,chips,mult)=> [chips,mult] },
+  { id:'orfevre',      rarity:'uncommon', name:"L'Orfèvre",      name_en:'The Goldsmith',  img:IMG('jokers-peu-communs','lorfevre.png'),        cost:4,
+    desc:'Chaque 6 dans la combo +8 Chips', desc_en:'Each 6 in the combo +8 Chips',
+    apply:(id,chips,mult,dice)=> [chips + dice.filter(d=>d===6).length*8, mult] },
+  { id:'doubleur',     rarity:'uncommon', name:'Le Doubleur',    name_en:'The Doubler',    img:IMG('jokers-peu-communs','le-doubleur.png'),     cost:5,
+    desc:'Petite suite → Mult ×2 · Grande suite → Mult ×3', desc_en:'Small Straight → Mult ×2 · Large Straight → Mult ×3',
+    apply:(id,chips,mult)=> id==='smStr' ? [chips, mult*2] : id==='lgStr' ? [chips, mult*3] : [chips,mult] },
+  { id:'alchimiste',   rarity:'uncommon', name:"L'Alchimiste",   name_en:'The Alchemist',  img:IMG('jokers-peu-communs','lalchimiste.png'),     cost:5,
+    desc:'Convertit 10 Chips en +1 Mult (si Chips ≥ 10)', desc_en:'Converts 10 Chips into +1 Mult (if Chips ≥ 10)',
+    apply:(id,chips,mult)=> chips >= 10 ? [chips-10, mult+1] : [chips,mult] },
+  { id:'serie',        rarity:'uncommon', name:'La Série',       name_en:'The Series',     img:IMG('jokers-peu-communs','la-serie.png'),        cost:4,
+    desc:'Catégorie (As/Deux…Six) → +2 Mult', desc_en:'Number category → +2 Mult',
+    apply:(id,chips,mult)=> ['ones','twos','threes','fours','fives','sixes'].includes(id) ? [chips, mult+2] : [chips,mult] },
+  { id:'raccourci',    rarity:'uncommon', name:'Le Raccourci',   name_en:'The Shortcut',   img:IMG('jokers-peu-communs','le-raccourci.png'),    cost:5,
+    desc:'Petite suite valide avec 3 dés consécutifs', desc_en:'Small Straight valid with 3 consecutive dice',
+    apply:(id,chips,mult)=> [chips,mult] },
+  { id:'banquier',     rarity:'uncommon', name:'Le Banquier',    name_en:'The Banker',     img:IMG('jokers-peu-communs','le-banquier.png'),     cost:5,
     desc:'+2 or à chaque blind battue', desc_en:'+2 gold per blind beaten',
     onWinBlind:(j)=>{ G.gold+=2; toast(t('tBanquier'),'gold'); },
     apply:(id,chips,mult)=> [chips,mult] },
-  { id:'prospecteur',    rarity:'uncommon', name:'Le Prospecteur', name_en:'The Prospector', fa:'fa-solid fa-mountain',     icon:'⛏️',  cost:4,
+  { id:'prospecteur',  rarity:'uncommon', name:'Le Prospecteur', name_en:'The Prospector', img:IMG('jokers-peu-communs','le-prospecteur.png'), cost:4,
     desc:'Chaque 6 dans la combo jouée rapporte 1 or', desc_en:'Each 6 in the played combo yields 1 gold',
     onCombo:(id,dice)=>{ const g=dice.filter(d=>d===6).length; if(g){G.gold+=g;toast(t('tProspecteur',{g}),'gold');} },
     apply:(id,chips,mult)=> [chips,mult] },
-  { id:'marchand',       rarity:'rare',     name:'Le Marchand', name_en:'The Merchant', fa:'fa-solid fa-briefcase',        icon:'💼',  cost:6,
-    desc:'Brelan +3💰 · Carré +5💰 · Yahtzee +8💰', desc_en:'Three of a Kind +3💰 · Four of a Kind +5💰 · Yahtzee +8💰',
-    onCombo:(id,dice)=>{ const g=id==='threeKind'?3:id==='fourKind'?5:id==='yahtzee'?8:0; if(g){G.gold+=g;toast(t('tMarchand',{g}),'gold');} },
-    apply:(id,chips,mult)=> [chips,mult] },
-
-  // ── LÉGENDAIRES ─────────────────────────────────────────────────
-  { id:'supreme',        rarity:'legendary',name:'Le Suprême', name_en:'The Supreme', fa:'fa-solid fa-star',         icon:'🌟',  cost:9,
-    desc:'+2 Mult sur absolument toutes les combos', desc_en:'+2 Mult on absolutely every combo',
-    apply:(id,chips,mult)=> [chips, mult+2] },
-  { id:'eternal',        rarity:'legendary',name:"L'Éternel", name_en:'The Eternal', fa:'fa-solid fa-infinity',          icon:'♾️',  cost:10,
-    desc:'Gagne +1 Mult permanent après chaque blind battue (max 8)', desc_en:'Gains +1 permanent Mult after each blind beaten (max 8)',
-    state: { mult: 0 },
-    onWinBlind:(j)=>{ if(j.state.mult<8) j.state.mult++; },
-    apply:(id,chips,mult,dice,kept,j)=> [chips, mult + (j?.state?.mult ?? 0)] },
-
-  // ── JOKERS SUITE ────────────────────────────────────────────────
-  { id:'raccourci',      rarity:'uncommon', name:'Le Raccourci', name_en:'The Shortcut', fa:'fa-solid fa-scissors',      icon:'✂️',  cost:5,
-    desc:'Petite suite valide avec 3 dés consécutifs au lieu de 4', desc_en:'Small Straight valid with 3 consecutive dice instead of 4',
-    apply:(id,chips,mult)=> [chips,mult] },
-  { id:'graccourci',     rarity:'rare',     name:'Le Grand Raccourci', name_en:'The Grand Shortcut', fa:'fa-solid fa-shuffle', icon:'🔀',  cost:6,
-    desc:'Grande suite valide avec 4 dés consécutifs au lieu de 5', desc_en:'Large Straight valid with 4 consecutive dice instead of 5',
-    apply:(id,chips,mult)=> [chips,mult] },
-
-  // ── JOKERS DÉS / LANCERS ────────────────────────────────────────
-  { id:'sextuple',       rarity:'rare',     name:'Le Sextuple', name_en:'The Sextuple', fa:'fa-solid fa-dice-six',        icon:'🎲',  cost:7,
-    desc:'Joue avec 6 dés au lieu de 5', desc_en:'Play with 6 dice instead of 5',
-    apply:(id,chips,mult)=> [chips,mult] },
-  { id:'marathonien',    rarity:'uncommon', name:'Le Marathonien', name_en:'The Marathoner', fa:'fa-solid fa-stopwatch',     icon:'🏅',  cost:5,
+  { id:'marathonien',  rarity:'uncommon', name:'Le Marathonien', name_en:'The Marathoner', img:IMG('jokers-peu-communs','le-marathonien.png'), cost:5,
     desc:'+2 lancers supplémentaires par main', desc_en:'+2 extra rolls per hand',
     apply:(id,chips,mult)=> [chips,mult] },
-
-  // ── NOUVEAUX JOKERS ─────────────────────────────────────────────
-  { id:'doyen',          rarity:'uncommon', name:'Le Doyen', name_en:'The Elder', fa:'fa-solid fa-graduation-cap',   icon:'🎓',  cost:4,
+  { id:'doyen',        rarity:'uncommon', name:'Le Doyen',       name_en:'The Elder',      img:IMG('jokers-peu-communs','le-doyen.png'),       cost:4,
     desc:'Chaque 1 dans la combo jouée ajoute +5 Chips', desc_en:'Each 1 in the played combo adds +5 Chips',
     apply:(id,chips,mult,dice)=> [chips + dice.filter(d=>d===1).length*5, mult] },
-  { id:'equilibriste',   rarity:'rare',     name:"L'Équilibriste", name_en:'The Acrobat', fa:'fa-solid fa-scale-balanced',    icon:'⚖️',  cost:6,
-    desc:'Si tous les dés retenus ont la même valeur → +5 Mult supplémentaire', desc_en:'If all kept dice share the same value → +5 extra Mult',
-    apply:(id,chips,mult)=> {
-      const kVals = G.kept ? G.dice.filter((_,i)=>G.kept[i]) : [];
-      const uniq  = [...new Set(kVals)];
-      return (kVals.length >= 2 && uniq.length === 1) ? [chips, mult+5] : [chips,mult];
-    }},
-  { id:'collectionneur',  rarity:'rare',    name:'Le Collectionneur', name_en:'The Collector', fa:'fa-solid fa-boxes-stacked',    icon:'📦', cost:7,
-    desc:'Gagne +1 Mult permanent pour chaque joker possédé (max +4)', desc_en:'Gains +1 permanent Mult per joker owned (max +4)',
-    apply:(id,chips,mult)=> [chips, mult + Math.min(4, Math.max(0, G.jokers.length - 1))] },
-  { id:'jumeaux',         rarity:'uncommon', name:'Les Jumeaux', name_en:'The Twins', fa:'fa-solid fa-users',           icon:'👥',  cost:5,
+  { id:'jumeaux',      rarity:'uncommon', name:'Les Jumeaux',    name_en:'The Twins',      img:IMG('jokers-peu-communs','les-jumeaux.png'),     cost:5,
     desc:'Paire dans la combo → +15 Chips +1 Mult', desc_en:'Pair in the combo → +15 Chips +1 Mult',
     apply:(id,chips,mult,dice)=> {
       const c = dice.reduce((a,d)=>{a[d]=(a[d]||0)+1;return a;},{});
       return Object.values(c).some(v=>v>=2) ? [chips+15, mult+1] : [chips,mult];
     }},
-  { id:'ascete',          rarity:'legendary',name:"L'Ascète", name_en:'The Ascetic', fa:'fa-solid fa-person-praying',    icon:'🧘',  cost:9,
+
+  // ── RARES ───────────────────────────────────────────────────────
+  { id:'dechaine',       rarity:'rare', name:'Le Déchainé',      name_en:'The Unchained',    img:IMG('jokers-rares','le-dechaine.png'),      cost:7,
+    desc:'Yahtzee → Mult ×3', desc_en:'Yahtzee → Mult ×3',
+    apply:(id,chips,mult)=> id==='yahtzee' ? [chips, mult*3] : [chips,mult] },
+  { id:'gambleur',       rarity:'rare', name:'Le Gambleur',       name_en:'The Gambler',      img:IMG('jokers-rares','le-gambleur.png'),      cost:6,
+    desc:'Full House compte comme 60 Chips × 5 Mult', desc_en:'Full House counts as 60 Chips × 5 Mult',
+    apply:(id,chips,mult)=> id==='fullHouse' ? [60, 5] : [chips,mult] },
+  { id:'stratege',       rarity:'rare', name:'Le Stratège',       name_en:'The Strategist',   img:IMG('jokers-rares','le-stratege.png'),      cost:6,
+    desc:'Mult ×1.5 sur toutes les combos', desc_en:'Mult ×1.5 on all combos',
+    apply:(id,chips,mult)=> [chips, Math.round(mult*1.5)] },
+  { id:'perfectionniste',rarity:'rare', name:'Le Perfectionniste', name_en:'The Perfectionist',img:IMG('jokers-rares','le-perfectionniste.png'),cost:6,
+    desc:'Carré ou Yahtzee → +4 Mult supplémentaire', desc_en:'Four of a Kind or Yahtzee → +4 extra Mult',
+    apply:(id,chips,mult)=> (id==='fourKind'||id==='yahtzee') ? [chips, mult+4] : [chips,mult] },
+  { id:'tricheur',       rarity:'rare', name:'Le Tricheur',       name_en:'The Cheater',      img:IMG('jokers-rares','le-tricheur.png'),      cost:6,
+    desc:'Grande suite valide avec 4 dés consécutifs au lieu de 5', desc_en:'Large Straight valid with 4 consecutive dice instead of 5',
+    apply:(id,chips,mult)=> [chips,mult] },
+  { id:'imbattable',     rarity:'rare', name:"L'Imbattable",      name_en:'The Unbeatable',   img:IMG('jokers-rares','limbattable.png'),      cost:7,
+    desc:'Joue avec 6 dés au lieu de 5', desc_en:'Play with 6 dice instead of 5',
+    apply:(id,chips,mult)=> [chips,mult] },
+  { id:'survivant',      rarity:'rare', name:'Le Survivant',      name_en:'The Survivor',     img:IMG('jokers-rares','le-survivant.png'),     cost:6,
+    desc:'Si tous les dés retenus ont la même valeur → +5 Mult', desc_en:'If all kept dice share the same value → +5 Mult',
+    apply:(id,chips,mult)=> {
+      const kVals = G.kept ? G.dice.filter((_,i)=>G.kept[i]) : [];
+      const uniq  = [...new Set(kVals)];
+      return (kVals.length >= 2 && uniq.length === 1) ? [chips, mult+5] : [chips,mult];
+    }},
+  { id:'collector',      rarity:'rare', name:'Le Collector',      name_en:'The Collector',    img:IMG('jokers-rares','le-collector.png'),     cost:7,
+    desc:'+1 Mult permanent par joker possédé (max +4)', desc_en:'+1 permanent Mult per joker owned (max +4)',
+    apply:(id,chips,mult)=> [chips, mult + Math.min(4, Math.max(0, G.jokers.length - 1))] },
+  { id:'exploitant',     rarity:'rare', name:"L'Exploitant",      name_en:'The Exploiter',    img:IMG('jokers-rares','lexploitant.png'),      cost:6,
+    desc:'Brelan +3💰 · Carré +5💰 · Yahtzee +8💰', desc_en:'Three of a Kind +3💰 · Four of a Kind +5💰 · Yahtzee +8💰',
+    onCombo:(id,dice)=>{ const g=id==='threeKind'?3:id==='fourKind'?5:id==='yahtzee'?8:0; if(g){G.gold+=g;toast(t('tMarchand',{g}),'gold');} },
+    apply:(id,chips,mult)=> [chips,mult] },
+  { id:'bourreau',       rarity:'rare', name:'Le Bourreau',       name_en:'The Executioner',  img:IMG('jokers-rares','le-bourreau.png'),      cost:6,
+    desc:'Chaque dé 1 dans la combo ajoute +15 Chips', desc_en:'Each 1 in the combo adds +15 Chips',
+    apply:(id,chips,mult,dice)=> [chips + dice.filter(d=>d===1).length*15, mult] },
+
+  // ── LÉGENDAIRES ─────────────────────────────────────────────────
+  { id:'alpha',          rarity:'legendary', name:"L'Alpha",           name_en:'The Alpha',         img:IMG('jokers-legendaires','lalpha.png'),          cost:9,
+    desc:'+2 Mult sur absolument toutes les combos', desc_en:'+2 Mult on every combo',
+    apply:(id,chips,mult)=> [chips, mult+2] },
+  { id:'eternal',        rarity:'legendary', name:"L'Éternel",         name_en:'The Eternal',       img:IMG('jokers-legendaires','leternel.png'),         cost:10,
+    desc:'Gagne +1 Mult permanent après chaque blind battue (max 8)', desc_en:'+1 permanent Mult after each blind beaten (max 8)',
+    state:{ mult:0 },
+    onWinBlind:(j)=>{ if(j.state.mult<8) j.state.mult++; },
+    apply:(id,chips,mult,dice,kept,j)=> [chips, mult + (j?.state?.mult ?? 0)] },
+  { id:'omniscient',     rarity:'legendary', name:"L'Omniscient",      name_en:'The Omniscient',    img:IMG('jokers-legendaires','lomniscient.png'),      cost:9,
     desc:'Si aucun dé n\'est retenu → Mult ×2', desc_en:'If no dice are kept → Mult ×2',
     apply:(id,chips,mult,dice,kept)=> kept === 0 ? [chips, mult*2] : [chips,mult] },
+  { id:'dieu-hasard',    rarity:'legendary', name:'Le Dieu du Hasard', name_en:'God of Fortune',    img:IMG('jokers-legendaires','le-dieu-du-hasard.png'),cost:10,
+    desc:'Après chaque blind gagnée : +15 Chips OU +2 Mult OU +3💰 (aléatoire)', desc_en:'After each blind won: +15 Chips OR +2 Mult OR +3💰 (random)',
+    state:{ chips:0, mult:0 },
+    onWinBlind:(j)=>{ const r=Math.floor(Math.random()*3); if(r===0){j.state.chips+=15;toast('+15 Chips (Dieu du Hasard)','chips');}else if(r===1){j.state.mult+=2;toast('+2 Mult (Dieu du Hasard)','mult');}else{G.gold+=3;toast('+3💰 (Dieu du Hasard)','gold');} },
+    apply:(id,chips,mult,dice,kept,j)=> [chips+(j?.state?.chips??0), mult+(j?.state?.mult??0)] },
+  { id:'multiplicateur', rarity:'legendary', name:'Le Multiplicateur',  name_en:'The Multiplier',    img:IMG('jokers-legendaires','le-multiplicateur.png'),cost:9,
+    desc:'Mult ×1.5 sur toutes les combos · Chaque 6 dans la combo ×1.1 Mult en plus', desc_en:'Mult ×1.5 on all combos · Each 6 adds ×1.1 Mult',
+    apply:(id,chips,mult,dice)=> [chips, Math.round(mult * 1.5 * Math.pow(1.1, dice.filter(d=>d===6).length))] },
+  { id:'createur',       rarity:'legendary', name:'Le Créateur',        name_en:'The Creator',       img:IMG('jokers-legendaires','le-createur.png'),       cost:11,
+    desc:'Déverrouille 1 slot joker supplémentaire', desc_en:'Unlocks 1 extra joker slot',
+    isCreateur:true,
+    apply:(id,chips,mult)=> [chips,mult] },
+  { id:'intenable',      rarity:'legendary', name:"L'Intenable",        name_en:'The Unstoppable',   img:IMG('jokers-legendaires','lintenable.png'),        cost:10,
+    desc:'+2 Mult par joker possédé (sans limite)', desc_en:'+2 Mult per joker owned (no cap)',
+    apply:(id,chips,mult)=> [chips, mult + G.jokers.length * 2] },
+  { id:'maitre',         rarity:'legendary', name:'Le Maître du Jeu',   name_en:'Master of the Game',img:IMG('jokers-legendaires','le-maitre-du-jeu.png'),  cost:9,
+    desc:'Catégories (As…Six) → Chips doublées', desc_en:'Number categories (Aces…Sixes) → Chips doubled',
+    apply:(id,chips,mult)=> ['ones','twos','threes','fours','fives','sixes'].includes(id) ? [chips*2, mult] : [chips,mult] },
+  { id:'infini',         rarity:'legendary', name:"L'Infini",           name_en:'The Infinite',      img:IMG('jokers-legendaires','linfini.png'),           cost:11,
+    desc:'+3 Chips permanent après chaque combo jouée', desc_en:'+3 permanent Chips after every combo played',
+    state:{ chips:0 },
+    onCombo:(id,dice,j)=>{ j.state.chips+=3; },
+    apply:(id,chips,mult,dice,kept,j)=> [chips+(j?.state?.chips??0), mult] },
+  { id:'apotheose',      rarity:'legendary', name:"L'Apothéose",        name_en:'The Apotheosis',    img:IMG('jokers-legendaires','lapotheose.png'),        cost:12,
+    desc:'Dernier lancer de la main → Mult ×2', desc_en:'Last roll of the hand → Mult ×2',
+    apply:(id,chips,mult)=> G.rollsLeft === 0 ? [chips, mult*2] : [chips,mult] },
 ];
 
 // ══════════════════════════════════════════════════════════════════
@@ -321,54 +347,47 @@ const MODIFIERS = [
 // ══════════════════════════════════════════════════════════════════
 // Bonus équilibrés : combos faibles = petits bonus, combos fortes = gros bonus
 const CONSTELLATIONS = [
-  { id:'belier',    name:'Le Bélier', name_en:'Aries',      icon:'♈', combo:'ones',      bonus:{ chips:12, mult:1 }, desc:'As → +12 Chips +1 Mult', desc_en:'Aces → +12 Chips +1 Mult' },
-  { id:'taureau',   name:'Le Taureau', name_en:'Taurus',     icon:'♉', combo:'twos',      bonus:{ chips:12, mult:1 }, desc:'Deux → +12 Chips +1 Mult', desc_en:'Twos → +12 Chips +1 Mult' },
-  { id:'gemeaux',   name:'Les Gémeaux', name_en:'Gemini',    icon:'♊', combo:'threes',    bonus:{ chips:12, mult:1 }, desc:'Trois → +12 Chips +1 Mult', desc_en:'Threes → +12 Chips +1 Mult' },
-  { id:'cancer',    name:'Le Cancer', name_en:'Cancer',      icon:'♋', combo:'fours',     bonus:{ chips:12, mult:1 }, desc:'Quatre → +12 Chips +1 Mult', desc_en:'Fours → +12 Chips +1 Mult' },
-  { id:'lion',      name:'Le Lion', name_en:'Leo',        icon:'♌', combo:'fives',     bonus:{ chips:12, mult:1 }, desc:'Cinq → +12 Chips +1 Mult', desc_en:'Fives → +12 Chips +1 Mult' },
-  { id:'vierge',    name:'La Vierge', name_en:'Virgo',      icon:'♍', combo:'sixes',     bonus:{ chips:12, mult:1 }, desc:'Six → +12 Chips +1 Mult', desc_en:'Sixes → +12 Chips +1 Mult' },
-  { id:'pleiades',  name:'Les Pléiades', name_en:'The Pleiades',   icon:'💫', combo:'smStr',     bonus:{ chips:18, mult:1 }, desc:'Petite Suite → +18 Chips +1 Mult', desc_en:'Small Straight → +18 Chips +1 Mult' },
-  { id:'orion',     name:'Orion', name_en:'Orion',          icon:'⭐', combo:'threeKind', bonus:{ chips:22, mult:1 }, desc:'Brelan → +22 Chips +1 Mult', desc_en:'Three of a Kind → +22 Chips +1 Mult' },
-  { id:'andromede', name:'Andromède', name_en:'Andromeda',      icon:'🌌', combo:'fullHouse', bonus:{ chips:28, mult:2 }, desc:'Full House → +28 Chips +2 Mult', desc_en:'Full House → +28 Chips +2 Mult' },
-  { id:'cassiopee', name:'Cassiopée', name_en:'Cassiopeia',      icon:'🌟', combo:'fourKind',  bonus:{ chips:38, mult:2 }, desc:'Carré → +38 Chips +2 Mult', desc_en:'Four of a Kind → +38 Chips +2 Mult' },
-  { id:'lyre',      name:'La Lyre', name_en:'Lyra',        icon:'🎵', combo:'smStr',     bonus:{ chips:38, mult:2 }, desc:'Petite suite → +38 Chips +2 Mult', desc_en:'Small Straight → +38 Chips +2 Mult' },
-  { id:'cygne',     name:'Le Cygne', name_en:'Cygnus',       icon:'🦢', combo:'lgStr',     bonus:{ chips:55, mult:3 }, desc:'Grande suite → +55 Chips +3 Mult', desc_en:'Large Straight → +55 Chips +3 Mult' },
-  { id:'phenix',    name:'Le Phénix', name_en:'Phoenix',      icon:'🔥', combo:'yahtzee',   bonus:{ chips:75, mult:4 }, desc:'Yahtzee → +75 Chips +4 Mult', desc_en:'Yahtzee → +75 Chips +4 Mult' },
+  { id:'belier',      name:'Le Bélier',    name_en:'Aries',       img:IMG('constellations','le-belier.png'),      combo:'ones',      bonus:{ chips:12, mult:1 }, desc:'As → +12 Chips +1 Mult',            desc_en:'Aces → +12 Chips +1 Mult' },
+  { id:'taureau',     name:'Le Taureau',   name_en:'Taurus',      img:IMG('constellations','le-taureau.png'),     combo:'twos',      bonus:{ chips:12, mult:1 }, desc:'Deux → +12 Chips +1 Mult',           desc_en:'Twos → +12 Chips +1 Mult' },
+  { id:'gemeaux',     name:'Les Gémeaux',  name_en:'Gemini',      img:IMG('constellations','les-gemeaux.png'),    combo:'threes',    bonus:{ chips:12, mult:1 }, desc:'Trois → +12 Chips +1 Mult',          desc_en:'Threes → +12 Chips +1 Mult' },
+  { id:'cancer',      name:'Le Cancer',    name_en:'Cancer',      img:IMG('constellations','le-cancer.png'),      combo:'fours',     bonus:{ chips:12, mult:1 }, desc:'Quatre → +12 Chips +1 Mult',         desc_en:'Fours → +12 Chips +1 Mult' },
+  { id:'lion',        name:'Le Lion',      name_en:'Leo',         img:IMG('constellations','le-lion.png'),        combo:'fives',     bonus:{ chips:12, mult:1 }, desc:'Cinq → +12 Chips +1 Mult',           desc_en:'Fives → +12 Chips +1 Mult' },
+  { id:'vierge',      name:'La Vierge',    name_en:'Virgo',       img:IMG('constellations','la-vierge.png'),      combo:'sixes',     bonus:{ chips:12, mult:1 }, desc:'Six → +12 Chips +1 Mult',            desc_en:'Sixes → +12 Chips +1 Mult' },
+  { id:'balance',     name:'La Balance',   name_en:'Libra',       img:IMG('constellations','la-balance.png'),     combo:'smStr',     bonus:{ chips:18, mult:1 }, desc:'Petite Suite → +18 Chips +1 Mult',   desc_en:'Small Straight → +18 Chips +1 Mult' },
+  { id:'scorpion',    name:'Le Scorpion',  name_en:'Scorpio',     img:IMG('constellations','le-scorpion.png'),    combo:'threeKind', bonus:{ chips:22, mult:1 }, desc:'Brelan → +22 Chips +1 Mult',         desc_en:'Three of a Kind → +22 Chips +1 Mult' },
+  { id:'sagittaire',  name:'Le Sagittaire',name_en:'Sagittarius', img:IMG('constellations','le-sagittaire.png'),  combo:'lgStr',     bonus:{ chips:30, mult:2 }, desc:'Grande Suite → +30 Chips +2 Mult',   desc_en:'Large Straight → +30 Chips +2 Mult' },
+  { id:'capricorne',  name:'Le Capricorne',name_en:'Capricorn',   img:IMG('constellations','le-capricorne.png'),  combo:'fullHouse', bonus:{ chips:28, mult:2 }, desc:'Full House → +28 Chips +2 Mult',     desc_en:'Full House → +28 Chips +2 Mult' },
+  { id:'verseau',     name:'Le Verseau',   name_en:'Aquarius',    img:IMG('constellations','le-verseau.png'),     combo:'fourKind',  bonus:{ chips:38, mult:2 }, desc:'Carré → +38 Chips +2 Mult',          desc_en:'Four of a Kind → +38 Chips +2 Mult' },
+  { id:'poissons',    name:'Les Poissons', name_en:'Pisces',      img:IMG('constellations','les-poissons.png'),   combo:'yahtzee',   bonus:{ chips:75, mult:4 }, desc:'Yahtzee → +75 Chips +4 Mult',        desc_en:'Yahtzee → +75 Chips +4 Mult' },
 ];
 
 const CONSUMABLE_POOL = [
-  { id:'wilddie',      name:'Dé Joker', name_en:'Wild Die',      icon:'🎭', cost:3, desc:"Change un dé au choix en n'importe quelle valeur", desc_en:'Change one die to any value',       type:'wild'       },
-  { id:'reroll',       name:'Relance Libre', name_en:'Free Reroll',  icon:'🎁', cost:2, desc:'+1 relance gratuite pour cette main', desc_en:'+1 free reroll this hand',                    type:'roll'       },
-  { id:'doubledown',   name:'Double Mise', name_en:'Double Down',    icon:'💥', cost:5, desc:'Double le score de la prochaine combinaison', desc_en:"Doubles the next combo's score",            type:'double'     },
-  { id:'freezer',      name:'Gel', name_en:'Freeze',            icon:'🧊', cost:3, desc:'Conserve automatiquement le dé le plus élevé', desc_en:'Automatically keeps the highest die',          type:'freeze'     },
-  { id:'mirror',       name:'Miroir', name_en:'Mirror',         icon:'🔁', cost:3, desc:'Inverse la valeur de tous les dés (1↔6, 2↔5, 3↔4)', desc_en:'Flips all dice values (1↔6, 2↔5, 3↔4)',     type:'mirror'     },
-  { id:'oracle',       name:'Oracle', name_en:'Oracle',         icon:'🔮', cost:4, desc:'+2 Mult sur toutes les combos pour cette main', desc_en:'+2 Mult on all combos this hand',          type:'oracle'     },
-  { id:'bonus',        name:'Bonus', name_en:'Bonus',          icon:'🤑', cost:2, desc:'Gagne 3💰 immédiatement', desc_en:'Gain 3💰 immediately',                               type:'bonus'      },
-  { id:'acceleration', name:'Accélération', name_en:'Acceleration',   icon:'⏩', cost:4, desc:'Réduit la cible de la blind actuelle de 20%', desc_en:'Reduces current blind target by 20%',            type:'acceleration'},
+  { id:'oracle',       name:'Oracle',       name_en:'Oracle',       img:IMG('consommables','oracle.png'),       cost:4, desc:'+2 Mult sur toutes les combos pour cette main',              desc_en:'+2 Mult on all combos this hand',             type:'oracle'       },
+  { id:'elixir',       name:'Élixir',       name_en:'Elixir',       img:IMG('consommables','elixir.png'),       cost:3, desc:'+1 relance gratuite pour cette main',                        desc_en:'+1 free reroll this hand',                    type:'roll'         },
+  { id:'grimoire',     name:'Grimoire',     name_en:'Grimoire',     img:IMG('consommables','grimoire.png'),     cost:5, desc:'Double le score de la prochaine combinaison jouée',            desc_en:"Doubles the next combo's score",              type:'double'       },
+  { id:'talisman',     name:'Talisman',     name_en:'Talisman',     img:IMG('consommables','talisman.png'),     cost:4, desc:'Réduit la cible de la blind actuelle de 20%',                 desc_en:'Reduces current blind target by 20%',         type:'acceleration' },
+  { id:'bombardment',  name:'Bombardement', name_en:'Bombardment',  img:IMG('consommables','bombardment.png'),  cost:3, desc:"Change un dé au choix en n'importe quelle valeur",            desc_en:'Change one die to any value',                 type:'wild'         },
 ];
 
 const BOSS_BLINDS = [
-  { id:'cyclope', name:'Le Cyclope', name_en:'The Cyclops',  icon:'👁️',  desc:'Les dés montrant 1 sont bannis — ils valent 0 et ne comptent pas dans les combinaisons.', desc_en:"Dice showing 1 are banned — they're worth 0 and don't count in combinations.", effect:'ban1'      },
-  { id:'serpent', name:'Le Serpent', name_en:'The Serpent',  icon:'🐍',  desc:'La combinaison Full House est interdite.', desc_en:'The Full House combination is forbidden.',                                                   effect:'noFullHouse'},
-  { id:'tyran',   name:'Le Tyran', name_en:'The Tyrant',    icon:'🗡️',  desc:'-1 lancer par main (minimum 1).', desc_en:'-1 roll per hand (minimum 1).',                                                            effect:'lessRoll'  },
-  { id:'brume',   name:'La Brume', name_en:'The Mist',    icon:'🌫️',  desc:'Les valeurs des dés sont cachées jusqu\'à la soumission d\'une combinaison.', desc_en:'Dice values are hidden until you submit a combination.',                effect:'fog'       },
-  { id:'gouffre', name:'Le Gouffre', name_en:'The Abyss',  icon:'🕳️',  desc:'Le score cible est multiplié par 1.8.', desc_en:'The target score is multiplied by 1.8.',                                                      effect:'bigTarget' },
-  { id:'miroir',  name:'Le Miroir', name_en:'The Mirror',   icon:'🪞',  desc:'Les dés impairs (1,3,5) sont transformés en leur miroir (6,4,2) après le lancer.', desc_en:'Odd dice (1,3,5) are transformed into their mirror (6,4,2) after the roll.',           effect:'mirror'    },
-  { id:'parasite',  name:'Le Parasite', name_en:'The Parasite',   icon:'🦠',  desc:'Un joker aléatoire est neutralisé avant chaque lancer. Il se réactive après.', desc_en:'A random joker is disabled before each roll. It reactivates afterwards.',         effect:'parasite'  },
-  { id:'avare',     name:"L'Avare",     name_en:'The Miser Boss',  icon:'💀',  desc:'Vous ne récupérez que 2 or après une blind battue au lieu de 4.', desc_en:'You only gain 2 gold after beating a blind instead of 4.',                            effect:'lowGold'   },
-  { id:'fantome',   name:'Le Fantôme',  name_en:'The Ghost',       icon:'👻',  desc:'Vous commencez avec seulement 3 mains au lieu de 4.', desc_en:'You start with only 3 hands instead of 4.',                                                     effect:'lessHands' },
+  { id:'la-hydre',          name:'La Hydre',          name_en:'The Hydra',       img:IMG('boss-blinds','la-hydre.png'),          desc:'Les dés montrant 1 sont bannis — ils valent 0 et ne comptent pas.',           desc_en:"Dice showing 1 are banned — worth 0 and don't count.",         effect:'ban1'       },
+  { id:'le-necromancien',   name:'Le Nécromancien',   name_en:'The Necromancer', img:IMG('boss-blinds','le-necromancien.png'),   desc:'Un joker aléatoire est neutralisé avant chaque lancer. Il se réactive après.', desc_en:'A random joker is disabled before each roll. Reactivates after.',effect:'parasite'   },
+  { id:'le-golem',          name:'Le Golem',          name_en:'The Golem',       img:IMG('boss-blinds','le-golem.png'),          desc:'Le score cible est multiplié par 1.8.',                                        desc_en:'The target score is multiplied by 1.8.',                        effect:'bigTarget'  },
+  { id:'la-reine-araignee', name:'La Reine Araignée', name_en:'The Spider Queen', img:IMG('boss-blinds','la-reine-araignee.png'),desc:'La combinaison Full House est interdite.',                                      desc_en:'The Full House combination is forbidden.',                      effect:'noFullHouse'},
+  { id:'le-devoreur',       name:'Le Dévoreur',       name_en:'The Devourer',    img:IMG('boss-blinds','le-devoreur.png'),       desc:'-1 lancer par main (minimum 1).',                                             desc_en:'-1 roll per hand (minimum 1).',                                 effect:'lessRoll'   },
 ];
 
 // Cibles par ante [petite, grande, boss] — équilibre revu (difficulté rehaussée)
 const ANTE_TARGETS = [
-  [  450,   900,  1600],
-  [ 1200,  2400,  4200],
-  [ 3000,  6000, 10500],
-  [ 7500, 15000, 27000],
-  [18000, 38000, 68000],
+  [  350,   700,  1200],
+  [  900,  1800,  3200],
+  [ 2200,  4500,  8000],
+  [ 5500, 11000, 20000],
+  [14000, 28000, 50000],
 ];
 
 const MAX_JOKERS  = 5;
+function getMaxJokers() { return MAX_JOKERS + (G.jokers?.some(j => j.isCreateur) ? 1 : 0); }
 const BASE_HANDS  = 4;
 const BASE_ROLLS  = 3;
 const BASE_GOLD   = 4;
@@ -727,7 +746,8 @@ function showBlindIntro() {
   G.bannedValue = G.bossEffect === 'ban1' ? rand(1, 6) : null;
 
   const labels = [t('smallBlind'), t('bigBlind'), t('bossBlind')];
-  const icons  = ['<i class="fa-solid fa-bullseye"></i>', '<i class="fa-solid fa-trophy"></i>', boss?.icon ?? '💀'];
+  const bossIconHtml = boss?.img ? `<img src="${boss.img}" class="card-art" alt="" style="max-height:60px">` : (boss?.icon ?? '💀');
+  const icons  = ['<i class="fa-solid fa-bullseye"></i>', '<i class="fa-solid fa-trophy"></i>', bossIconHtml];
   const names  = [t('blindNameSmall', {n:G.ante}), t('blindNameBig', {n:G.ante}), boss ? jn(boss) : '???'];
 
   document.getElementById('biLabel').textContent  = labels[G.blindIdx];
@@ -786,7 +806,7 @@ function getMaxRolls() {
 }
 
 function getDiceCount() {
-  return 5 + G.jokers.filter(j => j.id === 'sextuple').length;
+  return 5 + G.jokers.filter(j => j.id === 'imbattable').length;
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -1050,7 +1070,7 @@ function isComboValid(id, effDice) {
     case 'fourKind':  return vals.some(c=>c>=4);
     case 'fullHouse': { const sv=[...vals].sort((a,b)=>a-b); return sv[0]===2&&sv[1]===3; }
     case 'smStr':     return hasSeq(effDice, G.jokers.some(j=>j.id==='raccourci')  ? 3 : 4);
-    case 'lgStr':     return hasSeq(effDice, G.jokers.some(j=>j.id==='graccourci') ? 4 : 5);
+    case 'lgStr':     return hasSeq(effDice, G.jokers.some(j=>j.id==='tricheur') ? 4 : 5);
     case 'yahtzee':   return vals.some(c=>c===5);
     default:          return false;
   }
@@ -1087,7 +1107,7 @@ function computeScore(id, effDice, preview = false) {
     // Modificateur appliqué immédiatement après le joker (l'ordre compte ici aussi)
     if (j.modifier && !j.modifier.isPhantom) [chips, mult] = j.modifier.apply(chips, mult);
     if (steps && (chips !== c0 || mult !== m0)) {
-      steps.push({ type:'joker', jIdx, icon:j.icon, name:jn(j), chips, mult, dChips:chips-c0, dMult:mult-m0 });
+      steps.push({ type:'joker', jIdx, icon:j.icon ?? '🃏', name:jn(j), chips, mult, dChips:chips-c0, dMult:mult-m0 });
     }
   });
 
@@ -1482,7 +1502,7 @@ function renderShopSection(elId, items, type) {
   }
   items.forEach(item => {
     const canBuy  = !item.sold && G.gold >= item.cost;
-    const tooMany = type === 'joker' && G.jokers.length >= MAX_JOKERS;
+    const tooMany = type === 'joker' && G.jokers.length >= getMaxJokers();
     const div = document.createElement('div');
     div.className = 'shop-item' + (item.sold ? ' sold' : '');
     if (type === 'joker') div.dataset.rarity = item.rarity || 'common';
@@ -1508,7 +1528,7 @@ function renderShopSection(elId, items, type) {
 
 function buyItem(item, type) {
   if (G.gold < item.cost || item.sold) return;
-  if (type === 'joker' && !item.phantom && G.jokers.filter(j=>!j.phantom).length >= MAX_JOKERS) {
+  if (type === 'joker' && !item.phantom && G.jokers.filter(j=>!j.phantom).length >= getMaxJokers()) {
     toast(t('slotsJokersFull'),'red'); return;
   }
   if (type === 'consumable' && G.consumables.length >= MAX_CONSUMABLES) {
@@ -1554,12 +1574,12 @@ function renderSidePanel() {
 
   // Label avec compteur
   const jLabel = js.closest('.col-side').querySelector('.panel-label');
-  if (jLabel) jLabel.textContent = t('jokersCount', {n: normalJokers.length, max: MAX_JOKERS});
+  if (jLabel) jLabel.textContent = t('jokersCount', {n: normalJokers.length, max: getMaxJokers()});
 
   const jGrid = document.createElement('div');
   jGrid.className = 'slot-grid';
   const normalWithIdx = G.jokers.map((j,i) => ({ j, i })).filter(x => !x.j.phantom);
-  for (let slot = 0; slot < MAX_JOKERS; slot++) {
+  for (let slot = 0; slot < getMaxJokers(); slot++) {
     const item = normalWithIdx[slot];
     const div  = document.createElement('div');
     if (item) {
@@ -1631,7 +1651,7 @@ function renderSidePanel() {
     const div = document.createElement('div');
     if (c) {
       div.className = 'panel-card cons-card';
-      div.innerHTML = `<div class="pc-icon">${c.icon}</div><div class="pc-name">${jn(c)}</div><div class="pc-desc">${jd(c)}</div>`;
+      div.innerHTML = `<div class="pc-icon">${jicon(c)}</div><div class="pc-name">${jn(c)}</div><div class="pc-desc">${jd(c)}</div>`;
       div.style.cursor = 'pointer';
       div.title = t('clickToUse');
       div.addEventListener('click', () => useConsumable(c, i));
@@ -1665,29 +1685,9 @@ function useConsumable(c, idx) {
       G.doubleNext = true;
       toast(t('doubleCombo'), 'gold');
       break;
-    case 'freeze': {
-      const maxIdx = G.dice.indexOf(Math.max(...G.dice));
-      G.kept[maxIdx] = true;
-      renderDice();
-      toast(t('frozen', {v: G.dice[maxIdx]}), 'gold');
-      break;
-    }
-    case 'mirror': {
-      const mirrorMap = {1:6, 2:5, 3:4, 4:3, 5:2, 6:1};
-      G.dice = G.dice.map(d => mirrorMap[d] ?? d);
-      renderDice();
-      renderPreviewPanel();
-      toast(t('mirrored'), 'gold');
-      break;
-    }
     case 'oracle':
       G.oracleActive = true;
       toast(t('oracleActive'), 'gold');
-      break;
-    case 'bonus':
-      G.gold += 3;
-      renderSidePanel();
-      toast(t('plus3gold'), 'gold');
       break;
     case 'acceleration':
       G.target = Math.max(1, Math.round(G.target * 0.8));
@@ -1795,7 +1795,10 @@ function renderBoosterSection() {
   G.shopItems.boosters.forEach(b => {
     const isCons  = b.kind !== 'joker';
     const isSmall = b.type === 'small';
-    const icon    = isCons ? (isSmall ? '📦' : '🎁') : (isSmall ? '🎴' : '🗃️');
+    const boxImg  = isCons
+      ? (isSmall ? IMG('boites-boutique','boite-peu-commune.png') : IMG('boites-boutique','boite-rare.png'))
+      : (isSmall ? IMG('boites-boutique','boite-commune.png')     : IMG('boites-boutique','boite-legendaire.png'));
+    const icon    = `<img src="${boxImg}" class="card-art" alt="" style="max-height:56px">`;
     const picks   = isCons ? (isSmall ? 4 : 8) : (isSmall ? 3 : 5);
     const name    = isCons ? t(isSmall ? 'smallBoxConstellation' : 'largeBoxConstellation')
                            : t(isSmall ? 'smallBoxJoker' : 'largeBoxJoker');
@@ -1823,13 +1826,15 @@ function buyBooster(booster) {
   booster.sold = true;
   renderShop();
   if (booster.kind === 'joker') {
-    openJokerBoosterModal(booster.type === 'small' ? 3 : 5);
+    const boxImg = booster.type === 'small' ? IMG('boites-boutique','boite-commune.png') : IMG('boites-boutique','boite-legendaire.png');
+    openJokerBoosterModal(booster.type === 'small' ? 3 : 5, boxImg);
   } else {
-    openBoosterModal(booster.type === 'small' ? 4 : 8);
+    const boxImg = booster.type === 'small' ? IMG('boites-boutique','boite-peu-commune.png') : IMG('boites-boutique','boite-rare.png');
+    openBoosterModal(booster.type === 'small' ? 4 : 8, boxImg);
   }
 }
 
-function openBoosterModal(count) {
+function openBoosterModal(count, boxImg = IMG('boites-boutique','boite-peu-commune.png')) {
   // Sélectionner 'count' constellations aléatoires (avec remplacement possible pour stacks)
   const pool    = [...CONSTELLATIONS];
   shuffle(pool);
@@ -1845,17 +1850,9 @@ function openBoosterModal(count) {
     <div class="booster-modal" id="boosterModal">
       <h3 class="booster-title">${t('constellationBox')}</h3>
       <div class="booster-box-wrap" id="boosterBoxWrap">
-        <div class="box3d cosmic" id="boosterBox">
-          <div class="box3d-inner">
-            <div class="bf bf-back"></div>
-            <div class="bf bf-left"></div>
-            <div class="bf bf-right"></div>
-            <div class="bf bf-bottom"></div>
-            <div class="box-core"></div>
-            <div class="lid-pivot"><div class="lid"><span class="lid-grip"></span></div></div>
-            <div class="bf bf-front"><span class="box-sym">🌌</span></div>
-          </div>
-          <div class="box-beam"></div>
+        <div class="booster-box-img" id="boosterBox">
+          <img src="${boxImg}" alt="" class="booster-box-art">
+          <div class="booster-box-glow"></div>
         </div>
         <p class="booster-click-hint">${t('clickToOpen')}</p>
       </div>
@@ -1871,7 +1868,7 @@ function openBoosterModal(count) {
     const card = document.createElement('div');
     card.className = 'booster-card';
     card.innerHTML = `
-      <div class="bc-icon">${con.icon}</div>
+      <div class="bc-icon">${jicon(con)}</div>
       <div class="bc-name">${jn(con)}</div>
       <div class="bc-combo">${cn(con.combo)}</div>
       <div class="bc-bonus">${jd(con)}</div>
@@ -1888,12 +1885,11 @@ function openBoosterModal(count) {
       overlay.querySelector('#boosterBoxWrap').classList.add('hidden');
       cardsEl.classList.remove('hidden');
       overlay.querySelector('#boosterPickHint').classList.remove('hidden');
-      // Animer l'apparition des cartes en cascade
       cardsEl.querySelectorAll('.booster-card').forEach((c, i) => {
         c.style.transitionDelay = `${i * 80}ms`;
         c.classList.add('revealed');
       });
-    }, 1000);
+    }, 400);
   }, { once: true });
 }
 
@@ -1947,7 +1943,7 @@ function applyConstellation(con, overlay) {
   setTimeout(() => overlay.remove(), 400);
 }
 
-function openJokerBoosterModal(count) {
+function openJokerBoosterModal(count, boxImg = IMG('boites-boutique','boite-commune.png')) {
   const ownedIds  = G.jokers.map(j => j.id);
   const available = JOKER_POOL.filter(j => !ownedIds.includes(j.id));
   const pool      = [...available];
@@ -1984,17 +1980,9 @@ function openJokerBoosterModal(count) {
     <div class="booster-modal">
       <h3 class="booster-title">${t('jokerBox')}</h3>
       <div class="booster-box-wrap" id="jokerBoosterBoxWrap">
-        <div class="box3d gold" id="jokerBoosterBox">
-          <div class="box3d-inner">
-            <div class="bf bf-back"></div>
-            <div class="bf bf-left"></div>
-            <div class="bf bf-right"></div>
-            <div class="bf bf-bottom"></div>
-            <div class="box-core"></div>
-            <div class="lid-pivot"><div class="lid"><span class="lid-grip"></span></div></div>
-            <div class="bf bf-front"><span class="box-sym">🃏</span></div>
-          </div>
-          <div class="box-beam"></div>
+        <div class="booster-box-img" id="jokerBoosterBox">
+          <img src="${boxImg}" alt="" class="booster-box-art">
+          <div class="booster-box-glow"></div>
         </div>
         <p class="booster-click-hint">${t('clickToOpen')}</p>
       </div>
@@ -2005,7 +1993,7 @@ function openJokerBoosterModal(count) {
 
   const cardsEl = overlay.querySelector('#jokerBoosterCards');
   picks.forEach(j => {
-    const canAdd   = j.phantom || G.jokers.filter(x => !x.phantom).length < MAX_JOKERS;
+    const canAdd   = j.phantom || G.jokers.filter(x => !x.phantom).length < getMaxJokers();
     const modBadge = j.modifier
       ? `<span class="mod-badge" style="color:${j.modifier.color}">${j.modifier.icon}</span>` : '';
     const card = document.createElement('div');
@@ -2040,7 +2028,7 @@ function openJokerBoosterModal(count) {
         c.style.transitionDelay = `${i * 80}ms`;
         c.classList.add('revealed');
       });
-    }, 1000);
+    }, 400);
   }, { once: true });
 }
 
@@ -2142,7 +2130,7 @@ function renderEncycloTab(tab) {
       const row = document.createElement('div');
       row.className = 'encyclo-row';
       row.innerHTML = `
-        <span class="er-icon">${c.icon}</span>
+        <span class="er-icon">${jicon(c)}</span>
         <div class="er-info">
           <span class="er-name">${jn(c)}</span>
           <span class="er-desc">${jd(c)}</span>

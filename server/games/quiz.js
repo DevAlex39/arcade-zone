@@ -11,7 +11,7 @@ function shuffle(arr) {
 function publicQuestion(q, idx, total, timeLimit) {
   const answers = q.type === 'boolean'
     ? ['True', 'False']
-    : shuffle([q.correct_answer, ...JSON.parse(q.incorrect_answers)]);
+    : shuffle([q.correct_answer, ...(Array.isArray(q.incorrect_answers) ? q.incorrect_answers : JSON.parse(q.incorrect_answers || '[]'))]);
   return {
     idx,
     total,

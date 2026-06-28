@@ -1,0 +1,499 @@
+[
+  {
+    "category": "jokers-communs",
+    "name": "Le Briscard",
+    "file": "cards/jokers-communs/le-briscard.png",
+    "w": 139,
+    "h": 201
+  },
+  {
+    "category": "jokers-communs",
+    "name": "Le Cariste",
+    "file": "cards/jokers-communs/le-cariste.png",
+    "w": 130,
+    "h": 201
+  },
+  {
+    "category": "jokers-communs",
+    "name": "Le Pleiniste",
+    "file": "cards/jokers-communs/le-pleiniste.png",
+    "w": 130,
+    "h": 201
+  },
+  {
+    "category": "jokers-communs",
+    "name": "Le Coureur",
+    "file": "cards/jokers-communs/le-coureur.png",
+    "w": 129,
+    "h": 201
+  },
+  {
+    "category": "jokers-communs",
+    "name": "Le Chanceux",
+    "file": "cards/jokers-communs/le-chanceux.png",
+    "w": 144,
+    "h": 201
+  },
+  {
+    "category": "jokers-communs",
+    "name": "L'Avare",
+    "file": "cards/jokers-communs/lavare.png",
+    "w": 148,
+    "h": 201
+  },
+  {
+    "category": "jokers-communs",
+    "name": "La Fortune",
+    "file": "cards/jokers-communs/la-fortune.png",
+    "w": 127,
+    "h": 201
+  },
+  {
+    "category": "jokers-communs",
+    "name": "Le Rentier",
+    "file": "cards/jokers-communs/le-rentier.png",
+    "w": 136,
+    "h": 201
+  },
+  {
+    "category": "jokers-peu-communs",
+    "name": "Le Relanceur",
+    "file": "cards/jokers-peu-communs/le-relanceur.png",
+    "w": 111,
+    "h": 174
+  },
+  {
+    "category": "jokers-peu-communs",
+    "name": "L'Orfevre",
+    "file": "cards/jokers-peu-communs/lorfevre.png",
+    "w": 110,
+    "h": 174
+  },
+  {
+    "category": "jokers-peu-communs",
+    "name": "Le Doubleur",
+    "file": "cards/jokers-peu-communs/le-doubleur.png",
+    "w": 109,
+    "h": 174
+  },
+  {
+    "category": "jokers-peu-communs",
+    "name": "L'Alchimiste",
+    "file": "cards/jokers-peu-communs/lalchimiste.png",
+    "w": 107,
+    "h": 174
+  },
+  {
+    "category": "jokers-peu-communs",
+    "name": "La Serie",
+    "file": "cards/jokers-peu-communs/la-serie.png",
+    "w": 104,
+    "h": 174
+  },
+  {
+    "category": "jokers-peu-communs",
+    "name": "Le Raccourci",
+    "file": "cards/jokers-peu-communs/le-raccourci.png",
+    "w": 106,
+    "h": 174
+  },
+  {
+    "category": "jokers-peu-communs",
+    "name": "Le Banquier",
+    "file": "cards/jokers-peu-communs/le-banquier.png",
+    "w": 112,
+    "h": 174
+  },
+  {
+    "category": "jokers-peu-communs",
+    "name": "Le Prospecteur",
+    "file": "cards/jokers-peu-communs/le-prospecteur.png",
+    "w": 109,
+    "h": 174
+  },
+  {
+    "category": "jokers-peu-communs",
+    "name": "Le Marathonien",
+    "file": "cards/jokers-peu-communs/le-marathonien.png",
+    "w": 111,
+    "h": 174
+  },
+  {
+    "category": "jokers-peu-communs",
+    "name": "Le Doyen",
+    "file": "cards/jokers-peu-communs/le-doyen.png",
+    "w": 113,
+    "h": 174
+  },
+  {
+    "category": "jokers-peu-communs",
+    "name": "Les Jumeaux",
+    "file": "cards/jokers-peu-communs/les-jumeaux.png",
+    "w": 111,
+    "h": 174
+  },
+  {
+    "category": "jokers-rares",
+    "name": "Le Dechaine",
+    "file": "cards/jokers-rares/le-dechaine.png",
+    "w": 117,
+    "h": 179
+  },
+  {
+    "category": "jokers-rares",
+    "name": "Le Perfectionniste",
+    "file": "cards/jokers-rares/le-perfectionniste.png",
+    "w": 122,
+    "h": 179
+  },
+  {
+    "category": "jokers-rares",
+    "name": "Le Collector",
+    "file": "cards/jokers-rares/le-collector.png",
+    "w": 116,
+    "h": 179
+  },
+  {
+    "category": "jokers-rares",
+    "name": "Le Gambleur",
+    "file": "cards/jokers-rares/le-gambleur.png",
+    "w": 118,
+    "h": 179
+  },
+  {
+    "category": "jokers-rares",
+    "name": "Le Stratege",
+    "file": "cards/jokers-rares/le-stratege.png",
+    "w": 120,
+    "h": 179
+  },
+  {
+    "category": "jokers-rares",
+    "name": "L'Exploitant",
+    "file": "cards/jokers-rares/lexploitant.png",
+    "w": 122,
+    "h": 179
+  },
+  {
+    "category": "jokers-rares",
+    "name": "Le Survivant",
+    "file": "cards/jokers-rares/le-survivant.png",
+    "w": 118,
+    "h": 179
+  },
+  {
+    "category": "jokers-rares",
+    "name": "Le Tricheur",
+    "file": "cards/jokers-rares/le-tricheur.png",
+    "w": 114,
+    "h": 179
+  },
+  {
+    "category": "jokers-rares",
+    "name": "L'Imbattable",
+    "file": "cards/jokers-rares/limbattable.png",
+    "w": 119,
+    "h": 179
+  },
+  {
+    "category": "jokers-rares",
+    "name": "Le Bourreau",
+    "file": "cards/jokers-rares/le-bourreau.png",
+    "w": 123,
+    "h": 179
+  },
+  {
+    "category": "jokers-legendaires",
+    "name": "Le Dieu du Hasard",
+    "file": "cards/jokers-legendaires/le-dieu-du-hasard.png",
+    "w": 114,
+    "h": 180
+  },
+  {
+    "category": "jokers-legendaires",
+    "name": "Le Multiplicateur",
+    "file": "cards/jokers-legendaires/le-multiplicateur.png",
+    "w": 115,
+    "h": 180
+  },
+  {
+    "category": "jokers-legendaires",
+    "name": "Le Createur",
+    "file": "cards/jokers-legendaires/le-createur.png",
+    "w": 113,
+    "h": 180
+  },
+  {
+    "category": "jokers-legendaires",
+    "name": "L'Omniscient",
+    "file": "cards/jokers-legendaires/lomniscient.png",
+    "w": 115,
+    "h": 180
+  },
+  {
+    "category": "jokers-legendaires",
+    "name": "L'Alpha",
+    "file": "cards/jokers-legendaires/lalpha.png",
+    "w": 121,
+    "h": 180
+  },
+  {
+    "category": "jokers-legendaires",
+    "name": "L'Eternel",
+    "file": "cards/jokers-legendaires/leternel.png",
+    "w": 119,
+    "h": 180
+  },
+  {
+    "category": "jokers-legendaires",
+    "name": "L'Intenable",
+    "file": "cards/jokers-legendaires/lintenable.png",
+    "w": 116,
+    "h": 180
+  },
+  {
+    "category": "jokers-legendaires",
+    "name": "Le Maitre du Jeu",
+    "file": "cards/jokers-legendaires/le-maitre-du-jeu.png",
+    "w": 117,
+    "h": 180
+  },
+  {
+    "category": "jokers-legendaires",
+    "name": "L'Infini",
+    "file": "cards/jokers-legendaires/linfini.png",
+    "w": 122,
+    "h": 180
+  },
+  {
+    "category": "jokers-legendaires",
+    "name": "L'Apotheose",
+    "file": "cards/jokers-legendaires/lapotheose.png",
+    "w": 123,
+    "h": 180
+  },
+  {
+    "category": "constellations",
+    "name": "Le Belier",
+    "file": "cards/constellations/le-belier.png",
+    "w": 93,
+    "h": 136
+  },
+  {
+    "category": "constellations",
+    "name": "Le Taureau",
+    "file": "cards/constellations/le-taureau.png",
+    "w": 93,
+    "h": 136
+  },
+  {
+    "category": "constellations",
+    "name": "Les Gemeaux",
+    "file": "cards/constellations/les-gemeaux.png",
+    "w": 93,
+    "h": 136
+  },
+  {
+    "category": "constellations",
+    "name": "Le Cancer",
+    "file": "cards/constellations/le-cancer.png",
+    "w": 93,
+    "h": 136
+  },
+  {
+    "category": "constellations",
+    "name": "Le Lion",
+    "file": "cards/constellations/le-lion.png",
+    "w": 92,
+    "h": 136
+  },
+  {
+    "category": "constellations",
+    "name": "La Vierge",
+    "file": "cards/constellations/la-vierge.png",
+    "w": 93,
+    "h": 136
+  },
+  {
+    "category": "constellations",
+    "name": "La Balance",
+    "file": "cards/constellations/la-balance.png",
+    "w": 96,
+    "h": 136
+  },
+  {
+    "category": "constellations",
+    "name": "Le Scorpion",
+    "file": "cards/constellations/le-scorpion.png",
+    "w": 108,
+    "h": 136
+  },
+  {
+    "category": "constellations",
+    "name": "Le Sagittaire",
+    "file": "cards/constellations/le-sagittaire.png",
+    "w": 112,
+    "h": 136
+  },
+  {
+    "category": "constellations",
+    "name": "Le Capricorne",
+    "file": "cards/constellations/le-capricorne.png",
+    "w": 111,
+    "h": 136
+  },
+  {
+    "category": "constellations",
+    "name": "Le Verseau",
+    "file": "cards/constellations/le-verseau.png",
+    "w": 111,
+    "h": 136
+  },
+  {
+    "category": "constellations",
+    "name": "Les Poissons",
+    "file": "cards/constellations/les-poissons.png",
+    "w": 110,
+    "h": 136
+  },
+  {
+    "category": "consommables",
+    "name": "Oracle",
+    "file": "cards/consommables/oracle.png",
+    "w": 102,
+    "h": 116
+  },
+  {
+    "category": "consommables",
+    "name": "Elixir",
+    "file": "cards/consommables/elixir.png",
+    "w": 103,
+    "h": 116
+  },
+  {
+    "category": "consommables",
+    "name": "Grimoire",
+    "file": "cards/consommables/grimoire.png",
+    "w": 106,
+    "h": 116
+  },
+  {
+    "category": "consommables",
+    "name": "Talisman",
+    "file": "cards/consommables/talisman.png",
+    "w": 104,
+    "h": 116
+  },
+  {
+    "category": "consommables",
+    "name": "Bombardment",
+    "file": "cards/consommables/bombardment.png",
+    "w": 102,
+    "h": 116
+  },
+  {
+    "category": "boss-blinds",
+    "name": "La Hydre",
+    "file": "cards/boss-blinds/la-hydre.png",
+    "w": 126,
+    "h": 116
+  },
+  {
+    "category": "boss-blinds",
+    "name": "Le Necromancien",
+    "file": "cards/boss-blinds/le-necromancien.png",
+    "w": 127,
+    "h": 116
+  },
+  {
+    "category": "boss-blinds",
+    "name": "Le Golem",
+    "file": "cards/boss-blinds/le-golem.png",
+    "w": 135,
+    "h": 116
+  },
+  {
+    "category": "boss-blinds",
+    "name": "La Reine Araignee",
+    "file": "cards/boss-blinds/la-reine-araignee.png",
+    "w": 128,
+    "h": 116
+  },
+  {
+    "category": "boss-blinds",
+    "name": "Le Devoreur",
+    "file": "cards/boss-blinds/le-devoreur.png",
+    "w": 125,
+    "h": 116
+  },
+  {
+    "category": "boites-boutique",
+    "name": "Boite Commune",
+    "file": "cards/boites-boutique/boite-commune.png",
+    "w": 108,
+    "h": 88
+  },
+  {
+    "category": "boites-boutique",
+    "name": "Boite Peu Commune",
+    "file": "cards/boites-boutique/boite-peu-commune.png",
+    "w": 105,
+    "h": 88
+  },
+  {
+    "category": "boites-boutique",
+    "name": "Boite Rare",
+    "file": "cards/boites-boutique/boite-rare.png",
+    "w": 105,
+    "h": 88
+  },
+  {
+    "category": "boites-boutique",
+    "name": "Boite Legendaire",
+    "file": "cards/boites-boutique/boite-legendaire.png",
+    "w": 114,
+    "h": 88
+  },
+  {
+    "category": "boites-boutique",
+    "name": "Boite Cosmique",
+    "file": "cards/boites-boutique/boite-cosmique.png",
+    "w": 117,
+    "h": 88
+  },
+  {
+    "category": "fonds-ecran",
+    "name": "Taverne",
+    "file": "cards/fonds-ecran/taverne.png",
+    "w": 153,
+    "h": 88
+  },
+  {
+    "category": "fonds-ecran",
+    "name": "Donjon",
+    "file": "cards/fonds-ecran/donjon.png",
+    "w": 112,
+    "h": 88
+  },
+  {
+    "category": "fonds-ecran",
+    "name": "Carte du Monde",
+    "file": "cards/fonds-ecran/carte-du-monde.png",
+    "w": 153,
+    "h": 88
+  },
+  {
+    "category": "fonds-ecran",
+    "name": "Observatoire",
+    "file": "cards/fonds-ecran/observatoire.png",
+    "w": 133,
+    "h": 88
+  },
+  {
+    "category": "fonds-ecran",
+    "name": "Boutique",
+    "file": "cards/fonds-ecran/boutique.png",
+    "w": 114,
+    "h": 88
+  }
+]

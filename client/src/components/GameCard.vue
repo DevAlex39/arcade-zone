@@ -2,8 +2,12 @@
   <div class="game-card" :style="{ '--card-color': game.color }">
     <div class="card-glow"></div>
 
+    <div v-if="game.image_url" class="card-image-wrap">
+      <img :src="game.image_url" :alt="game.name" class="card-image" />
+    </div>
+
     <div class="card-top">
-      <span class="card-icon">{{ game.icon }}</span>
+      <span v-if="!game.image_url" class="card-icon">{{ game.icon }}</span>
       <div class="card-badges">
         <span v-if="game.solo_url || game.min_players === 1" class="badge badge-cyan">Solo</span>
         <span v-if="game.has_multiplayer" class="badge badge-rose">Multi</span>
@@ -56,9 +60,11 @@ const { t } = useI18n();
   position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
   background: radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--card-color, var(--cyan)) 14%, transparent), transparent 60%);
 }
-.card-top  { position: relative; display: flex; align-items: flex-start; justify-content: space-between; }
+.card-image-wrap { position: relative; width: 100%; height: 160px; display: flex; align-items: center; justify-content: center; margin-bottom: .5rem; }
+.card-image { max-height: 160px; max-width: 100%; object-fit: contain; filter: drop-shadow(0 4px 12px rgba(0,0,0,.5)); }
+.card-top  { position: relative; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .3rem; }
 .card-icon { font-size: 2.2rem; line-height: 1; }
-.card-badges { display: flex; flex-direction: column; align-items: flex-end; gap: .3rem; }
+.card-badges { display: flex; flex-direction: row; align-items: center; gap: .3rem; flex-wrap: wrap; }
 .card-name { position: relative; font-family: var(--font-title); font-size: 1.15rem; font-weight: 800; margin: .7rem 0 0; }
 .card-desc { position: relative; font-size: .84rem; color: var(--text-2); line-height: 1.55; margin: .4rem 0 0; flex: 1; }
 

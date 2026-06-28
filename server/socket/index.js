@@ -144,7 +144,12 @@ function initSocket(io) {
       } else if (room.gameId === 'petits-chevaux') {
         startPCGame(io, room);
       } else if (room.gameId === 'quiz') {
-        startQuizGame(io, room);
+        try {
+          await startQuizGame(io, room);
+        } catch (e) {
+          console.error('[Quiz] startQuizGame error:', e);
+          socket.emit('error', 'Erreur au démarrage du quiz : ' + e.message);
+        }
       }
     });
 

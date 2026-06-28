@@ -29,6 +29,7 @@ const TABLES = [
     is_active       BOOLEAN DEFAULT TRUE,
     has_multiplayer BOOLEAN DEFAULT FALSE,
     solo_url        VARCHAR(255),
+    image_url       VARCHAR(255),
     sort_order      INT DEFAULT 0,
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   ) CHARACTER SET utf8mb4`,
@@ -198,6 +199,18 @@ async function migrate() {
   await pool.query(`UPDATE games SET has_multiplayer=1, min_players=1, max_players=4 WHERE id='petits-chevaux'`);
   // Supprimer les anciennes entrées motus séparées si elles existent encore
   await pool.query(`DELETE FROM games WHERE id IN ('motus-solo','motus-multi')`).catch(() => {});
+
+  // Colonne image_url
+  await pool.query("ALTER TABLE games ADD COLUMN IF NOT EXISTS image_url VARCHAR(255)").catch(() =>
+    pool.query("ALTER TABLE games ADD COLUMN image_url VARCHAR(255)").catch(() => {})
+  );
+  // Images des jeux
+  await pool.query(`UPDATE games SET image_url='/images/games/yahtzee-rogue.png' WHERE id='yahtzee-rogue'`);
+  await pool.query(`UPDATE games SET image_url='/images/games/yahtzee.png'       WHERE id='yahtzee'`);
+  await pool.query(`UPDATE games SET image_url='/images/games/motus.png'         WHERE id='motus'`);
+  await pool.query(`UPDATE games SET image_url='/images/games/skyjo.png'         WHERE id='skyjo'`);
+  await pool.query(`UPDATE games SET image_url='/images/games/petits-chevaux.png' WHERE id='petits-chevaux'`);
+  await pool.query(`UPDATE games SET image_url='/images/games/quiz.png'          WHERE id='quiz'`);
 
   console.log('✅ Base de données prête (tables + jeux)');
 }
