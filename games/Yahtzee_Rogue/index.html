@@ -231,7 +231,15 @@
     <span data-i18n="restarting">Recommencer…</span>
     <div class="hold-restart-track"><div class="hold-restart-fill" id="holdRestartFill"></div></div>
   </div>
-  <script src="game.js"></script>
+  <!-- Ordre de chargement : données/utilitaires d'abord, logique ensuite -->
+  <script src="js/i18n.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/scoring.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/shop.js"></script>
   <script src="review.js"></script>
 </body>
 </html>
