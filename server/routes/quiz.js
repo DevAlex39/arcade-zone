@@ -1,6 +1,21 @@
 const router = require('express').Router();
 const { pool } = require('../config/db');
 const { awardXp, updateChallenge, recordGame } = require('../services/xp');
+const { requireAdmin } = require('../middleware/auth');
+
+// POST /api/quiz/flag-english { questionId } — admin uniquement
+// Marque une question comme anglaise : elle bascule en section EN
+// et ne sera plus jamais proposée dans les parties en français.
+router.post('/flag-english', requireAdmin, async (req, res) => {
+  const id = parseInt(req.body.questionId);
+  if (!id) return res.status(400).json({ error: 'questionId requis' });
+  try {
+    await pool.query("UPDATE quiz_questions SET lang = 'en' WHERE id = ?", [id]);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // GET /api/quiz/categories
 router.get('/categories', async (req, res) => {

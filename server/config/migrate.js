@@ -68,6 +68,14 @@ const TABLES = [
     INDEX idx_word_cat (word, category)
   ) CHARACTER SET utf8mb4`,
 
+  `CREATE TABLE IF NOT EXISTS motus_word_blacklist (
+    word       VARCHAR(20) NOT NULL,
+    lang       VARCHAR(2)  NOT NULL DEFAULT 'fr',
+    user_id    INT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (word, lang)
+  ) CHARACTER SET utf8mb4`,
+
   `CREATE TABLE IF NOT EXISTS game_sessions (
     id        INT PRIMARY KEY AUTO_INCREMENT,
     user_id   INT,

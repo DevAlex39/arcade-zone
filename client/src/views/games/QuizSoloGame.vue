@@ -97,6 +97,10 @@
         <div class="question-meta">
           <span class="q-category">{{ currentQ?.category_icon }} {{ currentQ?.category_name }}</span>
           <span class="q-diff" :class="currentQ?.difficulty">{{ diffLabel(currentQ?.difficulty) }}</span>
+          <button v-if="isAdmin" class="btn-flag-en" :disabled="flaggedEn.has(currentQ?.id)" @click="flagEnglish"
+            title="Marquer cette question comme anglaise : elle bascule en section EN et ne sera plus proposée en français">
+            {{ flaggedEn.has(currentQ?.id) ? '✅ Signalée EN' : '🇬🇧 EN' }}
+          </button>
           <span class="q-timer" :class="timerClass">{{ timeLeft }}s</span>
         </div>
 
@@ -210,6 +214,25 @@ import { ref, computed, reactive, onMounted, onUnmounted } from 'vue';
 import { useAuthStore } from '@/stores/auth.js';
 
 const auth = useAuthStore();
+
+// ── Signalement admin : question en anglais ────────────────────────────────
+const isAdmin   = computed(() => auth.user?.role === 'admin');
+const flaggedEn = ref(new Set());
+
+async function flagEnglish() {
+  const id = currentQ.value?.id;
+  if (!id || flaggedEn.value.has(id)) return;
+  flaggedEn.value = new Set([...flaggedEn.value, id]);
+  try {
+    await fetch('/api/quiz/flag-english', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth.token}` },
+      body: JSON.stringify({ questionId: id }),
+    });
+  } catch {
+    const s = new Set(flaggedEn.value); s.delete(id); flaggedEn.value = s;
+  }
+}
 
 // ── Config ──────────────────────────────────────────────────────────────────
 const cfg = reactive({ lang: 'fr', lives: 5, timer: 15, difficulty: 'mixed', types: 'both', categories: [] });
@@ -732,6 +755,9 @@ onUnmounted(() => {
 .q-diff.medium { background: rgba(251,191,36,.1);  color: #fbbf24; }
 .q-diff.hard   { background: rgba(248,113,113,.1); color: #f87171; }
 .q-timer { font-weight: 800; font-size: 1.05rem; min-width: 2.5rem; text-align: right; }
+.btn-flag-en { background: rgba(59,130,246,.1); border: 1px solid rgba(59,130,246,.4); color: #60a5fa; border-radius: 6px; font-size: .68rem; font-weight: 700; padding: .15rem .5rem; cursor: pointer; transition: all .15s; }
+.btn-flag-en:hover:not(:disabled) { background: rgba(59,130,246,.2); }
+.btn-flag-en:disabled { opacity: .65; cursor: default; }
 .q-timer.green  { color: #4ade80; }
 .q-timer.orange { color: #fb923c; }
 .q-timer.red    { color: #f87171; animation: pulse-txt .5s infinite alternate; }

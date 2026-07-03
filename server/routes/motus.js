@@ -1,7 +1,25 @@
 const router = require('express').Router();
 const { pool } = require('../config/db');
-const { fetchWord, validateWord } = require('../games/motus');
-const { optionalAuth } = require('../middleware/auth');
+const { fetchWord, validateWord, addToBlacklist } = require('../games/motus');
+const { optionalAuth, requireAdmin } = require('../middleware/auth');
+
+// POST /api/motus/blacklist { word, lang } — admin uniquement
+// Le mot ne sera plus jamais proposé comme mot mystère.
+router.post('/blacklist', requireAdmin, async (req, res) => {
+  const word = (req.body.word || '').toUpperCase().trim();
+  const lang = req.body.lang === 'en' ? 'en' : 'fr';
+  if (!word) return res.status(400).json({ error: 'Mot requis' });
+  try {
+    await pool.query(
+      'INSERT IGNORE INTO motus_word_blacklist (word, lang, user_id) VALUES (?, ?, ?)',
+      [word, lang, req.user?.id || null]
+    );
+    addToBlacklist(word);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // GET /api/motus/word?min=5&max=6&lang=fr&category=animaux
 router.get('/word', async (req, res) => {

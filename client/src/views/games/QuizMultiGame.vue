@@ -20,6 +20,10 @@
       <div class="question-meta">
         <span class="q-counter">{{ t('quiz.question', { n: (currentQ?.idx ?? 0) + 1, total: currentQ?.total ?? '?' }) }}</span>
         <span class="q-category">{{ currentQ?.category }}</span>
+        <button v-if="isAdmin" class="btn-flag-en" :disabled="flaggedEn" @click="flagEnglish"
+          title="Marquer cette question comme anglaise : elle bascule en section EN et ne sera plus proposée en français">
+          {{ flaggedEn ? '✅ Signalée EN' : '🇬🇧 Question en anglais' }}
+        </button>
         <span class="q-timer" :class="timerClass">{{ timeLeft }}s</span>
       </div>
 
@@ -185,6 +189,20 @@ const mr    = useMultiRoom(props.roomCode);
 
 const socket   = ref(null);
 const myId     = computed(() => auth.user?.id?.toString() || auth.user?.id);
+const isAdmin  = computed(() => auth.user?.role === 'admin');
+const flaggedEn = ref(false);
+
+async function flagEnglish() {
+  if (flaggedEn.value || !currentQ.value?.id) return;
+  flaggedEn.value = true;
+  try {
+    await fetch('/api/quiz/flag-english', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth.token}` },
+      body: JSON.stringify({ questionId: currentQ.value.id }),
+    });
+  } catch { flaggedEn.value = false; }
+}
 
 // State
 const phase         = ref('question');
@@ -285,6 +303,7 @@ function connectSocket() {
     myAnswerCorrect.value = false;
     correctAnswer.value   = null;
     myPoints.value  = 0;
+    flaggedEn.value = false;
     answeredPlayers.value = new Set();
     if (data.scores)     scores.value    = data.scores;
     if (data.lives)      lives.value     = data.lives;
@@ -357,6 +376,10 @@ onUnmounted(() => { socket.value?.disconnect(); clearInterval(timerInterval); })
 </script>
 
 <style scoped>
+.btn-flag-en { background: rgba(59,130,246,.1); border: 1px solid rgba(59,130,246,.4); color: #60a5fa; border-radius: 6px; font-size: .68rem; font-weight: 700; padding: .15rem .5rem; cursor: pointer; transition: all .15s; }
+.btn-flag-en:hover:not(:disabled) { background: rgba(59,130,246,.2); }
+.btn-flag-en:disabled { opacity: .65; cursor: default; }
+
 .pg-inline { display: flex; flex-direction: column; gap: .55rem; align-items: stretch; width: 100%; max-width: 320px; margin-top: .5rem; }
 .pg-inline .text-muted { text-align: center; font-size: .85rem; }
 

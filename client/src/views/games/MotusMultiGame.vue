@@ -111,6 +111,19 @@
           <span class="badge-beta">Bêta</span>
         </div>
 
+        <!-- Blacklist admin : mot incorrect → ne plus jamais proposer -->
+        <div v-if="isAdmin" class="rr-report">
+          <button
+            class="btn-report btn-blacklist"
+            :disabled="wordBlacklisted"
+            @click="blacklistWord"
+            :title="`'${roundResults?.word}' ne sera plus jamais proposé comme mot mystère`"
+          >
+            {{ wordBlacklisted ? '✅ Mot retiré définitivement' : '🚫 Ce mot est incorrect — ne plus le proposer' }}
+          </button>
+          <span class="badge-beta" style="background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.4);color:#f87171">Admin</span>
+        </div>
+
         <button v-if="isHost" class="btn btn-primary btn-full mt-2" @click="nextRound">
           Manche suivante →
         </button>
@@ -256,6 +269,7 @@ onMounted(() => {
     phase.value = 'results';
     showResults.value = true;
     wordReported.value = false;
+    wordBlacklisted.value = false;
     if (roundState.value) roundState.value.word = data.word;
   });
 
@@ -389,6 +403,24 @@ function getCombo(playerId) {
   return roundResults.value?.players?.find(p => p.id === playerId)?.combo ?? 0;
 }
 
+const isAdmin        = computed(() => auth.user?.role === 'admin');
+const wordBlacklisted = ref(false);
+
+async function blacklistWord() {
+  if (wordBlacklisted.value || !roundResults.value?.word) return;
+  wordBlacklisted.value = true;
+  try {
+    await fetch('/api/motus/blacklist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth.token}` },
+      body: JSON.stringify({ word: roundResults.value.word, lang: mr.room.value?.settings?.lang || 'fr' }),
+    });
+    platform.showToast('Mot retiré définitivement du jeu', 'success');
+  } catch {
+    wordBlacklisted.value = false;
+  }
+}
+
 async function reportWord() {
   if (wordReported.value || !roundResults.value?.word) return;
   wordReported.value = true;
@@ -505,6 +537,7 @@ async function reportWord() {
 }
 .btn-report:hover:not(:disabled) { border-color: #fbbf24; color: #fbbf24; }
 .btn-report:disabled { opacity: .6; cursor: default; }
+.btn-blacklist:hover:not(:disabled) { border-color: #f87171 !important; color: #f87171 !important; }
 
 /* Badge catégorie dans la barre */
 .badge-category {
