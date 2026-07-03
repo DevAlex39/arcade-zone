@@ -118,15 +118,12 @@
       </div>
     </div>
 
+    <!-- Menu hamburger : règles + joueurs -->
+    <GameMenu :room="mr.room.value" :is-host="mr.isHost.value" :ai-supported="false" @kick="mr.kick" />
+
     <!-- Victoire -->
-    <div class="modal-backdrop" v-if="winner !== undefined">
-      <div class="modal-box text-center">
-        <div style="font-size:3rem">🏆</div>
-        <h2 class="mt-1">{{ winner ? `${winner.username} gagne !` : 'Match nul !' }}</h2>
-        <p class="text-muted mt-1">{{ winner ? `Dernier survivant avec ${winner.lives} vie${winner.lives > 1 ? 's' : ''} !` : 'Tout le monde est éliminé !' }}</p>
-        <router-link to="/" class="btn btn-primary btn-full mt-2">Retour au menu →</router-link>
-      </div>
-    </div>
+    <PostGameModal :game-over="mr.gameOver.value" :is-host="mr.isHost.value" :my-id="myId"
+      @replay="mr.choose('replay')" @lobby="mr.choose('lobby')" @home="mr.choose('home')" />
 
   </div>
 </template>
@@ -136,6 +133,9 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { io } from 'socket.io-client';
 import { useAuthStore } from '@/stores/auth.js';
 import { usePlatformStore } from '@/stores/platform.js';
+import GameMenu from '@/components/GameMenu.vue';
+import PostGameModal from '@/components/PostGameModal.vue';
+import { useMultiRoom } from '@/composables/useMultiRoom.js';
 
 const props = defineProps({ roomCode: String, game: Object });
 
@@ -143,6 +143,7 @@ const auth     = useAuthStore();
 const platform = usePlatformStore();
 const myId     = auth.user?.id;
 const isHost   = ref(false);
+const mr       = useMultiRoom(props.roomCode);
 
 // Catégories actives (reçues via room_update ou round_end)
 const currentCategories = ref(['tous']);
@@ -174,7 +175,6 @@ const roundState  = ref(null);
 const statusMsg   = ref('En attente…');
 const showResults = ref(false);
 const roundResults= ref(null);
-const winner      = ref(undefined); // undefined = pas fini
 
 // Ma grille
 const wordLength      = ref(6);
@@ -220,7 +220,6 @@ onMounted(() => {
     myDone.value = false; myResult.value = null;
     statusMsg.value = `Manche ${data.roundIdx} — Trouve le mot !`;
     showResults.value = false;
-    winner.value = undefined;
   });
 
   socket.on('guess_result', ({ result, confirmedLetters: cl, won }) => {
@@ -260,13 +259,14 @@ onMounted(() => {
     if (roundState.value) roundState.value.word = data.word;
   });
 
-  socket.on('game_over', (data) => {
+  socket.on('game_over', () => {
     showResults.value = false;
-    winner.value = data.winner || null;
     phase.value = 'finished';
   });
 
   socket.on('error', msg => platform.showToast(msg, 'error'));
+
+  mr.bind(socket);
 });
 
 onUnmounted(() => socket?.disconnect());

@@ -48,6 +48,144 @@ function clearDisconnectTimer(code, userId) {
   }
 }
 
+// Fin de partie : la room reste vivante en statut "postgame" pour permettre
+// à l'hôte de relancer, retourner au lobby, ou à chacun de quitter.
+function enterPostGame(room) {
+  room.status    = 'postgame';
+  room.gameState = null;
+  room.round     = null;
+  // Reset des états de partie portés par les joueurs (Motus)
+  room.players.forEach(p => { delete p.lives; delete p.combo; delete p.eliminated; });
+}
+
+// Retire un joueur de la room : transfert d'hôte au suivant, suppression si vide.
+function removePlayerFromRoom(io, room, playerId) {
+  room.players = room.players.filter(p => p.id !== playerId);
+  clearDisconnectTimer(room.code, playerId);
+  if (room.players.length === 0) { rooms.delete(room.code); return false; }
+  if (room.hostId === playerId) {
+    room.hostId   = room.players[0].id;
+    room.hostName = room.players[0].username;
+    io.to(room.code).emit('host_changed', { hostId: room.hostId, hostName: room.hostName });
+  }
+  io.to(room.code).emit('room_update', sanitizeRoom(room));
+  return true;
+}
+
+// Kick en partie : le joueur devient une IA qui continue à sa place (skyjo / petits-chevaux).
+function convertPlayerToAI(io, room, targetId) {
+  const gs = room.gameState;
+  if (!gs || !gs.players) return;
+  const p = gs.players.find(pl => pl.id === targetId);
+  if (!p) return;
+  p.isAI = true;
+  p.username = `${p.username} 🤖`;
+  if (room.gameId === 'skyjo') {
+    io.to(room.code).emit('skyjo_state', publicSkyjoState(gs));
+    scheduleAISkyjoTurn(io, room.code, room);
+  } else if (room.gameId === 'petits-chevaux') {
+    io.to(room.code).emit('pc_state', publicPCState(gs));
+    scheduleAITurn(io, room.code, room);
+  }
+}
+
+// Kick en partie sans remplacement : retire toute trace du joueur (pions, cartes, score…).
+function removePlayerFromGame(io, room, targetId) {
+  const code = room.code;
+  const gs   = room.gameState;
+
+  if (room.gameId === 'motus' && room.round) {
+    delete room.round.playerStates[targetId];
+    const remaining = room.players.filter(p => p.id !== targetId);
+    const allDone = remaining.every(p => { const s = room.round.playerStates[p.id]; return s && s.status !== 'playing'; });
+    // Retrait de room.players fait par l'appelant ; on force la fin de manche si tous ont fini
+    if (allDone && remaining.length > 0) {
+      room.players = remaining;
+      endMotusRound(io, room);
+    }
+    return;
+  }
+
+  if (!gs) return;
+
+  if (room.gameId === 'yahtzee') {
+    const idx = gs.playerOrder.indexOf(targetId);
+    if (idx === -1) return;
+    const wasTurn = gs.curPlayer === idx;
+    gs.playerOrder.splice(idx, 1);
+    delete gs.scores[targetId];
+    gs.players = (gs.players || []).filter(p => p.id !== targetId);
+    if (idx < gs.curPlayer) gs.curPlayer--;
+    if (gs.curPlayer >= gs.playerOrder.length) gs.curPlayer = 0;
+    if (wasTurn) { gs.dice = [1,1,1,1,1]; gs.kept = [false,false,false,false,false]; gs.rollsLeft = 3; gs.hasRolled = false; }
+    io.to(code).emit('yahtzee_state', publicYahtzeeState(gs));
+  }
+  else if (room.gameId === 'skyjo') {
+    const idx = gs.playerOrder.indexOf(targetId);
+    if (idx === -1) return;
+    gs.playerOrder.splice(idx, 1);
+    delete gs.hands[targetId];
+    gs.players = (gs.players || []).filter(p => p.id !== targetId);
+    if (idx < gs.curPlayer) gs.curPlayer--;
+    if (gs.curPlayer >= gs.playerOrder.length) gs.curPlayer = 0;
+    if (gs.endTriggeredBy === targetId) { gs.endTriggeredBy = null; gs.lastTurnCount = 0; gs.phase = 'draw'; }
+    if (gs.phase === 'hold' || gs.phase === 'flipOne') { gs.phase = 'draw'; gs.heldCard = null; gs.heldFrom = null; }
+    if (idx < gs.initFlipPlayer) gs.initFlipPlayer--;
+    if (gs.initFlipPlayer >= gs.playerOrder.length) gs.initFlipPlayer = 0;
+    io.to(code).emit('skyjo_state', publicSkyjoState(gs));
+    scheduleAISkyjoTurn(io, code, room);
+  }
+  else if (room.gameId === 'petits-chevaux') {
+    const idx = gs.playerOrder.indexOf(targetId);
+    if (idx === -1) return;
+    gs.playerOrder.splice(idx, 1);
+    delete gs.pawns[targetId];
+    delete gs.colorMap[targetId];
+    gs.players = (gs.players || []).filter(p => p.id !== targetId);
+    if (idx < gs.curPlayer) gs.curPlayer--;
+    if (gs.curPlayer >= gs.playerOrder.length) gs.curPlayer = 0;
+    gs.diceValue = null; gs.hasRolled = false; gs.movablePawns = []; gs.phase = 'roll';
+    io.to(code).emit('pc_state', publicPCState(gs));
+    scheduleAITurn(io, code, room);
+  }
+  else if (room.gameId === 'quiz') {
+    gs.playerIds = (gs.playerIds || []).filter(id => id !== targetId);
+    gs.eliminated = (gs.eliminated || []).filter(id => id !== targetId);
+    delete gs.answers?.[targetId];
+    gs.players = (gs.players || []).filter(p => p.id !== targetId);
+    // Si tous les joueurs restants ont répondu → résoudre la question
+    if (gs.phase === 'question') {
+      const active = gs.playerIds.filter(id => !gs.eliminated.includes(id));
+      const allAnswered = active.length > 0 && active.every(id => gs.answers[id]);
+      if (allAnswered && gs.timer) {
+        clearTimeout(gs.timer);
+        gs.timer = null;
+        resolveQuizQuestion(io, code, room, gs);
+      }
+    }
+  }
+}
+
+// Lance (ou relance) la partie selon le jeu de la room.
+async function launchGame(io, room, socket) {
+  if (room.gameId === 'motus') {
+    await startMotusRound(io, room);
+  } else if (room.gameId === 'yahtzee') {
+    startYahtzeeGame(io, room);
+  } else if (room.gameId === 'skyjo') {
+    startSkyjoGame(io, room);
+  } else if (room.gameId === 'petits-chevaux') {
+    startPCGame(io, room);
+  } else if (room.gameId === 'quiz') {
+    try {
+      await startQuizGame(io, room);
+    } catch (e) {
+      console.error('[Quiz] startQuizGame error:', e);
+      socket?.emit('error', 'Erreur au démarrage du quiz : ' + e.message);
+    }
+  }
+}
+
 function initSocket(io) {
 
   io.use((socket, next) => {
@@ -135,22 +273,34 @@ function initSocket(io) {
       if (room.hostId !== user.id) return socket.emit('error', 'Seul l\'hôte peut lancer');
       if (room.players.length < room.minPlayers) return socket.emit('error', `Il faut au moins ${room.minPlayers} joueurs`);
 
-      if (room.gameId === 'motus') {
-        await startMotusRound(io, room);
-      } else if (room.gameId === 'yahtzee') {
-        startYahtzeeGame(io, room);
-      } else if (room.gameId === 'skyjo') {
-        startSkyjoGame(io, room);
-      } else if (room.gameId === 'petits-chevaux') {
-        startPCGame(io, room);
-      } else if (room.gameId === 'quiz') {
-        try {
-          await startQuizGame(io, room);
-        } catch (e) {
-          console.error('[Quiz] startQuizGame error:', e);
-          socket.emit('error', 'Erreur au démarrage du quiz : ' + e.message);
-        }
+      await launchGame(io, room, socket);
+    });
+
+    // ─── Post-game : choix de l'hôte (rejouer / retour lobby) ───────
+    socket.on('postgame_choice', async ({ code, choice }) => {
+      code = code?.toUpperCase();
+      const room = rooms.get(code);
+      if (!room || room.status !== 'postgame') return;
+      if (room.hostId !== user.id) return;
+      if (choice === 'replay') {
+        room.status = 'waiting';
+        io.to(code).emit('postgame', { action: 'replay' });
+        await launchGame(io, room, socket);
+      } else if (choice === 'lobby') {
+        room.status = 'waiting';
+        io.to(code).emit('postgame', { action: 'lobby' });
+        io.to(code).emit('room_update', sanitizeRoom(room));
       }
+    });
+
+    // ─── Quitter la room explicitement (retour accueil) ─────────────
+    socket.on('leave_room', (code) => {
+      code = code?.toUpperCase();
+      const room = rooms.get(code);
+      if (!room) return;
+      socket.leave(code);
+      if (socket.currentRoom === code) socket.currentRoom = null;
+      removePlayerFromRoom(io, room, user.id);
     });
 
     // ─── Actions Quiz ────────────────────────────────────────────────
@@ -183,8 +333,8 @@ function initSocket(io) {
       }
     });
 
-    // ─── Kick ───────────────────────────────────────────────────────
-    socket.on('kick_player', ({ code, targetId }) => {
+    // ─── Kick (lobby OU en partie, avec option remplacement IA) ─────
+    socket.on('kick_player', ({ code, targetId, replaceByAI }) => {
       code = code?.toUpperCase();
       const room = rooms.get(code);
       if (!room || room.hostId !== user.id) return;
@@ -192,9 +342,17 @@ function initSocket(io) {
       const target = room.players.find(p => p.id === targetId);
       if (!target) return;
       if (target.socketId) io.to(target.socketId).emit('kicked');
-      room.players = room.players.filter(p => p.id !== targetId);
-      clearDisconnectTimer(code, targetId);
-      io.to(code).emit('room_update', sanitizeRoom(room));
+
+      const inGame = room.status === 'playing' && (room.gameState || room.round);
+      if (inGame) {
+        const aiCapable = ['skyjo', 'petits-chevaux'].includes(room.gameId);
+        if (replaceByAI && aiCapable) {
+          convertPlayerToAI(io, room, targetId);
+        } else {
+          removePlayerFromGame(io, room, targetId);
+        }
+      }
+      removePlayerFromRoom(io, room, targetId);
     });
 
     // ─── Actions Motus ──────────────────────────────────────────────
@@ -269,7 +427,7 @@ function initSocket(io) {
           const yahtzeeScores = {};
           gs.playerOrder.forEach(pid => { yahtzeeScores[pid] = gs.scores[pid]?.total || 0; });
           handleGameOver(room, winner.id, yahtzeeScores);
-          rooms.delete(code);
+          enterPostGame(room);
           return;
         }
 
@@ -395,18 +553,13 @@ function initSocket(io) {
       if (!p) return;
       p.socketId = null;
       io.to(code).emit('room_update', sanitizeRoom(room));
-      if (room.status === 'waiting') {
+      if (room.status === 'waiting' || room.status === 'postgame') {
         const timerKey = `${code}_${user.id}`;
         const timer = setTimeout(() => {
           disconnectTimers.delete(timerKey);
           const r = rooms.get(code);
-          if (!r || r.status !== 'waiting') return;
-          r.players = r.players.filter(pl => pl.id !== user.id);
-          if (r.hostId === user.id) {
-            if (r.players.length > 0) { r.hostId = r.players[0].id; r.hostName = r.players[0].username; }
-            else { rooms.delete(code); return; }
-          }
-          io.to(code).emit('room_update', sanitizeRoom(r));
+          if (!r || r.status === 'playing') return;
+          removePlayerFromRoom(io, r, user.id);
         }, 30_000);
         disconnectTimers.set(timerKey, timer);
       }
@@ -478,7 +631,7 @@ async function endMotusRound(io, room) {
     room.status = 'finished';
     io.to(room.code).emit('game_over', { winner: alive[0] || null });
     handleGameOver(room, alive[0]?.id ?? null, null);
-    rooms.delete(room.code);
+    enterPostGame(room);
   } else {
     room.status = 'waiting';
   }
@@ -527,7 +680,7 @@ async function endMotusRoundChangeOnFind(io, room, finderId) {
     room.status = 'finished';
     io.to(room.code).emit('game_over', { winner: alive[0] || null });
     handleGameOver(room, alive[0]?.id ?? null, null);
-    rooms.delete(room.code);
+    enterPostGame(room);
   } else {
     room.status = 'waiting';
   }
@@ -628,7 +781,7 @@ function advanceSkyjoTurn(io, code, room, gs) {
       const skyjoScores = {};
       sorted.forEach(s => { skyjoScores[s.id] = s.score; });
       handleGameOver(room, winner?.id ?? null, skyjoScores);
-      rooms.delete(code);
+      enterPostGame(room);
       return;
     }
     gs.phase = 'lastTurn';
@@ -865,7 +1018,7 @@ function applyPCMove(io, code, room, gs, pionIdx) {
     io.to(code).emit('pc_state', publicPCState(gs));
     io.to(code).emit('game_over', { winner: gs.players.find(p => p.id === winner) || null });
     handleGameOver(room, winner, null);
-    rooms.delete(code);
+    enterPostGame(room);
     return;
   }
 
@@ -1113,7 +1266,7 @@ function endQuizGame(io, code, room, gs) {
     }
   }
 
-  rooms.delete(code);
+  enterPostGame(room);
 }
 
 module.exports = { initSocket };

@@ -80,22 +80,19 @@
       </div>
     </template>
 
+    <!-- Menu hamburger : règles + joueurs -->
+    <GameMenu :room="mr.room.value" :is-host="mr.isHost.value" :ai-supported="true" @kick="mr.kick" />
+
     <!-- Game over -->
-    <Teleport to="body">
-      <div v-if="gameOver" class="modal-backdrop" @click.self="$router.push('/')">
-        <div class="modal-box game-over-modal">
-          <div class="go-title">{{ gameOver.winner?.id === myId ? t('victory') : t('game_over_title') }}</div>
-          <p v-if="gameOver.winner" class="go-winner">{{ t('winner_label') }} <strong>{{ gameOver.winner.username }}</strong></p>
-          <div class="score-list">
-            <div v-for="(sc, pid) in gameOver.scores" :key="pid" class="score-row">
-              <span class="score-name">{{ playerName(pid) }}</span>
-              <span class="score-val">{{ sc }} pts</span>
-            </div>
-          </div>
-          <button class="btn btn-primary mt-2" @click="$router.push('/')">{{ t('back_home') }}</button>
+    <PostGameModal :game-over="mr.gameOver.value" :is-host="mr.isHost.value" :my-id="myId"
+      @replay="mr.choose('replay')" @lobby="mr.choose('lobby')" @home="mr.choose('home')">
+      <div class="score-list" v-if="mr.gameOver.value?.scores">
+        <div v-for="(sc, pid) in mr.gameOver.value.scores" :key="pid" class="score-row">
+          <span class="score-name">{{ playerName(pid) }}</span>
+          <span class="score-val">{{ sc }} pts</span>
         </div>
       </div>
-    </Teleport>
+    </PostGameModal>
   </div>
 </template>
 
@@ -104,15 +101,18 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { io } from 'socket.io-client';
 import { useAuthStore } from '@/stores/auth.js';
 import { useI18n } from '@/composables/useI18n.js';
+import GameMenu from '@/components/GameMenu.vue';
+import PostGameModal from '@/components/PostGameModal.vue';
+import { useMultiRoom } from '@/composables/useMultiRoom.js';
 
 const props = defineProps({ roomCode: String, game: Object });
 const auth  = useAuthStore();
 const { t } = useI18n();
+const mr    = useMultiRoom(props.roomCode);
 
 let socket = null;
 
 const state    = ref(null);
-const gameOver = ref(null);
 
 const myId            = computed(() => auth.user?.id);
 const playerOrder     = computed(() => state.value?.playerOrder ?? []);
@@ -208,7 +208,7 @@ onMounted(() => {
   socket = io('/', { auth: { token: auth.token, username: auth.user?.username } });
   socket.on('connect', () => { socket.emit('join_room', props.roomCode); });
   socket.on('skyjo_state', (gs) => { state.value = gs; });
-  socket.on('game_over', (data) => { gameOver.value = data; });
+  mr.bind(socket, { onReplay: () => { state.value = null; } });
 });
 onUnmounted(() => { socket?.disconnect(); });
 </script>

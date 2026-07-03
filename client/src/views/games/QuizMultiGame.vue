@@ -151,8 +151,21 @@
         </div>
       </div>
 
-      <router-link to="/" class="btn btn-primary">← Retour au menu</router-link>
+      <div class="pg-inline">
+        <template v-if="mr.isHost.value">
+          <button class="btn btn-primary" @click="mr.choose('replay')">{{ t('pg.replay') }}</button>
+          <button class="btn btn-secondary" @click="mr.choose('lobby')">{{ t('pg.back_lobby') }}</button>
+          <button class="btn btn-ghost" @click="mr.choose('home')">{{ t('pg.back_home') }}</button>
+        </template>
+        <template v-else>
+          <p class="text-muted"><span class="spin">⟳</span> {{ t('pg.waiting_host') }}</p>
+          <button class="btn btn-ghost" @click="mr.choose('home')">{{ t('pg.back_home') }}</button>
+        </template>
+      </div>
     </div>
+
+    <!-- Menu hamburger : règles + joueurs -->
+    <GameMenu :room="mr.room.value" :is-host="mr.isHost.value" :ai-supported="false" @kick="mr.kick" />
 
   </div>
 </template>
@@ -161,11 +174,14 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { io } from 'socket.io-client';
 import { useAuthStore } from '@/stores/auth.js';
+import GameMenu from '@/components/GameMenu.vue';
+import { useMultiRoom } from '@/composables/useMultiRoom.js';
 import { useI18n } from '@/composables/useI18n.js';
 
 const props = defineProps({ roomCode: String, game: Object });
 const auth  = useAuthStore();
 const { t } = useI18n();
+const mr    = useMultiRoom(props.roomCode);
 
 const socket   = ref(null);
 const myId     = computed(() => auth.user?.id?.toString() || auth.user?.id);
@@ -329,6 +345,11 @@ function connectSocket() {
     }
     if (data.players) players.value = data.players;
   });
+
+  mr.bind(socket.value, { onReplay: () => {
+    rankings.value = []; winner.value = null; revealedRankings.value = [];
+    phase.value = 'question'; currentQ.value = null;
+  }});
 }
 
 onMounted(connectSocket);
@@ -336,6 +357,9 @@ onUnmounted(() => { socket.value?.disconnect(); clearInterval(timerInterval); })
 </script>
 
 <style scoped>
+.pg-inline { display: flex; flex-direction: column; gap: .55rem; align-items: stretch; width: 100%; max-width: 320px; margin-top: .5rem; }
+.pg-inline .text-muted { text-align: center; font-size: .85rem; }
+
 /* ── Layout ── */
 .quiz-game {
   min-height: 100vh;

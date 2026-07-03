@@ -99,16 +99,12 @@
       </div>
     </template>
 
+    <!-- Menu hamburger : règles + joueurs -->
+    <GameMenu :room="mr.room.value" :is-host="mr.isHost.value" :ai-supported="true" @kick="mr.kick" />
+
     <!-- Game over -->
-    <Teleport to="body">
-      <div v-if="gameOver" class="modal-backdrop">
-        <div class="modal-box text-center">
-          <div style="font-size:3rem">{{ gameOver.winner?.id === myId ? '🏆' : '🏁' }}</div>
-          <h2 class="mt-1">{{ gameOver.winner ? t('pc.wins', { name: gameOver.winner.username }) : t('pc.game_over') }}</h2>
-          <router-link to="/" class="btn btn-primary btn-full mt-2">{{ t('back_home') }}</router-link>
-        </div>
-      </div>
-    </Teleport>
+    <PostGameModal :game-over="mr.gameOver.value" :is-host="mr.isHost.value" :my-id="myId"
+      @replay="mr.choose('replay')" @lobby="mr.choose('lobby')" @home="mr.choose('home')" />
   </div>
 </template>
 
@@ -117,11 +113,15 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { io } from 'socket.io-client';
 import { useAuthStore } from '@/stores/auth.js';
 import DieFace from '@/components/DieFace.vue';
+import GameMenu from '@/components/GameMenu.vue';
+import PostGameModal from '@/components/PostGameModal.vue';
+import { useMultiRoom } from '@/composables/useMultiRoom.js';
 import { useI18n } from '@/composables/useI18n.js';
 
 const props = defineProps({ roomCode: String, game: Object });
 const auth  = useAuthStore();
 const { t } = useI18n();
+const mr    = useMultiRoom(props.roomCode);
 
 let socket = null;
 
@@ -162,7 +162,6 @@ const POS_DONE   = 62;
 const TRACK_LEN  = 56;
 
 const state    = ref(null);
-const gameOver = ref(null);
 
 const myId            = computed(() => auth.user?.id);
 const myColor         = computed(() => state.value?.colorMap?.[myId.value] ?? 'red');
@@ -263,7 +262,7 @@ onMounted(() => {
   socket = io('/', { auth: { token: auth.token, username: auth.user?.username } });
   socket.on('connect', () => { socket.emit('join_room', props.roomCode); });
   socket.on('pc_state',  (gs) => { state.value = gs; });
-  socket.on('game_over', (data) => { gameOver.value = data; });
+  mr.bind(socket, { onReplay: () => { state.value = null; } });
 });
 onUnmounted(() => socket?.disconnect());
 </script>

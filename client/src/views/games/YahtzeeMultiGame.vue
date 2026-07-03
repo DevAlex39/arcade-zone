@@ -86,16 +86,12 @@
       </div>
     </template>
 
+    <!-- Menu hamburger : règles + joueurs -->
+    <GameMenu :room="mr.room.value" :is-host="mr.isHost.value" :ai-supported="false" @kick="mr.kick" />
+
     <!-- Game over -->
-    <Teleport to="body">
-      <div v-if="gameOver" class="overlay">
-        <div class="modal-go">
-          <h2>{{ gameOver.winner?.id === myId ? t('victory') : t('ytz.defeat') }}</h2>
-          <p v-if="gameOver.winner">{{ t('winner_label') }} <strong>{{ gameOver.winner.username }}</strong></p>
-          <button class="btn-back" @click="$router.push('/')">{{ t('back_home') }}</button>
-        </div>
-      </div>
-    </Teleport>
+    <PostGameModal :game-over="mr.gameOver.value" :is-host="mr.isHost.value" :my-id="myId"
+      @replay="mr.choose('replay')" @lobby="mr.choose('lobby')" @home="mr.choose('home')" />
   </div>
 </template>
 
@@ -105,17 +101,20 @@ import { useRouter } from 'vue-router';
 import { io } from 'socket.io-client';
 import { useAuthStore } from '@/stores/auth.js';
 import DieFace from '@/components/DieFace.vue';
+import GameMenu from '@/components/GameMenu.vue';
+import PostGameModal from '@/components/PostGameModal.vue';
+import { useMultiRoom } from '@/composables/useMultiRoom.js';
 import { useI18n } from '@/composables/useI18n.js';
 
 const props  = defineProps({ roomCode: String, game: Object });
 const router = useRouter();
 const auth   = useAuthStore();
 const { t }  = useI18n();
+const mr     = useMultiRoom(props.roomCode);
 
 let socket = null;
 
 const state       = ref(null);
-const gameOver    = ref(null);
 
 const dice        = computed(() => state.value?.dice    ?? [1,1,1,1,1]);
 const kept        = computed(() => state.value?.kept    ?? [false,false,false,false,false]);
@@ -186,7 +185,7 @@ onMounted(() => {
   socket = io('/', { auth: { token: auth.token, username: auth.user?.username } });
   socket.on('connect', () => { socket.emit('join_room', props.roomCode); });
   socket.on('yahtzee_state', (gs) => { state.value = gs; });
-  socket.on('game_over', (data) => { gameOver.value = data; });
+  mr.bind(socket, { onReplay: () => { state.value = null; } });
 });
 
 onUnmounted(() => {

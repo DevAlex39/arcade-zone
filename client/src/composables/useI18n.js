@@ -12,6 +12,29 @@ const T = {
   'winner_label':    { fr: 'Gagnant :',        en: 'Winner:' },
   'you':             { fr: 'vous',             en: 'you' },
 
+  // Post-game
+  'pg.replay':        { fr: '🔄 Rejouer',                 en: '🔄 Play again' },
+  'pg.back_lobby':    { fr: '⚙️ Retour au lobby',         en: '⚙️ Back to lobby' },
+  'pg.back_home':     { fr: '🏠 Accueil',                 en: '🏠 Home' },
+  'pg.waiting_host':  { fr: 'En attente du choix de l\'hôte…', en: 'Waiting for the host\'s choice…' },
+  'pg.host_left':     { fr: 'Vous êtes maintenant l\'hôte !', en: 'You are now the host!' },
+
+  // Menu en partie
+  'menu.title':       { fr: 'Menu',                       en: 'Menu' },
+  'menu.rules':       { fr: '📜 Règles de la partie',     en: '📜 Game rules' },
+  'menu.players':     { fr: '👥 Joueurs',                 en: '👥 Players' },
+  'menu.kick':        { fr: 'Exclure',                    en: 'Kick' },
+  'menu.kick_title':  { fr: 'Exclure {name} ?',           en: 'Kick {name}?' },
+  'menu.kick_ai':     { fr: '🤖 Remplacer par une IA',   en: '🤖 Replace with AI' },
+  'menu.kick_remove': { fr: '🗑️ Retirer complètement',   en: '🗑️ Remove completely' },
+  'menu.kick_remove_hint': { fr: 'Ses pions, cartes et scores seront retirés de la partie.', en: 'Their pawns, cards and scores will be removed from the game.' },
+  'menu.cancel':      { fr: 'Annuler',                    en: 'Cancel' },
+  'menu.host':        { fr: 'Hôte',                       en: 'Host' },
+  'menu.online':      { fr: 'En ligne',                   en: 'Online' },
+  'menu.offline':     { fr: 'Déconnecté',                 en: 'Offline' },
+  'menu.yes':         { fr: 'Oui',                        en: 'Yes' },
+  'menu.no':          { fr: 'Non',                        en: 'No' },
+
   // Lobby
   'lobby.room_code':     { fr: 'Code de la salle',    en: 'Room Code' },
   'lobby.copy_link':     { fr: '📋 Copier le lien',   en: '📋 Copy link' },
