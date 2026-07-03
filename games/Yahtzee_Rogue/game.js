@@ -293,7 +293,7 @@ const JOKER_POOL = [
   { id:'doubleur',     rarity:'uncommon', name:'Le Doubleur',    name_en:'The Doubler',    img:IMG('jokers-peu-communs','le-doubleur.png'),     cost:5,
     desc:'Petite suite → Mult ×2 · Grande suite → Mult ×3', desc_en:'Small Straight → Mult ×2 · Large Straight → Mult ×3',
     apply:(id,chips,mult)=> id==='smStr' ? [chips, mult*2] : id==='lgStr' ? [chips, mult*3] : [chips,mult] },
-  { id:'alchimiste',   rarity:'uncommon', name:"L'Alchimiste",   name_en:'The Alchemist',  img:IMG('jokers-peu-communs','lalchimiste.png'),     cost:5,
+  { id:'alchimiste',   rarity:'uncommon', name:"L'Alchimiste",   name_en:'The Alchemist',  img:IMG('jokers-peu-communs','lalchimiste.png'),     cost:4,
     desc:'Convertit 10 Chips en +1 Mult (si Chips ≥ 10)', desc_en:'Converts 10 Chips into +1 Mult (if Chips ≥ 10)',
     apply:(id,chips,mult)=> chips >= 10 ? [chips-10, mult+1] : [chips,mult] },
   { id:'serie',        rarity:'uncommon', name:'La Série',       name_en:'The Series',     img:IMG('jokers-peu-communs','la-serie.png'),        cost:4,
@@ -362,8 +362,8 @@ const JOKER_POOL = [
 
   // ── LÉGENDAIRES ─────────────────────────────────────────────────
   { id:'alpha',          rarity:'legendary', name:"L'Alpha",           name_en:'The Alpha',         img:IMG('jokers-legendaires','lalpha.png'),          cost:9,
-    desc:'+2 Mult sur absolument toutes les combos', desc_en:'+2 Mult on every combo',
-    apply:(id,chips,mult)=> [chips, mult+2] },
+    desc:'+4 Mult sur absolument toutes les combos', desc_en:'+4 Mult on every combo',
+    apply:(id,chips,mult)=> [chips, mult+4] },
   { id:'eternal',        rarity:'legendary', name:"L'Éternel",         name_en:'The Eternal',       img:IMG('jokers-legendaires','leternel.png'),         cost:10,
     desc:'Gagne +1 Mult permanent après chaque blind battue (max 8)', desc_en:'+1 permanent Mult after each blind beaten (max 8)',
     state:{ mult:0 },
@@ -848,7 +848,7 @@ document.getElementById('btnPlayBlind').addEventListener('click', startBlind);
 
 function startBlind() {
   G.score      = 0;
-  G.handsLeft  = G.bossEffect === 'lessHands' ? Math.max(1, BASE_HANDS - 1) : BASE_HANDS;
+  G.handsLeft  = BASE_HANDS;
   G.rollsLeft  = getMaxRolls();
   G.hasRolled  = false;
   const n      = getDiceCount();
@@ -965,12 +965,6 @@ function renderPips() {
 // ══════════════════════════════════════════════════════════════════
 //  DÉS
 // ══════════════════════════════════════════════════════════════════
-function applyMirror() {
-  if (G.bossEffect !== 'mirror') return;
-  const map = {1:6, 3:4, 5:2};
-  G.dice = G.dice.map(d => map[d] ?? d);
-}
-
 function isBanned(i) {
   return G.hasRolled && G.bossEffect === 'ban1' && G.bannedValue !== null && G.dice[i] === G.bannedValue;
 }
@@ -979,7 +973,7 @@ function renderDice() {
   const fogActive = G.bossEffect === 'fog';
   const row = document.getElementById('diceRow');
   row.innerHTML = '';
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < G.dice.length; i++) {
     const die = document.createElement('div');
     die.className = 'die' +
       (G.kept[i]    ? ' kept'        : '') +
@@ -1082,7 +1076,6 @@ async function rollDice() {
 
   // Tirage des valeurs finales
   G.dice.forEach((_, i) => { if (!G.kept[i]) G.dice[i] = rand(1,6); });
-  applyMirror();
 
   // Retrait des classes d'animation + affichage immédiat des valeurs finales
   dieEls.forEach((el, i) => {
@@ -1147,7 +1140,6 @@ function getEffDice() {
 function isComboValid(id, effDice) {
   const counts = getCounts(effDice);
   const vals   = Object.values(counts);
-  const sum    = effDice.reduce((a,b)=>a+b,0);
   switch (id) {
     case 'ones':      return effDice.some(d=>d===1);
     case 'twos':      return effDice.some(d=>d===2);
@@ -1157,10 +1149,10 @@ function isComboValid(id, effDice) {
     case 'sixes':     return effDice.some(d=>d===6);
     case 'threeKind': return vals.some(c=>c>=3);
     case 'fourKind':  return vals.some(c=>c>=4);
-    case 'fullHouse': { const sv=[...vals].sort((a,b)=>a-b); return sv[0]===2&&sv[1]===3; }
+    case 'fullHouse': { const sv=[...vals].sort((a,b)=>b-a); return sv.length>=2 && sv[0]>=3 && sv[1]>=2; }
     case 'smStr':     return hasSeq(effDice, G.jokers.some(j=>j.id==='raccourci')  ? 3 : 4);
     case 'lgStr':     return hasSeq(effDice, G.jokers.some(j=>j.id==='tricheur') ? 4 : 5);
-    case 'yahtzee':   return vals.some(c=>c===5);
+    case 'yahtzee':   return vals.some(c=>c>=5);
     default:          return false;
   }
 }
@@ -1376,7 +1368,9 @@ function renderCombos() {
       (!res && !blocked     ? ' disabled' : '') +
       (res && res.total === bestTotal && bestTotal > 0 ? ' best' : '');
 
-    btn.innerHTML = `<span class="cb-name">${jn(cat)}</span>` + (res
+    const boost = G.comboBoosts[cat.id];
+    const star  = boost ? `<span class="cb-star" title="+${boost.chips} Chips +${boost.mult} Mult">★</span>` : '';
+    btn.innerHTML = `<span class="cb-name">${jn(cat)}${star}</span>` + (res
       ? `<span class="cb-chips">${res.chips} ${t('chips')}</span><span class="cb-mult">× ${res.mult} ${t('mult')}</span><span class="cb-total">= ${nf(res.total)} ${t('pts')}</span>`
       : `<span class="cb-total" style="color:var(--grey)">—</span>`);
 
@@ -1441,9 +1435,8 @@ async function playCombo(id) {
 //  FIN DE BLIND / GAME OVER / WIN
 // ══════════════════════════════════════════════════════════════════
 function winBlind() {
-  const goldGain = G.bossEffect === 'lowGold' ? 2 : 4;
   toast(t('blindBeaten'), 'green');
-  G.gold += goldGain;
+  G.gold += 4;
   G.jokers.forEach(j => { if (j.onWinBlind) j.onWinBlind(j); });
   openShop();
 }
@@ -1726,7 +1719,6 @@ function renderSidePanel() {
   // ── Consommables (slots visuels) ────────────────────────────────
   const cs = document.getElementById('consumablesSlot');
   cs.innerHTML = '';
-  const cLabel = cs.closest ? null : null; // compteur géré différemment
 
   const cGrid = document.createElement('div');
   cGrid.className = 'slot-grid cons-grid';
@@ -1921,7 +1913,7 @@ function buyBooster(booster) {
 function openBoosterModal(count, boxImg = IMG('boites-boutique','boite-peu-commune.png')) {
   // Sélectionner 'count' constellations aléatoires (avec remplacement possible pour stacks)
   const pool    = [...CONSTELLATIONS];
-  shuffle(pool);
+  shuffleArray(pool);
   const picks   = pool.slice(0, Math.min(count, pool.length));
 
   // Créer le modal
@@ -2229,14 +2221,6 @@ function renderEncycloTab(tab) {
 }
 
 document.getElementById('btnEncyclo')?.addEventListener('click', openEncyclopedia);
-
-function shuffle(arr) {
-  for (let i = arr.length-1; i > 0; i--) {
-    const j = rand(0, i);
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
 
 
 // ══════════════════════════════════════════════════════════════════

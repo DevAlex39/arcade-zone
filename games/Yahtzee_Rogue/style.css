@@ -548,6 +548,7 @@ body::after {
 .combo-btn.blocked  { border-color:var(--red); opacity:.42; cursor:not-allowed; }
 @keyframes comboPulse { 0%,100%{box-shadow:0 0 0 1px var(--gold), 0 0 0 0 var(--gold-bg)} 50%{box-shadow:0 0 0 1px var(--gold), 0 0 0 6px transparent} }
 .cb-name  { font-size:.78rem; font-weight:800; color:var(--white); }
+.cb-star  { color:var(--gold); margin-left:.25rem; font-size:.7rem; }
 .cb-chips { font-size:.68rem; color:var(--chips-col); font-weight:700; }
 .cb-mult  { font-size:.68rem; color:var(--mult-col);  font-weight:700; }
 .cb-total { font-size:.84rem; color:var(--total-col); font-weight:800; font-family: var(--font-num); }
