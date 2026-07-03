@@ -455,6 +455,9 @@ function renderHint() {
     case 'lastTurn':
       el.textContent = `${p.name} — Dernier tour ! (${G.lastTurnCount}/${G.players.length - 1} joués)`;
       break;
+    case 'flipOne':
+      el.textContent = `${p.name} — Clique une carte cachée pour la révéler`;
+      break;
     default:
       el.textContent = '';
   }
@@ -466,6 +469,9 @@ function isCardClickable(pi, ci, card) {
 
   if (G.phase === 'initFlip')
     return isCurrentPlayer && pi === G.initFlipPlayer && !card.revealed;
+
+  if (G.phase === 'flipOne')
+    return isCurrentPlayer && !card.revealed;
 
   if (G.phase === 'hold' && isCurrentPlayer)
     return !card.eliminated; // peut remplacer n'importe quelle carte (révélée ou non)
@@ -783,9 +789,13 @@ function doIATurn() {
       renderAll();
 
       setTimeout(() => {
+        const hiddenCards = p.cards.map((c, i) => ({ c, i })).filter(({ c }) => !c.eliminated && !c.revealed);
         // Si la carte piochée est meilleure que la carte visible la plus haute → échanger
         if (highestVisible && drawn < highestVisible.c.value) {
           swapCard(highestVisible.i);
+        } else if (drawn <= 2 && hiddenCards.length > 0) {
+          // Bonne carte mais rien de mieux à remplacer en visible → la placer sur une cachée
+          swapCard(hiddenCards[Math.floor(Math.random() * hiddenCards.length)].i);
         } else {
           // Sinon défausser et révéler une carte cachée
           G.discard.push(G.heldCard);

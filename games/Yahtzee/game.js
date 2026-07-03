@@ -351,7 +351,6 @@ function selectScore(catId, pts) {
 // ══════════════════════════════════════════════════════
 function renderScoreboard() {
   const sb = document.getElementById('scoreboard');
-  const cols = players.length + 1; // catégorie + joueurs
 
   // Header joueurs
   let html = `<div class="sb-row sb-header" style="grid-template-columns:1fr${' 52px'.repeat(players.length)}">
@@ -378,8 +377,6 @@ function renderScoreboard() {
         const val = p.scores[cat.id];
         const isActive = i === curPlayer && cat.id !== 'bonus' && cat.id !== 'total';
         const filled   = val !== undefined;
-        const isBest   = filled && cat.id !== 'total' && cat.id !== 'bonus' &&
-                         players.every(pl => !filled || (pl.scores[cat.id] ?? -1) <= val);
         return `<div class="sb-cell sb-score
           ${filled ? 'filled' : 'empty'}
           ${isActive ? ' active-player' : ''}

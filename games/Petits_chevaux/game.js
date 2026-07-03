@@ -1182,20 +1182,22 @@ function animateDice(finalValue, color, onDone) {
   playDiceRoll();
   const start    = performance.now();
   const duration = DICE_DURATIONS[OPTIONS.diceSpeed] ?? 700;
-  let   lastVal  = 0;
+  let   lastChange = 0;
+  let   curVal     = Math.ceil(Math.random() * 6);
 
   function frame(now) {
     const elapsed = now - start;
     const t       = Math.min(elapsed / duration, 1);
-    // Fréquence de changement décélère progressivement
-    const interval = 40 + t * 120;
-    const randVal  = Math.ceil(Math.random() * 6);
-    const shake    = (1 - t) * 5;
-
-    if (elapsed % interval < 20 || randVal !== lastVal) {
-      drawDiceFace(elapsed > duration - 60 ? finalValue : randVal, color, shake);
-      lastVal = randVal;
+    // Intervalle entre deux faces : court au début, long à la fin → vraie décélération
+    const interval = 45 + t * t * 220;
+    if (elapsed - lastChange >= interval) {
+      let next = Math.ceil(Math.random() * 6);
+      if (next === curVal) next = (next % 6) + 1; // éviter deux faces identiques d'affilée
+      curVal = next;
+      lastChange = elapsed;
     }
+    const shake = (1 - t) * 5;
+    drawDiceFace(t > 0.92 ? finalValue : curVal, color, shake);
 
     if (t < 1) {
       diceAnimFrame = requestAnimationFrame(frame);
@@ -1242,17 +1244,6 @@ function toast(msg, color = '#e2e8f0') {
   document.body.appendChild(el);
   setTimeout(() => el.classList.add('toast-out'), 2200);
   setTimeout(() => el.remove(), 2700);
-}
-
-// ═══════════════════════════════════════════════════════════════════
-//  UTILITAIRES
-// ═══════════════════════════════════════════════════════════════════
-function shuffleArray(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
 }
 
 // ═══════════════════════════════════════════════════════════════════
