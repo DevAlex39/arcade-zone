@@ -99,6 +99,15 @@ html[data-theme="ember"] {
   --grain:       .03;
 }
 
+/* ─── CODE COULEUR SCORE (constant quel que soit le thème) ───────────
+   Chips = violet · Mult = orange · Total = vert émeraude            */
+:root,
+html[data-theme] {
+  --chips-col: #8d66f4;   /* violet */
+  --mult-col:  #e57d23;   /* orange */
+  --total-col: #16ad77;   /* émeraude */
+}
+
 html, body { height: 100%; font-family: var(--font); background: var(--bg); color: var(--white); overflow-x: hidden; }
 body { transition: background .4s ease; }
 
@@ -324,16 +333,18 @@ body::after {
 /* Jokers panel : image pleine largeur */
 .panel-card[data-rarity] { padding: 0 0 .5rem; }
 .panel-card[data-rarity] .pc-icon {
-  width: 100%; height: 110px; border-radius: 10px 10px 0 0;
+  width: 100%; height: 176px; border-radius: 10px 10px 0 0;
   background: rgba(0,0,0,.2); border: none; margin: 0; align-self: stretch;
 }
 .panel-card[data-rarity] .pc-icon .card-art {
-  width: 100%; height: 100%; object-fit: cover; max-height: none;
+  width: 100%; height: 100%; object-fit: contain; max-height: none;
+  padding: .3rem;
   filter: drop-shadow(0 3px 8px rgba(0,0,0,.6));
 }
 .panel-card[data-rarity] .pc-name { display: none; }
 .panel-card[data-rarity] .pc-rar  { margin-top: .3rem; }
-.panel-card[data-rarity] .pc-desc { padding: 0 .4rem; }
+/* effet retiré de la carte (dispo au survol) → plus de place pour l'image */
+.panel-card[data-rarity] .pc-desc { display: none; }
 .panel-card[data-rarity] .joker-move-row { margin-bottom: .2rem; }
 .panel-card:not(.empty-slot):hover { transform: translateY(-3px); box-shadow: 0 8px 22px -6px rgba(0,0,0,.6); }
 .panel-card.joker-active { outline: 2px solid var(--gold); box-shadow: 0 0 22px -2px var(--gold); animation: jokerPulse .35s ease; z-index:10; }
@@ -388,6 +399,33 @@ body::after {
    DÉS — glossy 3D
    ════════════════════════════════════════════════════════════════ */
 .col-main { display: flex; flex-direction: column; gap: .85rem; }
+
+/* ── Bannière Boss (écran de jeu) ── */
+.boss-banner {
+  display: flex; align-items: stretch; gap: .9rem;
+  background: linear-gradient(120deg, color-mix(in oklab, var(--red) 22%, var(--bg-2)), var(--bg-2) 70%);
+  border: 1px solid color-mix(in oklab, var(--red) 45%, var(--border));
+  border-radius: 16px; padding: .7rem .9rem;
+  box-shadow: 0 0 26px -12px var(--red), inset 0 1px 0 rgba(255,255,255,.04);
+  animation: bossBannerIn .35s cubic-bezier(.2,.8,.3,1) both;
+}
+@keyframes bossBannerIn { from { opacity:0; transform: translateY(-8px); } to { opacity:1; transform:none; } }
+.boss-banner.hidden { display: none !important; }
+.boss-banner-portrait {
+  flex: 0 0 auto; width: 58px; height: 78px; border-radius: 10px; overflow: hidden;
+  border: 1px solid color-mix(in oklab, var(--red) 50%, transparent);
+  background: radial-gradient(circle at 50% 30%, color-mix(in oklab, var(--red) 16%, #0c0f17), #090c13);
+  box-shadow: inset 0 0 22px -8px var(--red);
+  display: flex; align-items: center; justify-content: center;
+}
+.boss-banner-portrait img { height: 100%; width: auto; max-width: 100%; object-fit: contain; }
+.boss-banner-info { display: flex; flex-direction: column; justify-content: center; gap: .15rem; min-width: 0; }
+.boss-banner-tag {
+  font-size: .58rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--red); display: flex; align-items: center; gap: .35rem;
+}
+.boss-banner-name { font-family: var(--font-title); font-size: 1.15rem; font-weight: 700; color: var(--white); line-height: 1.1; }
+.boss-banner-effect { font-size: .76rem; color: var(--grey-3); line-height: 1.35; }
 .dice-area {
   background: radial-gradient(ellipse 80% 120% at 50% 0%, color-mix(in oklab, var(--accent-2) 9%, var(--bg-2)), var(--bg-2));
   border: 1px solid var(--border); border-radius: 18px;
@@ -489,7 +527,7 @@ body::after {
 .hsp-x     { color:var(--grey-2); }
 .hsp-mult  { color:var(--mult-col); font-weight:800; }
 .hsp-eq    { color:var(--grey-2); }
-.hsp-total { color:var(--gold-2); font-weight:800; font-size:1.1rem; font-family:var(--font-num); }
+.hsp-total { color:var(--total-col); font-weight:800; font-size:1.1rem; font-family:var(--font-num); }
 
 .actions-row { display: flex; justify-content: center; }
 
@@ -512,7 +550,12 @@ body::after {
 .cb-name  { font-size:.78rem; font-weight:800; color:var(--white); }
 .cb-chips { font-size:.68rem; color:var(--chips-col); font-weight:700; }
 .cb-mult  { font-size:.68rem; color:var(--mult-col);  font-weight:700; }
-.cb-total { font-size:.84rem; color:var(--gold-2); font-weight:800; font-family: var(--font-num); }
+.cb-total { font-size:.84rem; color:var(--total-col); font-weight:800; font-family: var(--font-num); }
+.cb-best-tag { display:none; }
+/* mots-clés colorés dans les descriptions (jokers, boutique, encyclo) */
+.kw-chips { color:var(--chips-col); font-weight:800; }
+.kw-mult  { color:var(--mult-col);  font-weight:800; }
+.kw-gold  { color:var(--gold-2);    font-weight:800; }
 
 /* ════════════════════════════════════════════════════════════════
    BOUTIQUE
@@ -543,14 +586,29 @@ body::after {
 .si-sell-btn  { background:color-mix(in oklab, var(--red) 70%, #000); color:#fff; }
 .si-sell-btn:hover { background:var(--red); }
 .sell-price   { color:color-mix(in oklab, var(--red) 60%, #fff); }
-.sell-item    { border-color:color-mix(in oklab, var(--red) 30%, transparent) !important; width:100% !important; flex-direction:row !important; padding:.5rem .85rem !important; gap:.7rem; align-items:center; }
-.sell-item:hover { border-color:color-mix(in oklab, var(--red) 60%, transparent) !important; transform:none; }
-.sell-item .si-icon { font-size:1.2rem; width: 1.9rem; height: 1.9rem; }
-.sell-item .si-desc { display:none; }
-.sell-item .si-type { display:none; }
-.sell-item .si-name { flex:1; font-size:.79rem; }
-.sell-item .si-footer { margin-top:0; gap:.5rem; }
-.sell-grid { flex-direction:column !important; gap:.35rem !important; }
+.sell-grid {
+  display:grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
+  gap:.55rem !important; flex-direction: initial !important;
+}
+.sell-item {
+  border-color:color-mix(in oklab, var(--red) 30%, transparent) !important;
+  width:100% !important; flex-direction:column !important;
+  padding:.55rem !important; gap:.4rem; align-items:stretch;
+}
+.sell-item:hover { border-color:color-mix(in oklab, var(--red) 60%, transparent) !important; transform:translateY(-2px); }
+.sell-item .si-icon {
+  width:100% !important; height:76px !important; font-size:1.5rem !important;
+  border-radius:10px !important; padding:.25rem !important; margin:0 !important;
+  background:radial-gradient(circle at 50% 30%, color-mix(in oklab,var(--red) 10%, #0c0f17), #090c13) !important;
+  border:1px solid color-mix(in oklab,var(--red) 18%, transparent) !important;
+  box-shadow:none !important; overflow:hidden;
+}
+.sell-item .si-icon .card-art { height:100% !important; width:auto !important; max-width:100% !important; object-fit:contain !important; border-radius:5px; }
+.sell-item .si-desc { display:none !important; }
+.sell-item .si-type { display:none !important; }
+.sell-item .si-name { display:block !important; flex:none; font-size:.74rem; text-align:center; line-height:1.2; min-height:1.8em; }
+.sell-item .si-footer { margin-top:auto; gap:.45rem; justify-content:space-between; }
 .shop-divider { display:flex; align-items:center; gap:.6rem; margin:.6rem 0 .3rem; font-size:.64rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:var(--red); }
 .shop-divider::before, .shop-divider::after { content:''; flex:1; height:1px; background:color-mix(in oklab, var(--red) 30%, transparent); }
 .shop-footer { display:flex; justify-content:space-between; align-items:center; padding-top:.75rem; border-top:1px solid var(--border); }
@@ -909,28 +967,119 @@ body::after {
   opacity: 1; transform: translateX(-50%) translateY(0) scale(1);
 }
 
+/* ── Infobulle joker (image + nom + effet) au survol de la carte ── */
+.joker-tip {
+  position: fixed; left: 0; top: 0;
+  transform: translateY(-50%);
+  width: 216px; z-index: 99998; pointer-events: none;
+  display: flex; gap: .6rem; padding: .6rem;
+  background: rgba(13,17,28,.97); border: 1px solid color-mix(in oklab, var(--rc, #4ade80) 55%, var(--border));
+  border-radius: 12px; box-shadow: 0 14px 34px -8px rgba(0,0,0,.7), 0 0 20px -10px var(--rc, #4ade80);
+  opacity: 0; transition: opacity .16s ease, transform .16s ease;
+  backdrop-filter: blur(6px); text-align: left;
+}
+.joker-tip[data-rarity="common"]    { --rc: #4ade80; }
+.joker-tip[data-rarity="uncommon"]  { --rc: #74b4ff; }
+.joker-tip[data-rarity="rare"]      { --rc: var(--gold-2); }
+.joker-tip[data-rarity="legendary"] { --rc: #ff8a9e; }
+.jt-art {
+  flex: 0 0 auto; width: 62px; height: 82px; border-radius: 8px; overflow: hidden;
+  background: radial-gradient(circle at 50% 32%, color-mix(in oklab, var(--rc) 18%, #0c0f17), #090c13);
+  border: 1px solid color-mix(in oklab, var(--rc) 45%, transparent);
+  display: flex; align-items: center; justify-content: center;
+}
+.jt-art .card-art { width: 100%; height: 100%; object-fit: contain; padding: .15rem; }
+.jt-body { display: flex; flex-direction: column; gap: .12rem; min-width: 0; flex: 1; }
+.jt-name { font-size: .8rem; font-weight: 800; color: var(--white); line-height: 1.15; }
+.jt-rar  { margin: .05rem 0 .1rem; }
+.jt-mod {
+  display: flex; align-items: baseline; gap: .35rem; flex-wrap: wrap;
+  font-size: .64rem; margin: .1rem 0 .05rem; padding: .3rem .4rem; border-radius: 6px;
+  background: color-mix(in oklab, var(--mc) 14%, transparent);
+  border: 1px solid color-mix(in oklab, var(--mc) 30%, transparent);
+}
+.jt-mod b    { color: var(--mc); font-weight: 800; letter-spacing: .01em; white-space: nowrap; }
+.jt-mod span { color: color-mix(in oklab, var(--mc) 70%, var(--white)); font-weight: 600; line-height: 1.3; }
+.jt-desc { font-size: .66rem; color: var(--grey-2); line-height: 1.35; }
+.jt-desc .kw-chips { color: var(--chips-col); } .jt-desc .kw-mult { color: var(--mult-col); }
+.joker-tip::after {
+  content: ''; position: absolute; right: 100%; top: 50%; transform: translateY(-50%);
+  border: 7px solid transparent; border-right-color: color-mix(in oklab, var(--rc, #4ade80) 55%, var(--border));
+}
+/* variante à gauche (si pas la place à droite) : la flèche pointe vers la droite */
+.joker-tip.flip::after {
+  right: auto; left: 100%;
+  border-right-color: transparent; border-left-color: color-mix(in oklab, var(--rc, #4ade80) 55%, var(--border));
+}
+.panel-card:hover .joker-tip { opacity: 1; }
+/* au survol : la carte se débride pour laisser sortir l'infobulle (l'image reste clippée par .pc-icon) et passe au-dessus des voisines */
+.panel-card:hover { overflow: visible; z-index: 40; }
+
 
 /* ════════════════════════════════════════════════════════════════
    BOÎTE — ouverture des boosters (constellation / joker)
    ════════════════════════════════════════════════════════════════ */
 .booster-box-img {
   position: relative; cursor: pointer; display: flex; align-items: center; justify-content: center;
-  width: 200px; height: 200px; margin: 0 auto;
+  width: 212px; height: 212px; margin: 0 auto;
   animation: boxFloat 3.5s ease-in-out infinite;
-  filter: drop-shadow(0 8px 24px rgba(0,0,0,.7));
-  transition: transform .15s;
+  transition: transform .2s;
+}
+/* halo de rayons lumineux tournants (aura au repos) */
+.booster-box-img::before {
+  content: ''; position: absolute; inset: -24px; z-index: 0; border-radius: 50%;
+  background: conic-gradient(from 0deg,
+    transparent 0 9deg, rgba(120,180,255,.24) 15deg, transparent 27deg,
+    transparent 60deg, rgba(120,180,255,.16) 102deg, transparent 116deg,
+    transparent 150deg, rgba(120,180,255,.24) 195deg, transparent 207deg,
+    transparent 240deg, rgba(120,180,255,.16) 285deg, transparent 299deg);
+  -webkit-mask: radial-gradient(closest-side, transparent 40%, #000 54%, transparent 88%);
+          mask: radial-gradient(closest-side, transparent 40%, #000 54%, transparent 88%);
+  animation: rayspin 12s linear infinite;
 }
 .booster-box-img:hover { transform: scale(1.05); }
-.booster-box-img.open  { animation: boxPop .35s cubic-bezier(.3,1.8,.4,1) forwards; }
-.booster-box-art { width: 180px; height: 180px; object-fit: contain; position: relative; z-index: 2; }
-.booster-box-glow {
-  position: absolute; inset: 0; border-radius: 50%;
-  background: radial-gradient(ellipse at 50% 60%, rgba(80,160,255,.35), transparent 68%);
-  filter: blur(14px); animation: boxGlowPulse 2.5s ease-in-out infinite; z-index: 1;
+.booster-box-art {
+  width: 198px; height: 198px; object-fit: contain; position: relative; z-index: 2;
+  /* fond les bandeaux de texte incrustés (basse résolution) dans le décor du modal */
+  -webkit-mask: linear-gradient(to bottom, transparent 0, #000 23%, #000 77%, transparent 100%);
+          mask: linear-gradient(to bottom, transparent 0, #000 23%, #000 77%, transparent 100%);
+  filter: drop-shadow(0 10px 22px rgba(0,0,0,.75)) contrast(1.05) saturate(1.08);
 }
+.booster-box-glow {
+  position: absolute; inset: 6%; border-radius: 50%; z-index: 1;
+  background: radial-gradient(ellipse at 50% 58%, rgba(90,170,255,.5), transparent 66%);
+  filter: blur(16px); animation: boxGlowPulse 2.5s ease-in-out infinite;
+}
+/* ── OUVERTURE : la boîte gonfle, flashe et éclate + onde de choc ── */
+.booster-box-img.open { animation: boxBurst .72s cubic-bezier(.3,.9,.3,1) forwards; pointer-events: none; }
+.booster-box-img.open .booster-box-art { animation: artBurst .72s cubic-bezier(.4,0,.2,1) forwards; }
+.booster-box-img.open::after {
+  content: ''; position: absolute; left: 50%; top: 50%; width: 36px; height: 36px; margin: -18px;
+  border-radius: 50%; z-index: 5; pointer-events: none;
+  background: radial-gradient(circle, #fff 0 30%, rgba(160,205,255,.7) 50%, transparent 72%);
+  box-shadow: 0 0 0 2px rgba(170,210,255,.55);
+  animation: shockwave .62s ease-out forwards;
+}
+@keyframes rayspin       { to { transform: rotate(360deg); } }
 @keyframes boxFloat      { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
-@keyframes boxPop        { 0%{transform:scale(1)} 50%{transform:scale(1.18)} 100%{transform:scale(0) translateY(-40px);opacity:0} }
-@keyframes boxGlowPulse  { 0%,100%{opacity:.6} 50%{opacity:1} }
+@keyframes boxGlowPulse  { 0%,100%{opacity:.55} 50%{opacity:1} }
+@keyframes boxBurst {
+  0%   { transform: scale(1)    rotate(0); }
+  24%  { transform: scale(1.16) rotate(-4deg); }
+  48%  { transform: scale(1.23) rotate(3deg); }
+  100% { transform: scale(.18)  rotate(10deg); opacity: 0; }
+}
+@keyframes artBurst {
+  0%   { filter: brightness(1); }
+  45%  { filter: brightness(1.15) saturate(1.1); }
+  60%  { filter: brightness(3.6) saturate(.2); }
+  100% { filter: brightness(7)   saturate(0); opacity: 0; }
+}
+@keyframes shockwave {
+  0%   { transform: scale(.2); opacity: .95; }
+  60%  { opacity: .55; }
+  100% { transform: scale(9.5); opacity: 0; }
+}
 
 
 /* reveal robuste (transition au lieu d'animation : état final garanti visible) */
@@ -949,42 +1098,83 @@ body::after {
 .panel-card[data-rarity="rare"],     .shop-item[data-rarity="rare"],     .encyclo-row[data-rarity="rare"],     .joker-booster-card[data-rarity="rare"]     { --rc:#ffd887; }
 .panel-card[data-rarity="legendary"],.shop-item[data-rarity="legendary"],.encyclo-row[data-rarity="legendary"],.joker-booster-card[data-rarity="legendary"]{ --rc:#ff8a9e; }
 
-/* disque sombre rond + lueur de rareté — panel jokers (pas la boutique) */
+/* cadre image + lueur de rareté — panel jokers & encyclopédie */
 .panel-card[data-rarity] .pc-icon,
 .encyclo-row[data-rarity] .er-icon {
-  position: relative; border-radius: 50%; overflow: visible;
-  background: radial-gradient(circle at 50% 38%, #1a2030, #0b0e16);
-  border: 1px solid color-mix(in oklab, var(--rc) 42%, transparent);
-  box-shadow: inset 0 0 16px -6px var(--rc), 0 0 12px -7px var(--rc);
+  position: relative; overflow: hidden;
+  background: radial-gradient(circle at 50% 36%, #161c2c, #0a0d15);
+  border: 1px solid color-mix(in oklab, var(--rc) 40%, transparent);
+  box-shadow: inset 0 0 22px -8px var(--rc), 0 0 14px -9px var(--rc);
 }
+/* panel : les visuels sont des cartes portrait entières → vignette arrondie */
+.panel-card[data-rarity] .pc-icon  { border-radius: 13px; }
+.encyclo-row[data-rarity] .er-icon { border-radius: 50%; }
+.panel-card[data-rarity] .pc-icon .card-art { object-position: center center; }
+
 .panel-card[data-rarity] .pc-icon i,
 .encyclo-row[data-rarity] .er-icon i {
-  position: relative; z-index: 3;
+  position: relative; z-index: 4;
   background: linear-gradient(145deg, color-mix(in oklab, var(--rc) 65%, #fff), var(--rc) 55%, color-mix(in oklab, var(--rc) 55%, #000));
   -webkit-background-clip: text; background-clip: text;
   color: transparent; -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 1px 2px rgba(0,0,0,.5));
 }
+/* ── EFFET ATOME : deux orbites elliptiques croisées + électron sur chacune ── */
+.panel-card[data-rarity] .pc-icon::before,
+.panel-card[data-rarity] .pc-icon::after,
+.encyclo-row[data-rarity] .er-icon::before,
+.encyclo-row[data-rarity] .er-icon::after {
+  content: ''; position: absolute; inset: 7%;
+  border-radius: 50%; z-index: 3; pointer-events: none;
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px));
+          mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px));
+}
 .panel-card[data-rarity] .pc-icon::before,
 .encyclo-row[data-rarity] .er-icon::before {
-  content: ''; position: absolute; inset: -4px; border-radius: 50%; z-index: 2; pointer-events: none;
-  background: conic-gradient(from 0deg, transparent 0deg, var(--rc) 70deg, #fff 90deg, var(--rc) 110deg, transparent 200deg);
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3px));
-          mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3px));
-  animation: jokerRing 3s linear infinite;
+  background: conic-gradient(from 0deg, color-mix(in oklab, var(--rc) 22%, transparent) 0 250deg, var(--rc) 318deg, #fff 340deg, color-mix(in oklab, var(--rc) 22%, transparent) 360deg);
+  animation: atomOrbA 2.6s linear infinite;
 }
-@keyframes jokerRing { to { transform: rotate(360deg); } }
+.panel-card[data-rarity] .pc-icon::after,
+.encyclo-row[data-rarity] .er-icon::after {
+  background: conic-gradient(from 0deg, color-mix(in oklab, var(--rc) 18%, transparent) 0 250deg, var(--rc) 318deg, #fff 340deg, color-mix(in oklab, var(--rc) 18%, transparent) 360deg);
+  animation: atomOrbB 3.4s linear infinite;
+}
+@keyframes atomOrbA { from { transform: rotate(56deg)  scaleY(.38) rotate(0deg);   } to { transform: rotate(56deg)  scaleY(.38) rotate(360deg);  } }
+@keyframes atomOrbB { from { transform: rotate(-56deg) scaleY(.38) rotate(360deg); } to { transform: rotate(-56deg) scaleY(.38) rotate(0deg);    } }
 
 /* Cartes joker boutique : image pleine largeur, pas de cercle */
 .shop-item[data-rarity] .si-icon {
-  width: calc(100% + 1.7rem); margin-left: -.85rem; margin-right: -.85rem; margin-top: -.85rem;
-  height: 155px; border-radius: 12px 12px 0 0;
-  background: rgba(0,0,0,.2); border: none; box-shadow: none;
-  display: flex; align-items: flex-end; justify-content: center; overflow: hidden;
+  position: relative;
+  width: 100%; height: 170px; margin: 0 0 .4rem;
+  border-radius: 12px;
+  background: radial-gradient(circle at 50% 30%, color-mix(in oklab, var(--rc) 14%, #0b0f17), #080b12);
+  border: 1px solid color-mix(in oklab, var(--rc) 28%, transparent);
+  box-shadow: inset 0 0 28px -10px var(--rc), 0 0 14px -9px var(--rc);
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+  padding: .5rem;
 }
+/* hauteur fixe + largeur auto → toutes les cartes au même gabarit, quel que soit le fichier source */
 .shop-item[data-rarity] .si-icon .card-art {
-  width: 100%; height: 100%; object-fit: contain; max-height: none;
-  filter: drop-shadow(0 4px 12px rgba(0,0,0,.6));
+  height: 100%; width: auto; max-width: 100%; object-fit: contain; max-height: none;
+  border-radius: 6px; position: relative; z-index: 4;
+  filter: drop-shadow(0 5px 14px rgba(0,0,0,.55));
+}
+/* effet atome (orbites croisées) — comme le panneau jokers, derrière la carte */
+.shop-item[data-rarity] .si-icon::before,
+.shop-item[data-rarity] .si-icon::after {
+  content: ''; position: absolute; left: 50%; top: 50%;
+  width: 158px; height: 158px; margin: -79px 0 0 -79px;
+  border-radius: 50%; z-index: 2; pointer-events: none;
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px));
+          mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px));
+}
+.shop-item[data-rarity] .si-icon::before {
+  background: conic-gradient(from 0deg, color-mix(in oklab, var(--rc) 22%, transparent) 0 250deg, var(--rc) 318deg, #fff 340deg, color-mix(in oklab, var(--rc) 22%, transparent) 360deg);
+  animation: atomOrbA 2.6s linear infinite;
+}
+.shop-item[data-rarity] .si-icon::after {
+  background: conic-gradient(from 0deg, color-mix(in oklab, var(--rc) 18%, transparent) 0 250deg, var(--rc) 318deg, #fff 340deg, color-mix(in oklab, var(--rc) 18%, transparent) 360deg);
+  animation: atomOrbB 3.4s linear infinite;
 }
 /* booster modal jokers : idem */
 .joker-booster-card .bc-icon {

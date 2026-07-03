@@ -130,6 +130,14 @@
 
       <!-- Dés + actions -->
       <div class="col-main">
+        <div class="boss-banner hidden" id="bossBanner">
+          <div class="boss-banner-portrait"><img id="bossBannerImg" alt=""/></div>
+          <div class="boss-banner-info">
+            <div class="boss-banner-tag"><i class="fa-solid fa-skull"></i> <span data-i18n="bossBlind">Blind Boss</span></div>
+            <div class="boss-banner-name" id="bossBannerName"></div>
+            <div class="boss-banner-effect" id="bossBannerEffect"></div>
+          </div>
+        </div>
         <div class="dice-area">
           <div class="fog-overlay hidden" id="fogOverlay"><i class="fa-solid fa-eye-slash"></i> <span data-i18n="fogOverlay">La Brume — dés cachés jusqu'à la soumission</span></div>
           <div class="dice-row" id="diceRow"></div>
@@ -224,5 +232,6 @@
     <div class="hold-restart-track"><div class="hold-restart-fill" id="holdRestartFill"></div></div>
   </div>
   <script src="game.js"></script>
+  <script src="review.js"></script>
 </body>
 </html>

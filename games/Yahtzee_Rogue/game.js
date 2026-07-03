@@ -47,7 +47,7 @@ const I18N = {
     targetReduced: '⏩ Cible réduite à {t} pts !', wildChanged: '🎭 Dé changé en {v} !', chooseValue: 'Choisir :',
     parasiteNeutralized: '🦠 {name} neutralisé ce lancer !',
     tRentier: '+1 💰 (Rentier)', tBanquier: '+2 💰 (Banquier)', tProspecteur: '+{g} 💰 (Prospecteur)', tMarchand: '+{g} 💰 (Marchand)',
-    constellationBox: '🌌 Boîte Constellation', jokerBox: '🃏 Boîte Joker', clickToOpen: 'Cliquez sur la boîte pour l\'ouvrir',
+    constellationBox: 'Boîte Constellation', jokerBox: 'Boîte Joker', clickToOpen: 'Cliquez sur la boîte pour l\'ouvrir',
     pickConstellation: '✨ Choisissez une constellation pour améliorer cette combo définitivement',
     pickJoker: '🃏 Choisissez un joker — il rejoint votre collection !',
     constellationApplied: '🌌 {name} appliquée ! {combo} +{c}C +{m}M', jokerAdded: '✅ {g}{name} ajouté !',
@@ -108,7 +108,7 @@ const I18N = {
     targetReduced: '⏩ Target reduced to {t} pts!', wildChanged: '🎭 Die changed to {v}!', chooseValue: 'Choose:',
     parasiteNeutralized: '🦠 {name} disabled this roll!',
     tRentier: '+1 💰 (Landlord)', tBanquier: '+2 💰 (Banker)', tProspecteur: '+{g} 💰 (Prospector)', tMarchand: '+{g} 💰 (Merchant)',
-    constellationBox: '🌌 Constellation Box', jokerBox: '🃏 Joker Box', clickToOpen: 'Click the box to open it',
+    constellationBox: 'Constellation Box', jokerBox: 'Joker Box', clickToOpen: 'Click the box to open it',
     pickConstellation: '✨ Choose a constellation to permanently upgrade that combo',
     pickJoker: '🃏 Choose a joker — it joins your collection!',
     constellationApplied: '🌌 {name} applied! {combo} +{c}C +{m}M', jokerAdded: '✅ {g}{name} added!',
@@ -137,6 +137,14 @@ function t(key, p) {
 }
 function jn(o) { return o ? (LANG === 'en' && o.name_en != null ? o.name_en : o.name) : ''; }
 function jd(o) { return o ? (LANG === 'en' && o.desc_en != null ? o.desc_en : o.desc) : ''; }
+// Colorise les mots-clés de score dans une description (HTML)
+function colorizeStats(s) {
+  if (!s) return s;
+  return String(s)
+    .replace(/\bChips\b/g, '<span class="kw-chips">Chips</span>')
+    .replace(/\bMult\b/g,  '<span class="kw-mult">Mult</span>');
+}
+function jdc(o) { return colorizeStats(jd(o)); }
 function cn(id) { const c = COMBOS.find(x => x.id === id); return c ? jn(c) : ''; }
 function nf(n) { return Number(n).toLocaleString(LANG === 'en' ? 'en-US' : 'fr'); }
 function jicon(o) {
@@ -145,6 +153,71 @@ function jicon(o) {
 }
 function modIconBadge(m) { return m ? '<span class="mod-badge" style="color:' + m.color + '">' + m.icon + '</span>' : ''; }
 function modTipHTML(m) { return m ? '<div class="mod-tip" style="--mc:' + m.color + '"><b>' + m.icon + ' ' + modLabel(m) + '</b><span>' + modifierDesc(m.id) + '</span></div>' : ''; }
+// Infobulle joker : image + nom + effet, révélée au survol de la carte
+function jokerTipHTML(j) {
+  if (!j) return '';
+  const art = j.img ? `<div class="jt-art">${jicon(j)}</div>` : '';
+  const effMod = j.modifier || (j.phantom ? { id:'phantom', icon:'👻', color:'#b39ddb' } : null);
+  const mod = effMod
+    ? `<div class="jt-mod" style="--mc:${effMod.color}"><b>${effMod.icon} ${modLabel(effMod)}</b><span>${modifierDesc(effMod.id)}</span></div>`
+    : '';
+  return `<div class="joker-tip" data-rarity="${j.rarity || 'common'}">
+    ${art}
+    <div class="jt-body">
+      <div class="jt-name">${jn(j)}</div>
+      <div class="jt-rar">${rarityLabel(j.rarity)}</div>
+      ${mod}
+      <div class="jt-desc">${jdc(j)}</div>
+    </div>
+  </div>`;
+}
+// Positionne l'infobulle joker en position:fixed au survol → au-dessus de tout,
+// jamais rognée par un conteneur ni un autre élément.
+(function initJokerTipPositioning() {
+  function place(card) {
+    const tip = card.querySelector(':scope > .joker-tip');
+    if (!tip) return;
+    // Portée dans <body> : évite que le hover-transform de la carte (containing
+    // block créé par translateY) ne fausse le positionnement fixed de la bulle.
+    if (tip.parentElement !== document.body) {
+      tip._homeCard = card;
+      document.body.appendChild(tip);
+    }
+    const panel = document.getElementById('jokersSlot') || card.parentElement;
+    const pr = panel.getBoundingClientRect();
+    const cr = card.getBoundingClientRect();
+    const tw = tip.offsetWidth  || 216;
+    const th = tip.offsetHeight || 110;
+    // à droite du panneau de jokers (jamais sur une autre carte), aligné sur la carte survolée
+    let left = pr.right + 12;
+    const flip = left + tw > window.innerWidth - 8;
+    if (flip) left = cr.left - 12 - tw;
+    let top = cr.top + cr.height / 2;
+    top = Math.max(8 + th / 2, Math.min(top, window.innerHeight - 8 - th / 2));
+    tip.classList.toggle('flip', flip);
+    tip.style.left = left + 'px';
+    tip.style.top  = top + 'px';
+    tip.style.transform = 'translateY(-50%)';
+    tip.style.opacity = '1';
+  }
+  function clear(card) {
+    const tip = (card.querySelector(':scope > .joker-tip')) ||
+                [...document.querySelectorAll('body > .joker-tip')].find(t => t._homeCard === card);
+    if (!tip) return;
+    tip.style.opacity = '0';
+    if (tip._homeCard === card) card.appendChild(tip);
+    tip.style.left = tip.style.top = tip.style.transform = '';
+    tip.classList.remove('flip');
+  }
+  document.addEventListener('mouseover', e => {
+    const card = e.target.closest && e.target.closest('.panel-card[data-rarity]');
+    if (card && (card.querySelector(':scope > .joker-tip') || [...document.querySelectorAll('body > .joker-tip')].some(t => t._homeCard === card))) place(card);
+  });
+  document.addEventListener('mouseout', e => {
+    const card = e.target.closest && e.target.closest('.panel-card[data-rarity]');
+    if (card && !card.contains(e.relatedTarget)) clear(card);
+  });
+})();
 function applyI18n(root) {
   root = root || document;
   root.querySelectorAll('[data-i18n]').forEach(el => { el.innerHTML = t(el.getAttribute('data-i18n')); });
@@ -821,6 +894,22 @@ function renderHeader() {
 
   const boss = isBoss ? G.bossOrder[(G.ante - 1) % G.bossOrder.length] : null;
   document.getElementById('blindEffectMini').textContent = boss ? `⚠️ ${jn(boss)}` : '';
+
+  // Bannière boss : portrait + nom + effet directement sur l'écran de jeu
+  const banner = document.getElementById('bossBanner');
+  if (banner) {
+    if (boss) {
+      const img = document.getElementById('bossBannerImg');
+      if (boss.img) { img.src = boss.img; img.style.display = ''; } else { img.style.display = 'none'; }
+      document.getElementById('bossBannerName').textContent = jn(boss);
+      document.getElementById('bossBannerEffect').textContent =
+        boss.effect === 'ban1' ? t('ban1Effect', {v: G.bannedValue}) : jd(boss);
+      banner.classList.remove('hidden');
+    } else {
+      banner.classList.add('hidden');
+    }
+  }
+
   renderScore();
   renderPips();
 }
@@ -1476,7 +1565,7 @@ function renderOwnedSection(elId, items, type) {
     div.innerHTML = `
       <div class="si-icon">${jicon(item)}</div>
       <div class="si-name">${jn(item)} ${modBadge}</div>
-      <div class="si-desc">${jd(item)}</div>
+      <div class="si-desc">${jdc(item)}</div>
       <div class="si-footer">
         <span class="si-cost sell-price">💰 ${sellPrice}</span>
         <button class="si-btn si-sell-btn">${t('sell')}</button>
@@ -1513,7 +1602,7 @@ function renderShopSection(elId, items, type) {
       <div class="si-icon">${jicon(item)}</div>
       <div class="si-name">${jn(item)} ${modBadge}</div>
       <div class="si-type">${type==='joker' ? rarityLabel(item.rarity) : `<span style="color:var(--green)">${t('consumable')}</span>`}</div>
-      <div class="si-desc">${jd(item)}</div>
+      <div class="si-desc">${jdc(item)}</div>
       <div class="si-footer">
         <span class="si-cost">💰 ${item.cost}</span>
         <button class="si-btn" ${(!canBuy||item.sold||tooMany)?'disabled':''}>
@@ -1566,6 +1655,8 @@ document.getElementById('btnNextBlind').addEventListener('click', () => {
 //  PANEL LATÉRAL (jokers, consommables, stats)
 // ══════════════════════════════════════════════════════════════════
 function renderSidePanel() {
+  // Nettoie les infobulles jokers éventuellement encore portées dans <body>
+  document.querySelectorAll('body > .joker-tip').forEach(t => t.remove());
   // ── Jokers (slots visuels) ──────────────────────────────────────
   const js = document.getElementById('jokersSlot');
   js.innerHTML = '';
@@ -1597,15 +1688,8 @@ function renderSidePanel() {
         <div class="pc-icon">${jicon(j)}</div>
         <div class="pc-name">${jn(j)}</div>
         <div class="pc-rar">${rarityLabel(j.rarity)}</div>
-        <div class="pc-desc">${jd(j)}</div>
-        <div class="joker-move-row">
-          <button class="joker-move-btn" ${canLeft  ? '' : 'disabled'} title="${t('moveLeft')}">←</button>
-          <button class="joker-move-btn" ${canRight ? '' : 'disabled'} title="${t('moveRight')}">→</button>
-        </div>`;
-      if (j.modifier) div.insertAdjacentHTML('beforeend', modTipHTML(j.modifier));
-      div.querySelectorAll('.joker-move-btn').forEach((btn, bi) => {
-        btn.addEventListener('click', e => { e.stopPropagation(); moveJoker(gIdx, bi === 0 ? -1 : 1); });
-      });
+        <div class="pc-desc">${jdc(j)}</div>`;
+      div.insertAdjacentHTML('beforeend', jokerTipHTML(j));
       attachJokerDnD(div, slot);
     } else {
       div.className = 'panel-card empty-slot';
@@ -1632,7 +1716,7 @@ function renderSidePanel() {
         <div class="pc-icon">${jicon(j)}</div>
         <div class="pc-name">${jn(j)}</div>
         <div class="pc-rar">${rarityLabel(j.rarity)}</div>`;
-      if (j.modifier) div.insertAdjacentHTML('beforeend', modTipHTML(j.modifier));
+      div.insertAdjacentHTML('beforeend', jokerTipHTML(j));
       pg.appendChild(div);
     });
     ph.appendChild(pg);
@@ -1651,7 +1735,7 @@ function renderSidePanel() {
     const div = document.createElement('div');
     if (c) {
       div.className = 'panel-card cons-card';
-      div.innerHTML = `<div class="pc-icon">${jicon(c)}</div><div class="pc-name">${jn(c)}</div><div class="pc-desc">${jd(c)}</div>`;
+      div.innerHTML = `<div class="pc-icon">${jicon(c)}</div><div class="pc-name">${jn(c)}</div><div class="pc-desc">${jdc(c)}</div>`;
       div.style.cursor = 'pointer';
       div.title = t('clickToUse');
       div.addEventListener('click', () => useConsumable(c, i));
@@ -1871,7 +1955,7 @@ function openBoosterModal(count, boxImg = IMG('boites-boutique','boite-peu-commu
       <div class="bc-icon">${jicon(con)}</div>
       <div class="bc-name">${jn(con)}</div>
       <div class="bc-combo">${cn(con.combo)}</div>
-      <div class="bc-bonus">${jd(con)}</div>
+      <div class="bc-bonus">${jdc(con)}</div>
       ${existing ? `<div class="bc-level">${t('currentLevel', {c: existing.chips, m: existing.mult})}</div>` : ''}`;
     card.addEventListener('click', () => applyConstellation(con, overlay));
     cardsEl.appendChild(card);
@@ -1889,7 +1973,7 @@ function openBoosterModal(count, boxImg = IMG('boites-boutique','boite-peu-commu
         c.style.transitionDelay = `${i * 80}ms`;
         c.classList.add('revealed');
       });
-    }, 400);
+    }, 720);
   }, { once: true });
 }
 
@@ -2004,7 +2088,7 @@ function openJokerBoosterModal(count, boxImg = IMG('boites-boutique','boite-comm
       <div class="bc-icon">${jicon(j)}</div>
       <div class="bc-name">${jn(j)} ${modBadge}</div>
       <div class="bc-combo">${rarityLabel(j.rarity)}</div>
-      <div class="bc-bonus">${jd(j)}</div>
+      <div class="bc-bonus">${jdc(j)}</div>
       ${!canAdd ? `<div class="bc-level" style="color:#f87171">${t('slotsFullShort')}</div>` : ''}`;
     if (j.modifier) card.insertAdjacentHTML('beforeend', modTipHTML(j.modifier));
     card.addEventListener('click', () => {
@@ -2028,7 +2112,7 @@ function openJokerBoosterModal(count, boxImg = IMG('boites-boutique','boite-comm
         c.style.transitionDelay = `${i * 80}ms`;
         c.classList.add('revealed');
       });
-    }, 400);
+    }, 720);
   }, { once: true });
 }
 
@@ -2115,7 +2199,7 @@ function renderEncycloTab(tab) {
           <span class="er-icon">${jicon(j)}</span>
           <div class="er-info">
             <span class="er-name">${jn(j)}</span>
-            <span class="er-desc">${jd(j)}</span>
+            <span class="er-desc">${jdc(j)}</span>
           </div>
           <div class="er-meta">
             ${rarityLabel(j.rarity)}
@@ -2133,7 +2217,7 @@ function renderEncycloTab(tab) {
         <span class="er-icon">${jicon(c)}</span>
         <div class="er-info">
           <span class="er-name">${jn(c)}</span>
-          <span class="er-desc">${jd(c)}</span>
+          <span class="er-desc">${jdc(c)}</span>
         </div>
         <div class="er-meta">
           <span style="color:var(--green);font-size:.75rem">${t('consumable')}</span>
