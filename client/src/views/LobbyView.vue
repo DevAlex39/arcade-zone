@@ -429,6 +429,7 @@ function connectSocket() {
   });
 
   const goToGame = () => router.push(`/game/${room.value.game_id}?room=${room.value.code}`);
+  socket.on('game_started',   goToGame);
   socket.on('round_start',    goToGame);
   socket.on('yahtzee_state',  goToGame);
   socket.on('skyjo_state',    goToGame);

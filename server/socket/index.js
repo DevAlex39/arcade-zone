@@ -190,6 +190,8 @@ function removePlayerFromGame(io, room, targetId) {
 
 // Lance (ou relance) la partie selon le jeu de la room.
 async function launchGame(io, room, socket) {
+  // Signal robuste pour rediriger TOUS les clients du lobby vers le jeu
+  io.to(room.code).emit('game_started', { gameId: room.gameId });
   if (room.gameId === 'motus') {
     await startMotusRound(io, room);
   } else if (room.gameId === 'yahtzee') {
