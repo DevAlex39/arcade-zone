@@ -173,7 +173,7 @@ const GAMES_SEED = [
   ['petits-chevaux', 'Petits Chevaux',      'Le grand classique du plateau — 1 à 4 joueurs',                              '🐴', '#a78bfa', 1, 4, 1, 1, '/solo/petits-chevaux/',6],
   ['escape',         'Escape',              'Jeu d\'évasion textuel — résous les énigmes pour t\'échapper',               '🔐', '#fbbf24', 1, 1, 1, 0, '/solo/escape/',        7],
   ['quiz',           'Quiz Zone',           'Testez vos connaissances — solo ou multi jusqu\'à 8 joueurs',                 '🧠', '#8b5cf6', 1, 8, 1, 1, null,                  8],
-  ['oser-jouer',     'Oser Jouer',          'Complétez la phrase avec la carte la plus drôle — 4 à 10 joueurs',            '😈', '#f43f5e', 4, 10, 1, 1, null,                 9],
+  ['oser-jouer',     'Oser Jouer',          'Complétez la phrase avec la carte la plus drôle — 3 à 10 joueurs',            '😈', '#f43f5e', 3, 10, 1, 1, null,                 9],
 ];
 
 async function migrate() {
@@ -216,6 +216,7 @@ async function migrate() {
 
   await pool.query(`UPDATE games SET has_multiplayer=1, min_players=1, max_players=8 WHERE id='skyjo'`);
   await pool.query(`UPDATE games SET has_multiplayer=1, min_players=1, max_players=4 WHERE id='petits-chevaux'`);
+  await pool.query(`UPDATE games SET min_players=3, description='Complétez la phrase avec la carte la plus drôle — 3 à 10 joueurs' WHERE id='oser-jouer'`);
   // Supprimer les anciennes entrées motus séparées si elles existent encore
   await pool.query(`DELETE FROM games WHERE id IN ('motus-solo','motus-multi')`).catch(() => {});
 

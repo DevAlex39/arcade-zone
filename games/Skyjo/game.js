@@ -349,18 +349,18 @@ function renderAll() {
 }
 
 function renderCenter() {
-  // Deck
+  // Deck — cliquable aussi pendant le dernier tour
   const deckEl = $('deckCard');
   $('deckCount').textContent = `${G.deck.length} cartes`;
-  const deckClickable = G.phase === 'draw' && !G.players[G.currentIdx].ia;
-  deckEl.classList.toggle('clickable', deckClickable);
-  deckEl.onclick = deckClickable ? drawFromDeck : null;
+  const canDraw = (G.phase === 'draw' || G.phase === 'lastTurn') && !G.players[G.currentIdx].ia;
+  deckEl.classList.toggle('clickable', canDraw);
+  deckEl.onclick = canDraw ? drawFromDeck : null;
 
   // Défausse
   const top      = G.discard[G.discard.length - 1];
   const discardEl = $('discardTop');
   styleCard(discardEl, top, true);
-  const discardClickable = G.phase === 'draw' && !G.players[G.currentIdx].ia;
+  const discardClickable = canDraw;
   discardEl.classList.toggle('clickable', discardClickable);
   discardEl.onclick = discardClickable ? takeFromDiscard : null;
 
