@@ -7,11 +7,20 @@ function shuffle(arr) {
   return a;
 }
 
+// incorrect_answers peut être : tableau (JSON auto-parsé), JSON string,
+// ou texte brut séparé par des virgules (anciennes données)
+function parseIncorrect(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (!raw) return [];
+  try { return JSON.parse(raw); }
+  catch { return String(raw).split(',').map(s => s.trim()).filter(Boolean); }
+}
+
 // Retourne la question à envoyer aux clients (sans la bonne réponse)
 function publicQuestion(q, idx, total, timeLimit) {
   const answers = q.type === 'boolean'
     ? ['True', 'False']
-    : shuffle([q.correct_answer, ...(Array.isArray(q.incorrect_answers) ? q.incorrect_answers : JSON.parse(q.incorrect_answers || '[]'))]);
+    : shuffle([q.correct_answer, ...parseIncorrect(q.incorrect_answers)]);
   return {
     idx,
     total,
