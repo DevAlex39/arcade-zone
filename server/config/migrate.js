@@ -163,6 +163,7 @@ const GAMES_SEED = [
   ['petits-chevaux', 'Petits Chevaux',      'Le grand classique du plateau — 1 à 4 joueurs',                              '🐴', '#a78bfa', 1, 4, 1, 1, '/solo/petits-chevaux/',6],
   ['escape',         'Escape',              'Jeu d\'évasion textuel — résous les énigmes pour t\'échapper',               '🔐', '#fbbf24', 1, 1, 1, 0, '/solo/escape/',        7],
   ['quiz',           'Quiz Zone',           'Testez vos connaissances — solo ou multi jusqu\'à 8 joueurs',                 '🧠', '#8b5cf6', 1, 8, 1, 1, null,                  8],
+  ['oser-jouer',     'Oser Jouer',          'Complétez la phrase avec la carte la plus drôle — 4 à 10 joueurs',            '😈', '#f43f5e', 4, 10, 1, 1, null,                 9],
 ];
 
 async function migrate() {

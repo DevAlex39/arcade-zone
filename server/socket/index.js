@@ -5,6 +5,7 @@ const yahtzee = require('../games/yahtzee');
 const skyjo   = require('../games/skyjo');
 const pc      = require('../games/petits-chevaux');
 const quiz    = require('../games/quiz');
+const oj      = require('../games/oser-jouer');
 const { pool } = require('../config/db');
 const { awardXp, updateChallenge, recordGame } = require('../services/xp');
 
@@ -148,6 +149,27 @@ function removePlayerFromGame(io, room, targetId) {
     io.to(code).emit('pc_state', publicPCState(gs));
     scheduleAITurn(io, code, room);
   }
+  else if (room.gameId === 'oser-jouer') {
+    oj.removePlayer(gs, targetId);
+    if (gs.playerIds.length < 3) {
+      // Plus assez de joueurs pour continuer → fin de partie, meilleur score gagne
+      const best = gs.playerIds.reduce((a, b) => (gs.scores[b] > gs.scores[a] ? b : a), gs.playerIds[0]);
+      gs.winner = best ?? null;
+      gs.phase  = 'end';
+      broadcastOJ(io, room);
+      endOserJouerGame(io, room, gs);
+      return;
+    }
+    // Si le retrait débloque la phase (tous ont soumis / voté)
+    if (gs.phase === 'submit') {
+      const subs = oj.submitters(gs);
+      if (subs.length > 0 && subs.every(id => gs.submissions[id])) {
+        gs.submitOrder = Object.keys(gs.submissions).sort(() => Math.random() - 0.5);
+        gs.phase = gs.mode === 'master' ? 'judge' : 'vote';
+      }
+    }
+    broadcastOJ(io, room);
+  }
   else if (room.gameId === 'quiz') {
     gs.playerIds = (gs.playerIds || []).filter(id => id !== targetId);
     gs.eliminated = (gs.eliminated || []).filter(id => id !== targetId);
@@ -183,6 +205,8 @@ async function launchGame(io, room, socket) {
       console.error('[Quiz] startQuizGame error:', e);
       socket?.emit('error', 'Erreur au démarrage du quiz : ' + e.message);
     }
+  } else if (room.gameId === 'oser-jouer') {
+    startOserJouerGame(io, room);
   }
 }
 
@@ -541,6 +565,43 @@ function initSocket(io) {
       else if (action === 'move' && gs.phase === 'select') {
         if (!gs.movablePawns.includes(aData.pionIdx)) return;
         applyPCMove(io, code, room, gs, aData.pionIdx);
+      }
+    });
+
+    // ─── Actions Oser Jouer ─────────────────────────────────────────
+    socket.on('oj_action', ({ code, action, data: aData }) => {
+      const room = rooms.get(code?.toUpperCase());
+      if (!room || room.status !== 'playing' || room.gameId !== 'oser-jouer') return;
+      const gs = room.gameState;
+      if (!gs) return;
+
+      if (action === 'submit') {
+        const r = oj.submitCards(gs, user.id, aData?.cardIds);
+        if (r.error) return socket.emit('error', r.error);
+        broadcastOJ(io, room);
+      }
+      else if (action === 'judge_pick') {
+        // Le client envoie la clé anonyme → on retrouve l'auteur via submitOrder
+        const winnerPid = gs.submitOrder[aData?.winnerKey];
+        const r = oj.judgePick(gs, user.id, winnerPid);
+        if (r.error) return socket.emit('error', r.error);
+        broadcastOJ(io, room);
+        if (r.gameOver) endOserJouerGame(io, room, gs);
+      }
+      else if (action === 'vote') {
+        const targetPid = gs.submitOrder[aData?.targetKey];
+        const r = oj.castVote(gs, user.id, targetPid);
+        if (r.error) return socket.emit('error', r.error);
+        broadcastOJ(io, room);
+        if (r.gameOver) endOserJouerGame(io, room, gs);
+      }
+      else if (action === 'next_round') {
+        // Le maître (mode master) ou l'hôte (mode vote) enchaîne la manche
+        const allowed = gs.mode === 'master' ? oj.masterId(gs) === user.id : room.hostId === user.id;
+        if (!allowed) return;
+        const r = oj.nextRound(gs);
+        if (r.error) return socket.emit('error', r.error);
+        broadcastOJ(io, room);
       }
     });
 
@@ -1040,6 +1101,32 @@ function advancePCTurn(io, code, room, gs, reroll) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// OSER JOUER
+// ═══════════════════════════════════════════════════════════════════════
+function startOserJouerGame(io, room) {
+  room.status    = 'playing';
+  room.gameState = oj.initGame(room.players, room.settings);
+  broadcastOJ(io, room);
+}
+
+// Les mains sont privées → chaque joueur reçoit SON état
+function broadcastOJ(io, room) {
+  const gs = room.gameState;
+  if (!gs) return;
+  room.players.forEach(p => {
+    if (p.socketId) io.to(p.socketId).emit('oj_state', oj.publicState(gs, p.id));
+  });
+}
+
+function endOserJouerGame(io, room, gs) {
+  room.status = 'finished';
+  const winner = room.players.find(p => p.id === gs.winner) || gs.players.find(p => p.id === gs.winner) || null;
+  io.to(room.code).emit('game_over', { winner, scores: gs.scores });
+  handleGameOver(room, gs.winner, { ...gs.scores });
+  enterPostGame(room);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // HELPERS COMMUNS
 // ═══════════════════════════════════════════════════════════════════════
 function resendGameState(socket, room) {
@@ -1055,6 +1142,8 @@ function resendGameState(socket, room) {
     socket.emit('skyjo_state', publicSkyjoState(room.gameState));
   } else if (room.gameId === 'petits-chevaux' && room.gameState) {
     socket.emit('pc_state', publicPCState(room.gameState));
+  } else if (room.gameId === 'oser-jouer' && room.gameState) {
+    socket.emit('oj_state', oj.publicState(room.gameState, socket.user?.id));
   } else if (room.gameId === 'quiz' && room.gameState) {
     const gs = room.gameState;
     const q = gs.questions[gs.currentIdx];

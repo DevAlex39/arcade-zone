@@ -41,6 +41,11 @@
       <QuizMultiGame :room-code="roomCode" :game="game" />
     </template>
 
+    <!-- JEU MULTI Oser Jouer -->
+    <template v-else-if="game?.id === 'oser-jouer' && roomCode">
+      <OserJouerMultiGame :room-code="roomCode" :game="game" />
+    </template>
+
     <!-- JEU MULTI avec solo_url : iframe fallback -->
     <template v-else-if="game?.solo_url && roomCode">
       <div class="solo-bar">
@@ -72,6 +77,7 @@ import SkyjoMultiGame from '@/views/games/SkyjoMultiGame.vue';
 import PetitsChevauxMultiGame from '@/views/games/PetitsChevauxMultiGame.vue';
 import QuizMultiGame from '@/views/games/QuizMultiGame.vue';
 import QuizSoloGame from '@/views/games/QuizSoloGame.vue';
+import OserJouerMultiGame from '@/views/games/OserJouerMultiGame.vue';
 
 const route    = useRoute();
 const platform = usePlatformStore();

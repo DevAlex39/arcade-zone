@@ -229,6 +229,39 @@
             </div>
           </div>
 
+          <!-- Paramètres Oser Jouer -->
+          <div class="card lobby-settings" v-if="isHost && room.game_id === 'oser-jouer'">
+            <h3 class="settings-title">{{ t('lobby.settings') }}</h3>
+
+            <div class="setting-row">
+              <span class="toggle-label">{{ t('oj.mode') }}</span>
+              <div class="lang-switch">
+                <button class="lang-btn" :class="{ active: settings.ojMode === 'master' }"
+                  :title="t('oj.mode_master_tip')" @click="settings.ojMode = 'master'">{{ t('oj.mode_master') }}</button>
+                <button class="lang-btn" :class="{ active: settings.ojMode === 'vote' }"
+                  :title="t('oj.mode_vote_tip')" @click="settings.ojMode = 'vote'">{{ t('oj.mode_vote') }}</button>
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <span class="toggle-label">{{ t('oj.category') }}</span>
+              <div class="lang-switch">
+                <button class="lang-btn" :class="{ active: settings.ojCategory === 'public' }" @click="settings.ojCategory = 'public'">{{ t('oj.cat_public') }}</button>
+                <button class="lang-btn" :class="{ active: settings.ojCategory === 'trash' }" @click="settings.ojCategory = 'trash'">{{ t('oj.cat_trash') }}</button>
+                <button class="lang-btn" :class="{ active: settings.ojCategory === 'all' }" @click="settings.ojCategory = 'all'">{{ t('oj.cat_all') }}</button>
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <label>{{ t('oj.target') }}</label>
+              <div class="stepper">
+                <button @click="settings.ojTargetScore = Math.max(3, settings.ojTargetScore - 1)">−</button>
+                <span>{{ settings.ojTargetScore }}</span>
+                <button @click="settings.ojTargetScore = Math.min(30, settings.ojTargetScore + 1)">+</button>
+              </div>
+            </div>
+          </div>
+
           <!-- Liste des joueurs -->
           <div class="card lobby-players">
             <h3 class="settings-title">{{ t('lobby.players') }} ({{ (room.players?.length || 0) + (settings.aiCount || 0) }} / {{ room.max_players }})</h3>
@@ -292,6 +325,7 @@ const settings = ref({
   pionsPerPlayer: 2, rejouerSur6: true, allowOvertake: false, corridorSimplifie: false,
   quizMode: 1, timer: 15, targetScore: 100, questionCount: 20, lives: 5,
   questionTypes: 'both', difficulty: 'mixed', quizCategories: [], quizLang: 'fr',
+  ojMode: 'master', ojCategory: 'all', ojTargetScore: 10,
 });
 let socket = null;
 const quizCategories = ref([]);
@@ -372,6 +406,7 @@ function connectSocket() {
   socket.on('skyjo_state',    goToGame);
   socket.on('pc_state',       goToGame);
   socket.on('quiz_question',  goToGame);
+  socket.on('oj_state',       goToGame);
 
   socket.on('kicked', () => {
     platform.showToast('Vous avez été exclu de la salle par l\'hôte', 'error');
