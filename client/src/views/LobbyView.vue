@@ -265,11 +265,11 @@
           <!-- Liste des joueurs -->
           <div class="card lobby-players">
             <h3 class="settings-title">{{ t('lobby.players') }} ({{ (room.players?.length || 0) + (settings.aiCount || 0) }} / {{ room.max_players }})</h3>
-            <div class="player-list">
-              <div v-for="p in room.players" :key="p.id" class="player-row">
-                <div class="player-avatar">{{ p.username[0].toUpperCase() }}</div>
+            <transition-group name="pjoin" tag="div" class="player-list">
+              <div v-for="(p, pi) in room.players" :key="p.id" class="player-row">
+                <div class="player-avatar" :style="{ background: avatarGradient(pi) }">{{ p.username[0].toUpperCase() }}</div>
                 <span class="player-name">{{ p.username }}</span>
-                <span v-if="p.id === room.host_id" class="badge badge-amber">{{ t('lobby.host') }}</span>
+                <span v-if="p.id === room.host_id" class="badge badge-amber">👑 {{ t('lobby.host') }}</span>
                 <span v-else-if="p.online !== false" class="badge badge-green">{{ t('lobby.online') }}</span>
                 <span v-else class="badge" style="color:var(--text-3)">{{ t('lobby.disconnected') }}</span>
                 <button v-if="isHost && p.id !== room.host_id" class="btn-kick" title="Exclure ce joueur" @click="kickPlayer(p.id)">✕</button>
@@ -279,15 +279,15 @@
                 <span class="player-name">{{ t('lobby.ai_players') }} {{ i }}</span>
                 <span class="badge" style="background:rgba(6,182,212,.15);color:var(--cyan)">IA</span>
               </div>
-              <div v-if="(room.players?.length || 0) + (settings.aiCount || 0) < room.max_players" class="player-row placeholder">
-                <div class="player-avatar ghost">?</div>
+              <div v-if="(room.players?.length || 0) + (settings.aiCount || 0) < room.max_players" key="placeholder" class="player-row placeholder">
+                <div class="player-avatar ghost pulse-slot">?</div>
                 <span class="text-muted">{{ t('lobby.waiting_slot') }}</span>
               </div>
-            </div>
+            </transition-group>
           </div>
 
           <!-- Lancer -->
-          <button v-if="isHost" class="btn btn-primary btn-full btn-lg" :disabled="!canStart" @click="startGame">
+          <button v-if="isHost" class="btn btn-primary btn-full btn-lg" :class="{ 'btn-ready': canStart }" :disabled="!canStart" @click="startGame">
             {{ canStart ? t('lobby.start') : t('lobby.need_players', { n: room.min_players }) }}
           </button>
           <div v-else class="waiting-msg">{{ t('lobby.waiting_host') }}</div>
@@ -348,6 +348,19 @@ function toggleQuizCat(id) {
   else settings.value.quizCategories = [...cats, id];
 }
 
+// Avatar coloré différent par joueur
+const AVATAR_GRADIENTS = [
+  'linear-gradient(135deg, #06b6d4, #8b5cf6)',
+  'linear-gradient(135deg, #f59e0b, #ef4444)',
+  'linear-gradient(135deg, #22c55e, #06b6d4)',
+  'linear-gradient(135deg, #ec4899, #8b5cf6)',
+  'linear-gradient(135deg, #eab308, #22c55e)',
+  'linear-gradient(135deg, #ef4444, #ec4899)',
+  'linear-gradient(135deg, #8b5cf6, #06b6d4)',
+  'linear-gradient(135deg, #f97316, #eab308)',
+];
+function avatarGradient(i) { return AVATAR_GRADIENTS[i % AVATAR_GRADIENTS.length]; }
+
 function isCatActive(id) { return settings.value.categories.includes(id); }
 function toggleCat(id) {
   const cats = settings.value.categories;
@@ -398,7 +411,22 @@ function connectSocket() {
     });
   });
 
-  socket.on('room_update', (data) => { room.value = { ...room.value, ...data }; });
+  socket.on('room_update', (data) => {
+    // Toast d'arrivée / départ de joueurs
+    const before = (room.value?.players || []).map(p => p.id);
+    const after  = (data.players || []).map(p => p.id);
+    if (before.length) {
+      (data.players || []).forEach(p => {
+        if (!before.includes(p.id) && p.username !== auth.user?.username) {
+          platform.showToast(`🎉 ${p.username} a rejoint la salle !`, 'success');
+        }
+      });
+      (room.value?.players || []).forEach(p => {
+        if (!after.includes(p.id)) platform.showToast(`👋 ${p.username} a quitté la salle`, 'info');
+      });
+    }
+    room.value = { ...room.value, ...data };
+  });
 
   const goToGame = () => router.push(`/game/${room.value.game_id}?room=${room.value.code}`);
   socket.on('round_start',    goToGame);
@@ -487,6 +515,23 @@ onUnmounted(() => socket?.disconnect());
 .badge-beta { display: inline-block; background: color-mix(in srgb, var(--amber) 15%, transparent); border: 1px solid color-mix(in srgb, var(--amber) 40%, transparent); color: var(--amber); border-radius: 4px; padding: 0 .35rem; font-size: .65rem; font-weight: 700; letter-spacing: .04em; vertical-align: middle; margin-left: .3rem; }
 
 .player-list { display: flex; flex-direction: column; gap: .55rem; }
+
+/* Animation d'arrivée / départ des joueurs */
+.pjoin-enter-active { animation: pjoinIn .4s ease; }
+.pjoin-leave-active { animation: pjoinIn .3s ease reverse; }
+.pjoin-move { transition: transform .3s ease; }
+@keyframes pjoinIn { from { opacity: 0; transform: translateX(-14px) scale(.95); } to { opacity: 1; transform: none; } }
+
+/* Slot en attente qui respire */
+.pulse-slot { animation: slotPulse 2s ease-in-out infinite; }
+@keyframes slotPulse { 0%, 100% { opacity: .4; } 50% { opacity: .9; } }
+
+/* Bouton lancer prêt → halo pulsant */
+.btn-ready { animation: readyPulse 1.8s ease-in-out infinite; }
+@keyframes readyPulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--cyan) 45%, transparent); }
+  50%      { box-shadow: 0 0 0 8px transparent; }
+}
 .player-row { display: flex; align-items: center; gap: .6rem; }
 .player-avatar { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; background: linear-gradient(135deg, var(--cyan), var(--violet)); display: flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 800; color: var(--bg); }
 .player-avatar.ghost { background: var(--bg-4); color: var(--text-3); }
