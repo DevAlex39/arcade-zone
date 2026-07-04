@@ -35,6 +35,37 @@
         </div>
       </section>
 
+      <!-- Oser Jouer : cartes réponses custom -->
+      <section class="admin-section card">
+        <h2>😈 Oser Jouer — Cartes réponses</h2>
+        <p class="text-muted mb-2">Ajoutez vos propres cartes réponses. Les doublons (mêmes cartes de base incluses) sont refusés.</p>
+
+        <form class="oj-form" @submit.prevent="addOjAnswer">
+          <input v-model="ojForm.fr" class="oj-input" type="text" maxlength="255" placeholder="Texte FR (ex: un lama en trottinette)" required />
+          <input v-model="ojForm.en" class="oj-input" type="text" maxlength="255" placeholder="Texte EN (optionnel — FR repris sinon)" />
+          <select v-model="ojForm.cat" class="oj-select">
+            <option value="public">😊 Tout public</option>
+            <option value="trash">😈 Trash</option>
+          </select>
+          <button class="btn btn-primary btn-sm" type="submit" :disabled="ojAdding || !ojForm.fr.trim()">
+            {{ ojAdding ? '⟳' : '+ Ajouter' }}
+          </button>
+        </form>
+        <p v-if="ojError" class="oj-error">{{ ojError }}</p>
+
+        <div class="oj-list" v-if="ojAnswers.length">
+          <div v-for="a in ojAnswers" :key="a.id" class="oj-row">
+            <span class="oj-cat">{{ a.cat === 'trash' ? '😈' : '😊' }}</span>
+            <div class="oj-texts">
+              <span class="oj-fr">{{ a.text_fr }}</span>
+              <span class="oj-en" v-if="a.text_en && a.text_en !== a.text_fr">🇬🇧 {{ a.text_en }}</span>
+            </div>
+            <button class="oj-del" title="Supprimer" @click="deleteOjAnswer(a)">✕</button>
+          </div>
+        </div>
+        <p v-else class="text-muted" style="font-size:.8rem">Aucune carte custom pour l'instant.</p>
+      </section>
+
       <!-- Utilisateurs -->
       <section class="admin-section card">
         <h2>👥 Utilisateurs</h2>
@@ -72,6 +103,44 @@ const games = ref([]);
 const users = ref([]);
 const stats = ref({ users: 0, rooms: 0, sessions: 0 });
 
+// Oser Jouer — cartes custom
+const ojAnswers = ref([]);
+const ojForm    = ref({ fr: '', en: '', cat: 'public' });
+const ojAdding  = ref(false);
+const ojError   = ref('');
+
+async function loadOjAnswers() {
+  try {
+    const { data } = await axios.get('/api/oser-jouer/answers');
+    ojAnswers.value = data;
+  } catch { /* silencieux */ }
+}
+
+async function addOjAnswer() {
+  if (!ojForm.value.fr.trim() || ojAdding.value) return;
+  ojAdding.value = true;
+  ojError.value  = '';
+  try {
+    const { data } = await axios.post('/api/oser-jouer/answers', {
+      fr: ojForm.value.fr, en: ojForm.value.en, cat: ojForm.value.cat,
+    });
+    ojAnswers.value = [data, ...ojAnswers.value];
+    ojForm.value.fr = ''; ojForm.value.en = '';
+  } catch (err) {
+    ojError.value = err.response?.data?.error || 'Erreur lors de l\'ajout';
+  } finally {
+    ojAdding.value = false;
+  }
+}
+
+async function deleteOjAnswer(a) {
+  if (!confirm(`Supprimer « ${a.text_fr} » ?`)) return;
+  try {
+    await axios.delete(`/api/oser-jouer/answers/${a.id}`);
+    ojAnswers.value = ojAnswers.value.filter(x => x.id !== a.id);
+  } catch { /* silencieux */ }
+}
+
 async function load() {
   const [g, u, s] = await Promise.all([
     axios.get('/api/admin/games'),
@@ -81,6 +150,7 @@ async function load() {
   games.value = g.data;
   users.value = u.data;
   stats.value = s.data;
+  loadOjAnswers();
 }
 
 async function toggleGame(game) {
@@ -142,6 +212,21 @@ onMounted(load);
 }
 .toggle-switch input:checked + .toggle-slider { background: var(--cyan); }
 .toggle-switch input:checked + .toggle-slider::before { transform: translateX(18px); background: var(--bg); }
+
+/* Oser Jouer — cartes custom */
+.oj-form { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: .6rem; }
+.oj-input { flex: 1; min-width: 180px; background: var(--bg-3); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: .45rem .7rem; font-size: .85rem; }
+.oj-input:focus { outline: none; border-color: var(--cyan); }
+.oj-select { background: var(--bg-3); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: .45rem .5rem; font-size: .85rem; cursor: pointer; }
+.oj-error { color: #f87171; font-size: .8rem; font-weight: 700; margin-bottom: .5rem; }
+.oj-list { display: flex; flex-direction: column; gap: .35rem; max-height: 320px; overflow-y: auto; }
+.oj-row { display: flex; align-items: center; gap: .6rem; padding: .4rem .6rem; background: var(--bg-3); border: 1px solid var(--border); border-radius: 8px; }
+.oj-cat { flex-shrink: 0; }
+.oj-texts { flex: 1; display: flex; flex-direction: column; }
+.oj-fr { font-size: .84rem; font-weight: 600; }
+.oj-en { font-size: .72rem; color: var(--text-3); }
+.oj-del { background: transparent; border: 1px solid rgba(239,68,68,.35); border-radius: 6px; color: #f87171; cursor: pointer; width: 22px; height: 22px; font-size: .65rem; flex-shrink: 0; }
+.oj-del:hover { background: rgba(239,68,68,.15); }
 
 /* Tableau utilisateurs */
 .user-table-wrap { overflow-x: auto; }

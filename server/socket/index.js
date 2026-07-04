@@ -208,7 +208,7 @@ async function launchGame(io, room, socket) {
       socket?.emit('error', 'Erreur au démarrage du quiz : ' + e.message);
     }
   } else if (room.gameId === 'oser-jouer') {
-    startOserJouerGame(io, room);
+    await startOserJouerGame(io, room);
   }
 }
 
@@ -1105,7 +1105,8 @@ function advancePCTurn(io, code, room, gs, reroll) {
 // ═══════════════════════════════════════════════════════════════════════
 // OSER JOUER
 // ═══════════════════════════════════════════════════════════════════════
-function startOserJouerGame(io, room) {
+async function startOserJouerGame(io, room) {
+  await require('../games/oser-jouer-cards').ensureCustomLoaded();
   room.status    = 'playing';
   room.gameState = oj.initGame(room.players, room.settings);
   broadcastOJ(io, room);

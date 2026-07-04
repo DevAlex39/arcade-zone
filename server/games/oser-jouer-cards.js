@@ -199,12 +199,43 @@ function blanksCount(prompt) {
   return (prompt.fr.match(/___/g) || []).length;
 }
 
+// ── Cartes réponses ajoutées par l'admin (table oj_custom_answers) ──
+let _custom = null;
+async function ensureCustomLoaded() {
+  if (_custom) return _custom;
+  try {
+    const { pool } = require('../config/db');
+    const [rows] = await pool.query('SELECT text_fr, text_en, cat FROM oj_custom_answers');
+    _custom = rows.map(r => ({ cat: r.cat, fr: r.text_fr, en: r.text_en || r.text_fr }));
+  } catch {
+    _custom = []; // table absente ou DB indisponible
+  }
+  return _custom;
+}
+function addCustomToCache(card) { if (_custom) _custom.push(card); }
+function removeCustomFromCache(textFr) { if (_custom) _custom = _custom.filter(c => c.fr !== textFr); }
+
+// Normalisation pour la détection de doublons (casse/espaces/accents ignorés)
+function normalizeText(s) {
+  return String(s || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ');
+}
+function answerExists(textFr) {
+  const n = normalizeText(textFr);
+  if (ANSWERS.some(a => normalizeText(a.fr) === n)) return true;
+  if (_custom && _custom.some(a => normalizeText(a.fr) === n)) return true;
+  return false;
+}
+
 function getDeck(category) {
   const filter = c => category === 'all' ? true : c.cat === category;
+  const all = [...ANSWERS, ...(_custom || [])];
   return {
     prompts: PROMPTS.filter(filter),
-    answers: ANSWERS.filter(filter),
+    answers: all.filter(filter),
   };
 }
 
-module.exports = { PROMPTS, ANSWERS, getDeck, blanksCount };
+module.exports = {
+  PROMPTS, ANSWERS, getDeck, blanksCount,
+  ensureCustomLoaded, addCustomToCache, removeCustomFromCache, answerExists, normalizeText,
+};

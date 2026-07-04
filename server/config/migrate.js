@@ -68,6 +68,16 @@ const TABLES = [
     INDEX idx_word_cat (word, category)
   ) CHARACTER SET utf8mb4`,
 
+  `CREATE TABLE IF NOT EXISTS oj_custom_answers (
+    id         INT PRIMARY KEY AUTO_INCREMENT,
+    text_fr    VARCHAR(255) NOT NULL,
+    text_en    VARCHAR(255),
+    cat        ENUM('public','trash') NOT NULL DEFAULT 'public',
+    user_id    INT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_text_fr (text_fr)
+  ) CHARACTER SET utf8mb4`,
+
   `CREATE TABLE IF NOT EXISTS motus_word_blacklist (
     word       VARCHAR(20) NOT NULL,
     lang       VARCHAR(2)  NOT NULL DEFAULT 'fr',
@@ -220,6 +230,7 @@ async function migrate() {
   await pool.query(`UPDATE games SET image_url='/images/games/skyjo.png'         WHERE id='skyjo'`);
   await pool.query(`UPDATE games SET image_url='/images/games/petits-chevaux.png' WHERE id='petits-chevaux'`);
   await pool.query(`UPDATE games SET image_url='/images/games/quiz.png'          WHERE id='quiz'`);
+  await pool.query(`UPDATE games SET image_url='/images/games/oser-jouer.png'    WHERE id='oser-jouer'`);
 
   console.log('✅ Base de données prête (tables + jeux)');
 }
