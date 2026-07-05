@@ -19,9 +19,12 @@ export function useMultiRoom(roomCode) {
   const platform = usePlatformStore();
   const { t }    = useI18n();
 
-  const room     = ref(null);
-  const gameOver = ref(null);
+  const room      = ref(null);
+  const gameOver  = ref(null);
+  const reactions = ref([]);   // réactions emoji flottantes [{ id, emoji, username, x }]
   let socket = null;
+  let _reactionId = 0;
+  let _lastSent   = 0;
 
   const myId   = computed(() => auth.user?.id);
   const isHost = computed(() => {
@@ -51,6 +54,19 @@ export function useMultiRoom(roomCode) {
       platform.showToast('Vous avez été exclu de la partie par l\'hôte', 'error');
       router.push('/');
     });
+    s.on('reaction', ({ emoji, username }) => {
+      const id = ++_reactionId;
+      // Position horizontale aléatoire pour éviter que tout se superpose
+      reactions.value.push({ id, emoji, username, x: 8 + Math.random() * 80 });
+      setTimeout(() => { reactions.value = reactions.value.filter(r => r.id !== id); }, 3600);
+    });
+  }
+
+  function sendReaction(emoji) {
+    const now = Date.now();
+    if (now - _lastSent < 400) return; // anti-spam local (même règle que le serveur)
+    _lastSent = now;
+    socket?.emit('send_reaction', { code: roomCode, emoji });
   }
 
   // choice: 'replay' | 'lobby' | 'home'
@@ -67,5 +83,5 @@ export function useMultiRoom(roomCode) {
     socket?.emit('kick_player', { code: roomCode, targetId, replaceByAI });
   }
 
-  return { room, gameOver, isHost, myId, bind, choose, kick };
+  return { room, gameOver, reactions, isHost, myId, bind, choose, kick, sendReaction };
 }

@@ -100,6 +100,7 @@
     </template>
 
     <!-- Menu hamburger : règles + joueurs -->
+    <ReactionBar :mr="mr" />
     <GameMenu :room="mr.room.value" :is-host="mr.isHost.value" :ai-supported="true" @kick="mr.kick" />
 
     <!-- Game over -->
@@ -114,6 +115,7 @@ import { io } from 'socket.io-client';
 import { useAuthStore } from '@/stores/auth.js';
 import DieFace from '@/components/DieFace.vue';
 import GameMenu from '@/components/GameMenu.vue';
+import ReactionBar from '@/components/ReactionBar.vue';
 import PostGameModal from '@/components/PostGameModal.vue';
 import { useMultiRoom } from '@/composables/useMultiRoom.js';
 import { useI18n } from '@/composables/useI18n.js';

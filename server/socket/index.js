@@ -12,6 +12,9 @@ const { awardXp, updateChallenge, recordGame } = require('../services/xp');
 const rooms           = new Map();
 const disconnectTimers = new Map();
 
+// Emojis autorisés pour les réactions en partie
+const REACTION_EMOJIS = ['😂', '🔥', '😱', '👏', '😭', '😈'];
+
 // Attribuer XP à tous les joueurs à la fin d'une partie multijoueur
 async function handleGameOver(room, winnerId, gameSpecificScore) {
   const gameId = room.gameId;
@@ -605,6 +608,20 @@ function initSocket(io) {
         if (r.error) return socket.emit('error', r.error);
         broadcastOJ(io, room);
       }
+    });
+
+    // ─── Réactions emoji ────────────────────────────────────────────
+    socket.on('send_reaction', ({ code, emoji }) => {
+      code = code?.toUpperCase();
+      const room = rooms.get(code);
+      if (!room) return;
+      if (!room.players.some(p => p.id === user.id)) return;
+      if (!REACTION_EMOJIS.includes(emoji)) return;
+      // Anti-spam : 1 réaction max toutes les 400 ms par joueur
+      const now = Date.now();
+      if (socket._lastReaction && now - socket._lastReaction < 400) return;
+      socket._lastReaction = now;
+      io.to(code).emit('reaction', { emoji, username: user.username });
     });
 
     // ─── Déconnexion ────────────────────────────────────────────────

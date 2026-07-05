@@ -171,6 +171,7 @@
     </div>
 
     <!-- Menu hamburger : règles + joueurs -->
+    <ReactionBar :mr="mr" />
     <GameMenu :room="mr.room.value" :is-host="mr.isHost.value" :ai-supported="false" @kick="mr.kick" />
 
   </div>
@@ -181,6 +182,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { io } from 'socket.io-client';
 import { useAuthStore } from '@/stores/auth.js';
 import GameMenu from '@/components/GameMenu.vue';
+import ReactionBar from '@/components/ReactionBar.vue';
 import { useMultiRoom } from '@/composables/useMultiRoom.js';
 import { useI18n } from '@/composables/useI18n.js';
 
