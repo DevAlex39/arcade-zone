@@ -97,7 +97,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { io } from 'socket.io-client';
 import { useAuthStore } from '@/stores/auth.js';
@@ -130,6 +130,8 @@ const myId        = computed(() => auth.user?.id);
 
 const currentPlayerId  = computed(() => playerOrder.value[state.value?.curPlayer ?? 0]);
 const isMyTurn         = computed(() => currentPlayerId.value === myId.value);
+// Son + vibration quand c'est mon tour
+watch(isMyTurn, v => { if (v && state.value) mr.audio.turn(); });
 const currentPlayerName = computed(() => {
   const pid = currentPlayerId.value;
   return state.value?.players?.find(p => p.id === pid)?.username ?? pid;

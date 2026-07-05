@@ -303,6 +303,7 @@ function connectSocket() {
   });
 
   socket.value.on('quiz_question', (data) => {
+    mr.audio.turn(); // nouvelle question : bip + vibration
     phase.value     = 'question';
     currentQ.value  = data.question;
     myAnswer.value  = null;

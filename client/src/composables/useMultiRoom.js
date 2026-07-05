@@ -3,6 +3,7 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth.js';
 import { usePlatformStore } from '@/stores/platform.js';
 import { useI18n } from '@/composables/useI18n.js';
+import { useGameAudio } from '@/composables/useGameAudio.js';
 
 /**
  * Logique commune des vues multi : room, hôte, fin de partie, kick.
@@ -19,6 +20,7 @@ export function useMultiRoom(roomCode) {
   const platform = usePlatformStore();
   const { t }    = useI18n();
 
+  const audio     = useGameAudio();
   const room      = ref(null);
   const gameOver  = ref(null);
   const reactions = ref([]);   // réactions emoji flottantes [{ id, emoji, username, x }]
@@ -35,12 +37,26 @@ export function useMultiRoom(roomCode) {
 
   function bind(s, { onReplay } = {}) {
     socket = s;
-    s.on('room_update', (d) => { room.value = d; });
-    s.on('game_over',  (d) => { gameOver.value = d; });
+    s.on('room_update', (d) => {
+      // Pop sonore à l'arrivée / au départ d'un joueur
+      const before = (room.value?.players || []).length;
+      const after  = (d.players || []).length;
+      if (room.value && after > before) audio.pop();
+      else if (room.value && after < before) audio.popOut();
+      room.value = d;
+    });
+    s.on('game_over',  (d) => {
+      gameOver.value = d;
+      const me = auth.user;
+      const iWon = d?.winner && (me?.isGuest
+        ? d.winner.username === me.username
+        : String(d.winner.id) === String(me?.id));
+      iWon ? audio.win() : audio.lose();
+    });
     s.on('host_changed', ({ hostId, hostName }) => {
       const me = auth.user;
       const becameHost = me?.isGuest ? hostName === me.username : String(hostId) === String(me?.id);
-      if (becameHost) platform.showToast(t('pg.host_left'), 'success');
+      if (becameHost) { platform.showToast(t('pg.host_left'), 'success'); audio.chime(); }
     });
     s.on('postgame', ({ action }) => {
       if (action === 'lobby') {
@@ -58,6 +74,7 @@ export function useMultiRoom(roomCode) {
       const id = ++_reactionId;
       // Position horizontale aléatoire pour éviter que tout se superpose
       reactions.value.push({ id, emoji, username, x: 8 + Math.random() * 80 });
+      audio.blip();
       setTimeout(() => { reactions.value = reactions.value.filter(r => r.id !== id); }, 3600);
     });
   }
@@ -83,5 +100,5 @@ export function useMultiRoom(roomCode) {
     socket?.emit('kick_player', { code: roomCode, targetId, replaceByAI });
   }
 
-  return { room, gameOver, reactions, isHost, myId, bind, choose, kick, sendReaction };
+  return { room, gameOver, reactions, isHost, myId, bind, choose, kick, sendReaction, audio };
 }

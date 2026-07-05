@@ -243,8 +243,16 @@ onMounted(() => {
   socket.on('connect', () => { socket.emit('join_room', props.roomCode); });
   socket.on('oj_state', (gs) => {
     const prevRound = state.value?.roundIdx;
+    const prevPhase = state.value?.phase;
     state.value = gs;
-    if (gs.roundIdx !== prevRound) { selected.value = []; mySubmittedIds.value = []; }
+    if (gs.roundIdx !== prevRound) {
+      selected.value = []; mySubmittedIds.value = [];
+      if (prevRound !== undefined) mr.audio.chime(); // nouvelle manche
+    }
+    // Le maître est appelé à juger / c'est l'heure de voter
+    if (prevPhase === 'submit' && (gs.phase === 'judge' || gs.phase === 'vote')) {
+      if (gs.phase === 'vote' || String(gs.masterId) === String(myId.value)) mr.audio.turn();
+    }
   });
   socket.on('error', msg => platform.showToast(msg, 'error'));
   mr.bind(socket, { onReplay: () => { state.value = null; selected.value = []; mySubmittedIds.value = []; } });

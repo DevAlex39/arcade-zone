@@ -309,7 +309,9 @@ import { io } from 'socket.io-client';
 import { useAuthStore } from '@/stores/auth.js';
 import { usePlatformStore } from '@/stores/platform.js';
 import { useI18n } from '@/composables/useI18n.js';
+import { useGameAudio } from '@/composables/useGameAudio.js';
 
+const audio    = useGameAudio();
 const route    = useRoute();
 const router   = useRouter();
 const auth     = useAuthStore();
@@ -419,10 +421,11 @@ function connectSocket() {
       (data.players || []).forEach(p => {
         if (!before.includes(p.id) && p.username !== auth.user?.username) {
           platform.showToast(`🎉 ${p.username} a rejoint la salle !`, 'success');
+          audio.pop();
         }
       });
       (room.value?.players || []).forEach(p => {
-        if (!after.includes(p.id)) platform.showToast(`👋 ${p.username} a quitté la salle`, 'info');
+        if (!after.includes(p.id)) { platform.showToast(`👋 ${p.username} a quitté la salle`, 'info'); audio.popOut(); }
       });
     }
     room.value = { ...room.value, ...data };

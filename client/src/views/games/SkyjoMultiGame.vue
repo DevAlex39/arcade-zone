@@ -98,7 +98,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { io } from 'socket.io-client';
 import { useAuthStore } from '@/stores/auth.js';
 import { useI18n } from '@/composables/useI18n.js';
@@ -132,6 +132,8 @@ const isMyTurn = computed(() => {
   }
   return currentPlayerId.value === myId.value;
 });
+// Son + vibration quand c'est mon tour
+watch(isMyTurn, v => { if (v && state.value) mr.audio.turn(); });
 const currentPlayerName = computed(() => playerName(currentPlayerId.value));
 
 const phaseLabel = computed(() => {

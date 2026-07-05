@@ -2,6 +2,10 @@
   <!-- Barre de réactions : pilule flottante en bas de l'écran -->
   <div class="rx-bar">
     <button v-for="e in EMOJIS" :key="e" class="rx-btn" @click="send(e)">{{ e }}</button>
+    <span class="rx-sep" />
+    <button class="rx-btn rx-mute" :title="mr.audio.soundOn.value ? 'Couper le son' : 'Activer le son'" @click="mr.audio.toggle()">
+      {{ mr.audio.soundOn.value ? '🔊' : '🔇' }}
+    </button>
   </div>
 
   <!-- Couche des emojis flottants (au-dessus de tout, clics traversants) -->
@@ -45,6 +49,9 @@ function send(emoji) {
 }
 .rx-btn:hover  { transform: scale(1.3); background: rgba(255,255,255,.08); }
 .rx-btn:active { transform: scale(.9); }
+.rx-sep { width: 1px; align-self: stretch; margin: .2rem .1rem; background: var(--border, #333); }
+.rx-mute { font-size: 1rem; opacity: .75; }
+.rx-mute:hover { transform: scale(1.15); opacity: 1; }
 
 .rx-layer { position: fixed; inset: 0; pointer-events: none; z-index: 481; overflow: hidden; }
 .rx-float {

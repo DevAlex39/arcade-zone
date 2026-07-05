@@ -110,7 +110,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { io } from 'socket.io-client';
 import { useAuthStore } from '@/stores/auth.js';
 import DieFace from '@/components/DieFace.vue';
@@ -169,6 +169,8 @@ const myId            = computed(() => auth.user?.id);
 const myColor         = computed(() => state.value?.colorMap?.[myId.value] ?? 'red');
 const currentPlayerId = computed(() => state.value?.playerOrder?.[state.value.curPlayer] ?? '');
 const isMyTurn        = computed(() => currentPlayerId.value === myId.value);
+// Son + vibration quand c'est mon tour
+watch(isMyTurn, v => { if (v && state.value) mr.audio.turn(); });
 
 function playerName(pid) { return state.value?.players?.find(p => p.id === pid)?.username ?? pid; }
 function isAIPlayer(pid) { return state.value?.players?.find(p => p.id === pid)?.isAI ?? false; }
