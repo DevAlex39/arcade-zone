@@ -47,11 +47,13 @@
             </button>
           </div>
 
-          <!-- Feedback après réponse -->
+          <!-- Feedback après réponse (neutre tant que le serveur n'a pas tranché) -->
           <transition name="fade">
-            <div v-if="myAnswer !== null" class="answer-feedback" :class="myAnswerCorrect ? 'correct' : 'wrong'">
+            <div v-if="myAnswer !== null && correctAnswer === null" class="answer-feedback pending">
+              ⏳ {{ t('quiz.waiting') }}
+            </div>
+            <div v-else-if="myAnswer !== null" class="answer-feedback" :class="myAnswerCorrect ? 'correct' : 'wrong'">
               {{ myAnswerCorrect ? t('quiz.correct') : t('quiz.wrong') }}
-              <span v-if="!myAnswerCorrect" class="feedback-hint">{{ t('quiz.waiting') }}</span>
             </div>
           </transition>
         </div>
@@ -245,8 +247,10 @@ function displayAnswer(ans) {
 
 function answerBtnClass(ans) {
   if (myAnswer.value === null) return '';
+  // Tant que le serveur n'a pas révélé la bonne réponse → état neutre "sélectionné"
+  if (correctAnswer.value === null) return ans === myAnswer.value ? 'pending' : 'dimmed';
   if (ans === correctAnswer.value) return 'correct';
-  if (ans === myAnswer.value && myAnswer.value !== correctAnswer.value) return 'wrong';
+  if (ans === myAnswer.value) return 'wrong';
   return 'dimmed';
 }
 
@@ -520,6 +524,10 @@ onUnmounted(() => { socket.value?.disconnect(); clearInterval(timerInterval); })
   color: #4ade80;
   animation: correct-pop .4s ease;
 }
+.answer-btn.pending {
+  border-color: #60a5fa;
+  background: rgba(96,165,250,.12);
+}
 .answer-btn.wrong {
   border-color: #f87171;
   background: rgba(248,113,113,.12);
@@ -563,6 +571,7 @@ onUnmounted(() => { socket.value?.disconnect(); clearInterval(timerInterval); })
 }
 .answer-feedback.correct { background: rgba(74,222,128,.1); color: #4ade80; }
 .answer-feedback.wrong   { background: rgba(248,113,113,.1); color: #f87171; }
+.answer-feedback.pending { background: rgba(96,165,250,.1); color: #60a5fa; }
 .feedback-hint { font-size: .8rem; font-weight: 500; opacity: .7; }
 
 /* ── Answered chips ── */

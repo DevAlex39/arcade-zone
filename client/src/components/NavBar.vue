@@ -117,4 +117,21 @@ function handleLogout() {
 }
 .logout-btn svg { width: 15px; height: 15px; }
 .logout-btn:hover { color: #f87171; background: rgba(248,113,113,.12); }
+
+/* ── Mobile : tout doit tenir sans scroll horizontal ── */
+@media (max-width: 720px) {
+  .navbar-inner { padding: .55rem .7rem; gap: .5rem; }
+  .brand-text { display: none; }          /* icône seule */
+  .user-name  { display: none; }          /* avatar seul */
+  .nav-right  { gap: .35rem; }
+  .user-pill  { padding: .24rem; gap: .3rem; }
+  .sw-btn { padding: .28rem .42rem; font-size: .78rem; }
+  .sw-btn.sw-text { padding: .28rem .38rem; font-size: .66rem; }
+}
+@media (max-width: 460px) {
+  /* Très petit écran : le switch de thème passe à la trappe, l'essentiel reste */
+  .switcher[title="Thème"] { display: none; }
+  .nav-right :deep(.xp-label) { display: none; }
+  .nav-right :deep(.xp-track) { width: 52px; }
+}
 </style>
