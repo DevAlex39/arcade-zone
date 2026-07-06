@@ -13,6 +13,9 @@ export const useXpStore = defineStore('xp', () => {
   const history          = ref([]);
   const xpLog            = ref([]);
   const stats            = ref({ total_games: 0, wins: 0, losses: 0 });
+  const perGame          = ref([]);
+  const rival            = ref(null);
+  const badges           = ref([]);
   const loaded           = ref(false);
 
   // Toast XP
@@ -40,6 +43,9 @@ export const useXpStore = defineStore('xp', () => {
       history.value          = data.history || [];
       xpLog.value            = data.xpLog || [];
       stats.value            = data.stats || { total_games: 0, wins: 0, losses: 0 };
+      perGame.value          = data.perGame || [];
+      rival.value            = data.rival || null;
+      badges.value           = data.badges || [];
       loaded.value           = true;
     } catch {}
   }
@@ -52,7 +58,7 @@ export const useXpStore = defineStore('xp', () => {
 
   return {
     xp, level, xpInLevel, xpForLevel, pct,
-    dailyBonusClaimed, challenge, history, xpLog, stats, loaded,
+    dailyBonusClaimed, challenge, history, xpLog, stats, perGame, rival, badges, loaded,
     toasts,
     fetchMe, handleDailyBonus, showXpToast,
   };

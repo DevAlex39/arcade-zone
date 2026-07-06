@@ -59,6 +59,22 @@
         </div>
 
         <p v-if="filteredGames.length === 0 && platform.games.length > 0" class="no-results">{{ t('home.no_games') }}</p>
+
+        <!-- Classement de la semaine (reset chaque lundi) -->
+        <div v-if="weekly.length" class="weekly-card">
+          <div class="weekly-header">
+            <span class="weekly-title">🏅 Champions de la semaine</span>
+            <span class="weekly-hint">remise à zéro chaque lundi</span>
+          </div>
+          <div class="weekly-list">
+            <div v-for="(w, i) in weekly" :key="w.username" class="weekly-row"
+              :class="{ me: w.username === auth.user?.username, first: i === 0 }">
+              <span class="w-rank">{{ ['🥇','🥈','🥉'][i] || `#${i + 1}` }}</span>
+              <span class="w-name">{{ w.username }}</span>
+              <span class="w-wins">{{ w.wins }} victoire{{ w.wins > 1 ? 's' : '' }}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -98,7 +114,7 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick } from 'vue';
+import { ref, computed, nextTick, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import GameCard from '@/components/GameCard.vue';
 import { useAuthStore } from '@/stores/auth.js';
@@ -112,6 +128,15 @@ const { t }    = useI18n();
 
 const joinCode      = ref('');
 const joinModalGame = ref(null);
+
+// Classement hebdo
+const weekly = ref([]);
+onMounted(async () => {
+  try {
+    const res = await fetch('/api/xp/weekly');
+    if (res.ok) weekly.value = await res.json();
+  } catch { /* silencieux */ }
+});
 const joinCodeModal = ref('');
 const guestInput    = ref(null);
 const activeFilter  = ref('all');
@@ -252,6 +277,19 @@ function handleJoinModal() {
 .games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 1.25rem; }
 .loading-row { color: var(--text-2); display: flex; align-items: center; gap: .5rem; padding: 2rem 0; }
 .no-results  { color: var(--text-3); text-align: center; padding: 3rem 0; font-size: .9rem; }
+
+/* Classement hebdo */
+.weekly-card { margin-top: 2.5rem; background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; max-width: 480px; }
+.weekly-header { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; margin-bottom: .9rem; flex-wrap: wrap; }
+.weekly-title { font-family: var(--font-title); font-weight: 800; font-size: 1.05rem; }
+.weekly-hint { font-size: .7rem; color: var(--text-3); }
+.weekly-list { display: flex; flex-direction: column; gap: .4rem; }
+.weekly-row { display: flex; align-items: center; gap: .6rem; padding: .45rem .7rem; background: var(--bg-3); border: 1px solid var(--border); border-radius: 9px; font-size: .85rem; }
+.weekly-row.first { border-color: rgba(251,191,36,.45); background: rgba(251,191,36,.07); }
+.weekly-row.me { border-color: var(--cyan); }
+.w-rank { min-width: 30px; font-weight: 800; }
+.w-name { flex: 1; font-weight: 700; }
+.w-wins { color: var(--text-2); font-size: .78rem; }
 
 .filter-tabs { display: flex; gap: .2rem; background: var(--bg-3); border-radius: var(--radius-sm); padding: .22rem; border: 1px solid var(--border); }
 .filter-tab  { padding: .35rem .9rem; border-radius: 6px; border: none; background: transparent; color: var(--text-2); font-size: .8rem; font-weight: 700; cursor: pointer; transition: background .15s, color .15s; }

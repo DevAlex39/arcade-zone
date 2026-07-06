@@ -21,14 +21,18 @@ async function handleGameOver(room, winnerId, gameSpecificScore) {
   const players = room.players || [];
   const realPlayers = players.filter(p => p.id && !String(p.id).startsWith('guest') && !String(p.id).startsWith('AI_'));
 
+  const winnerName = players.find(p => String(p.id) === String(winnerId))?.username || null;
+
   for (const player of realPlayers) {
     const uid = player.id;
     const isWinner = String(uid) === String(winnerId);
     const result = isWinner ? 'win' : 'loss';
     const score = gameSpecificScore?.[uid] ?? null;
+    // Adversaires (pour la stat « adversaire le plus battu » du profil)
+    const opponents = players.filter(p => String(p.id) !== String(uid)).map(p => p.username);
 
     try {
-      await recordGame(uid, gameId, result, score, players.length, null);
+      await recordGame(uid, gameId, result, score, players.length, { opponents, winnerName });
       await awardXp(uid, 10, 'game_played', gameId);
       if (isWinner) {
         await awardXp(uid, 50, 'game_won', gameId);

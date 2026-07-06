@@ -50,6 +50,45 @@
         </div>
       </div>
 
+      <!-- Rival -->
+      <div class="card rival-card" v-if="xpStore.rival">
+        <span class="rival-emoji">⚔️</span>
+        <span class="rival-text">Ton adversaire le plus battu : <strong>{{ xpStore.rival.name }}</strong></span>
+        <span class="rival-count">{{ xpStore.rival.wins }} victoire{{ xpStore.rival.wins > 1 ? 's' : '' }} contre lui 😄</span>
+      </div>
+
+      <!-- Ratio par jeu -->
+      <div class="card" v-if="xpStore.perGame.length">
+        <div class="card-header">
+          <span class="card-title">📊 Ratio par jeu</span>
+        </div>
+        <div class="pergame-list">
+          <div v-for="g in xpStore.perGame" :key="g.game_id" class="pergame-row">
+            <span class="pg-icon">{{ g.game_icon || '🎮' }}</span>
+            <span class="pg-name">{{ g.game_name || g.game_id }}</span>
+            <div class="pg-bar">
+              <div class="pg-fill" :style="{ width: pgPct(g) + '%' }"></div>
+            </div>
+            <span class="pg-ratio">{{ g.wins || 0 }}V / {{ g.losses || 0 }}D</span>
+            <span class="pg-pct">{{ pgPct(g) }}%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Badges -->
+      <div class="card" v-if="xpStore.badges.length">
+        <div class="card-header">
+          <span class="card-title">🎖️ Succès</span>
+          <span class="badges-count">{{ earnedCount }}/{{ xpStore.badges.length }}</span>
+        </div>
+        <div class="badges-grid">
+          <div v-for="b in xpStore.badges" :key="b.id" class="badge-tile" :class="{ locked: !b.earned }" :title="b.desc">
+            <span class="badge-icon">{{ b.icon }}</span>
+            <span class="badge-label">{{ b.label }}</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Défi du jour -->
       <div class="card challenge-card" v-if="xpStore.challenge">
         <div class="card-header">
@@ -134,6 +173,14 @@ const winRate = computed(() => {
   if (!total) return 0;
   return Math.round(((xpStore.stats.wins || 0) / total) * 100);
 });
+
+const earnedCount = computed(() => xpStore.badges.filter(b => b.earned).length);
+
+function pgPct(g) {
+  const total = Number(g.total) || 0;
+  if (!total) return 0;
+  return Math.round(((Number(g.wins) || 0) / total) * 100);
+}
 
 const challengePct = computed(() => {
   const c = xpStore.challenge;
@@ -332,7 +379,36 @@ onMounted(async () => {
 .lb-wins  { font-size: 0.8rem; }
 .lb-row.me { background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3); }
 
+/* Rival */
+.rival-card { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-color: rgba(251,191,36,0.3); }
+.rival-emoji { font-size: 1.5rem; }
+.rival-text { flex: 1; font-size: 0.9rem; }
+.rival-count { font-size: 0.8rem; color: #fbbf24; font-weight: 600; }
+
+/* Ratio par jeu */
+.pergame-list { display: flex; flex-direction: column; gap: 10px; }
+.pergame-row { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; }
+.pg-icon { font-size: 1.1rem; }
+.pg-name { width: 130px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pg-bar { flex: 1; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
+.pg-fill { height: 100%; background: linear-gradient(90deg, #4ade80, #22c55e); border-radius: 4px; transition: width 0.5s ease; }
+.pg-ratio { color: rgba(255,255,255,0.6); font-size: 0.78rem; white-space: nowrap; }
+.pg-pct { min-width: 40px; text-align: right; font-weight: 700; color: #4ade80; }
+
+/* Badges */
+.badges-count { font-size: 0.85rem; color: #fbbf24; font-weight: 700; }
+.badges-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+.badge-tile {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 12px 8px; border-radius: 12px; text-align: center;
+  background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.3);
+}
+.badge-tile.locked { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.08); opacity: 0.45; filter: grayscale(1); }
+.badge-icon { font-size: 1.6rem; }
+.badge-label { font-size: 0.72rem; font-weight: 600; line-height: 1.2; }
+
 @media (max-width: 600px) {
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .pg-name { width: 90px; }
 }
 </style>

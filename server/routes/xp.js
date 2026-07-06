@@ -57,6 +57,54 @@ router.get('/me', authMiddleware, async (req, res) => {
       [uid]
     );
 
+    // Ratio par jeu
+    const [perGame] = await pool.query(
+      `SELECT gh.game_id, g.name AS game_name, g.icon AS game_icon,
+              COUNT(*) AS total,
+              SUM(gh.result='win')  AS wins,
+              SUM(gh.result='loss') AS losses
+       FROM game_history gh
+       LEFT JOIN games g ON g.id = gh.game_id
+       WHERE gh.user_id = ?
+       GROUP BY gh.game_id, g.name, g.icon
+       ORDER BY total DESC`,
+      [uid]
+    );
+
+    // Adversaire le plus battu (adversaires stockés dans details depuis 2026-07)
+    const [winRows] = await pool.query(
+      `SELECT details FROM game_history
+       WHERE user_id=? AND result='win' AND details IS NOT NULL
+       ORDER BY played_at DESC LIMIT 500`,
+      [uid]
+    );
+    const beaten = {};
+    for (const row of winRows) {
+      const d = typeof row.details === 'string' ? JSON.parse(row.details) : row.details;
+      (d?.opponents || []).forEach(name => { beaten[name] = (beaten[name] || 0) + 1; });
+    }
+    const rival = Object.entries(beaten).sort((a, b) => b[1] - a[1])[0] || null;
+
+    // Badges / succès (calculés à la volée, pas de table dédiée)
+    const wins  = Number(stats?.wins) || 0;
+    const total = Number(stats?.total_games) || 0;
+    const gWins = id => Number(perGame.find(p => p.game_id === id)?.wins) || 0;
+    const lvl   = user.level || 1;
+    const badges = [
+      { id:'first_win',   icon:'🏆', label:'Première victoire',  desc:'Gagner une partie',                    earned: wins >= 1 },
+      { id:'win_10',      icon:'🔥', label:'En feu',             desc:'Gagner 10 parties',                    earned: wins >= 10 },
+      { id:'win_50',      icon:'👑', label:'Champion',           desc:'Gagner 50 parties',                    earned: wins >= 50 },
+      { id:'play_25',     icon:'🎮', label:'Assidu',             desc:'Jouer 25 parties',                     earned: total >= 25 },
+      { id:'play_100',    icon:'🎖️', label:'Vétéran',            desc:'Jouer 100 parties',                    earned: total >= 100 },
+      { id:'variety_5',   icon:'🌍', label:'Touche-à-tout',      desc:'Jouer à 5 jeux différents',            earned: perGame.length >= 5 },
+      { id:'level_5',     icon:'⭐', label:'Niveau 5',           desc:'Atteindre le niveau 5',                earned: lvl >= 5 },
+      { id:'level_10',    icon:'🌟', label:'Niveau 10',          desc:'Atteindre le niveau 10',               earned: lvl >= 10 },
+      { id:'quiz_5',      icon:'🧠', label:'Cerveau',            desc:'Gagner 5 parties de Quiz',             earned: gWins('quiz') >= 5 },
+      { id:'motus_5',     icon:'🔤', label:'Lexicologue',        desc:'Gagner 5 parties de Trouve le Mot',    earned: gWins('motus') >= 5 },
+      { id:'oj_5',        icon:'😈', label:'Roi de la soirée',   desc:'Gagner 5 parties d\'Oser Jouer',       earned: gWins('oser-jouer') >= 5 },
+      { id:'winrate_50',  icon:'🥇', label:'Redoutable',         desc:'50% de victoires sur 10+ parties',     earned: total >= 10 && wins / total >= 0.5 },
+    ];
+
     res.json({
       xp: user.xp || 0,
       ...progress,
@@ -69,6 +117,9 @@ router.get('/me', authMiddleware, async (req, res) => {
       history,
       xpLog,
       stats: stats || { total_games: 0, wins: 0, losses: 0 },
+      perGame,
+      rival: rival ? { name: rival[0], wins: rival[1] } : null,
+      badges,
     });
   } catch (err) {
     console.error(err);
@@ -105,6 +156,25 @@ router.post('/solo-result', authMiddleware, async (req, res) => {
       await updateChallenge(uid, 'win_any', game_id);
     }
     res.json({ ok: true, xpGained });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/xp/weekly — victoires de la semaine en cours (reset chaque lundi)
+router.get('/weekly', async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT u.username, COUNT(*) AS wins
+       FROM game_history gh
+       JOIN users u ON u.id = gh.user_id
+       WHERE gh.result = 'win'
+         AND YEARWEEK(gh.played_at, 1) = YEARWEEK(CURDATE(), 1)
+       GROUP BY u.id, u.username
+       ORDER BY wins DESC, u.username ASC
+       LIMIT 10`
+    );
+    res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
