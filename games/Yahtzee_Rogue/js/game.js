@@ -112,6 +112,7 @@ function startBlind() {
   G.doubleNext  = false;
   G.wildPending = false;
   G.parasiteIdx = null;
+  G.fogged      = [];
 
   showScreen('screenGame');
   renderHeader();
@@ -224,6 +225,11 @@ function isBanned(i) {
   return G.hasRolled && G.bossEffect === 'ban1' && G.bannedValue !== null && G.dice[i] === G.bannedValue;
 }
 
+// Un dé est voilé s'il fait partie des dés brumés du lancer (révélation au scoring)
+function isFogged(i) {
+  return G.bossEffect === 'fog' && G.hasRolled && !G.scoring && (G.fogged || []).includes(i);
+}
+
 function renderDice() {
   const fogActive = G.bossEffect === 'fog';
   document.getElementById('fogOverlay')?.classList.toggle('hidden', !fogActive);
@@ -236,7 +242,7 @@ function renderDice() {
       (!G.hasRolled ? ' die-disabled' : '') +
       (isBanned(i)  ? ' banned'       : '');
     if (G.kept[i]) die.dataset.keptlabel = t('keptLabel');
-    if (fogActive && G.hasRolled) {
+    if (isFogged(i)) {
       renderFogMark(die);
     } else {
       renderDots(die, G.dice[i]);
@@ -325,7 +331,7 @@ async function rollDice() {
   for (let f = 0; f < frames; f++) {
     dieEls.forEach((el, i) => {
       if (G.kept[i]) return;
-      if (!fogActive) renderDots(el, rand(1,6));
+      renderDots(el, rand(1,6));
     });
     await sleep(INTERVAL);
   }
@@ -333,11 +339,23 @@ async function rollDice() {
   // Tirage des valeurs finales
   G.dice.forEach((_, i) => { if (!G.kept[i]) G.dice[i] = rand(1,6); });
 
+  // La Brume : 2 dés parmi les dés relancés sont voilés. Un dé gardé encore
+  // voilé (bloqué à l'aveugle) le reste ; un dé gardé révélé reste visible.
+  if (fogActive) {
+    const rerolled = G.dice.map((_, i) => i).filter(i => !G.kept[i]);
+    shuffleArray(rerolled);
+    const keptStillFogged = (G.fogged || []).filter(i => G.kept[i]);
+    G.fogged = [...keptStillFogged, ...rerolled.slice(0, Math.min(2, rerolled.length))];
+  }
+
   // Retrait des classes d'animation + affichage immédiat des valeurs finales
   dieEls.forEach((el, i) => {
     const v = el.dataset.rv;
     if (v) { el.classList.remove(v); delete el.dataset.rv; }
-    if (!G.kept[i] && !fogActive) renderDots(el, G.dice[i]);
+    if (!G.kept[i]) {
+      if (fogActive && G.fogged.includes(i)) renderFogMark(el);
+      else renderDots(el, G.dice[i]);
+    }
   });
 
   await sleep(INTERVAL * 2);
@@ -493,6 +511,7 @@ async function playCombo(id) {
   G.hasRolled   = false;
   G.wildPending = false;
   G.oracleActive= false;
+  G.fogged      = [];
 
   document.getElementById('hspCombo').textContent   = '—';
   document.getElementById('hspFormula').innerHTML   = '';
