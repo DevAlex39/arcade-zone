@@ -226,6 +226,7 @@ function isBanned(i) {
 
 function renderDice() {
   const fogActive = G.bossEffect === 'fog';
+  document.getElementById('fogOverlay')?.classList.toggle('hidden', !fogActive);
   const row = document.getElementById('diceRow');
   row.innerHTML = '';
   for (let i = 0; i < G.dice.length; i++) {
@@ -389,6 +390,13 @@ function updateHint(txt) { document.getElementById('diceHint').textContent = txt
 function renderPreviewPanel() {
   renderCombos();
 
+  // La Brume : ne rien révéler avant la soumission
+  if (G.bossEffect === 'fog' && !G.scoring) {
+    document.getElementById('hspCombo').textContent = '🌫️ ???';
+    document.getElementById('hspFormula').innerHTML = '';
+    return;
+  }
+
   let bestRes = null, bestName = '';
   COMBOS.forEach(cat => {
     const res = getComboResult(cat.id, true); // preview=true, ne consomme pas doubleNext
@@ -421,17 +429,22 @@ function renderCombos() {
     return { cat, res, blocked };
   });
 
+  // La Brume : les valeurs des combos sont masquées (sinon elles trahissent les dés)
+  const fogHidden = G.bossEffect === 'fog' && !G.scoring;
+
   results.forEach(({ cat, res, blocked }) => {
     const btn = document.createElement('button');
     btn.className = 'combo-btn' +
       (blocked              ? ' blocked'  : '') +
       (!res && !blocked     ? ' disabled' : '') +
-      (res && res.total === bestTotal && bestTotal > 0 ? ' best' : '');
+      (!fogHidden && res && res.total === bestTotal && bestTotal > 0 ? ' best' : '');
 
     const boost = G.comboBoosts[cat.id];
     const star  = boost ? `<span class="cb-star" title="+${boost.chips} Chips +${boost.mult} Mult">★</span>` : '';
     btn.innerHTML = `<span class="cb-name">${jn(cat)}${star}</span>` + (res
-      ? `<span class="cb-chips">${res.chips} ${t('chips')}</span><span class="cb-mult">× ${res.mult} ${t('mult')}</span><span class="cb-total">= ${nf(res.total)} ${t('pts')}</span>`
+      ? (fogHidden
+        ? `<span class="cb-total" style="color:var(--grey)">= ? ${t('pts')}</span>`
+        : `<span class="cb-chips">${res.chips} ${t('chips')}</span><span class="cb-mult">× ${res.mult} ${t('mult')}</span><span class="cb-total">= ${nf(res.total)} ${t('pts')}</span>`)
       : `<span class="cb-total" style="color:var(--grey)">—</span>`);
 
     if (res && !blocked) btn.addEventListener('click', () => playCombo(cat.id));

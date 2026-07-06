@@ -226,6 +226,7 @@ const BOSS_BLINDS = [
   { id:'le-golem',          name:'Le Golem',          name_en:'The Golem',       img:IMG('boss-blinds','le-golem.png'),          desc:'Le score cible est multiplié par 1.8.',                                        desc_en:'The target score is multiplied by 1.8.',                        effect:'bigTarget'  },
   { id:'la-reine-araignee', name:'La Reine Araignée', name_en:'The Spider Queen', img:IMG('boss-blinds','la-reine-araignee.png'),desc:'La combinaison Full House est interdite.',                                      desc_en:'The Full House combination is forbidden.',                      effect:'noFullHouse'},
   { id:'le-devoreur',       name:'Le Dévoreur',       name_en:'The Devourer',    img:IMG('boss-blinds','le-devoreur.png'),       desc:'-1 lancer par main (minimum 1).',                                             desc_en:'-1 roll per hand (minimum 1).',                                 effect:'lessRoll'   },
+  { id:'la-brume',          name:'La Brume',          name_en:'The Mist',        icon:'🌫️',                                       desc:'Les dés sont cachés jusqu\'à la soumission de la combinaison.',                desc_en:'Dice are hidden until you submit your combination.',            effect:'fog'        },
 ];
 
 // Cibles par ante [petite, grande, boss] — équilibre revu (difficulté rehaussée)

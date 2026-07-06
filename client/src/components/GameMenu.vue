@@ -104,7 +104,7 @@ const rulesList = computed(() => {
     add(t('lobby.allow_overtake'), onOff(s.allowOvertake));
     add(t('lobby.corridor_simple'), onOff(s.corridorSimplifie));
     if (s.aiCount) add(t('lobby.ai_players'), s.aiCount);
-  } else if (gid === 'skyjo') {
+  } else if (gid === 'skyjo' || gid === 'yahtzee') {
     if (s.aiCount) add(t('lobby.ai_players'), s.aiCount);
   } else if (gid === 'oser-jouer') {
     add(t('oj.mode'), s.ojMode === 'vote' ? t('oj.mode_vote') : t('oj.mode_master'));

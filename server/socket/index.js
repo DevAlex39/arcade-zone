@@ -90,6 +90,9 @@ function convertPlayerToAI(io, room, targetId) {
   } else if (room.gameId === 'petits-chevaux') {
     io.to(room.code).emit('pc_state', publicPCState(gs));
     scheduleAITurn(io, room.code, room);
+  } else if (room.gameId === 'yahtzee') {
+    io.to(room.code).emit('yahtzee_state', publicYahtzeeState(gs));
+    scheduleAIYahtzeeTurn(io, room.code, room);
   }
 }
 
@@ -123,6 +126,7 @@ function removePlayerFromGame(io, room, targetId) {
     if (gs.curPlayer >= gs.playerOrder.length) gs.curPlayer = 0;
     if (wasTurn) { gs.dice = [1,1,1,1,1]; gs.kept = [false,false,false,false,false]; gs.rollsLeft = 3; gs.hasRolled = false; }
     io.to(code).emit('yahtzee_state', publicYahtzeeState(gs));
+    scheduleAIYahtzeeTurn(io, code, room);
   }
   else if (room.gameId === 'skyjo') {
     const idx = gs.playerOrder.indexOf(targetId);
@@ -300,7 +304,10 @@ function initSocket(io) {
       const room = rooms.get(code);
       if (!room) return socket.emit('error', 'Room introuvable');
       if (room.hostId !== user.id) return socket.emit('error', 'Seul l\'hôte peut lancer');
-      if (room.players.length < room.minPlayers) return socket.emit('error', `Il faut au moins ${room.minPlayers} joueurs`);
+      // Les IA comptent dans le minimum (jouer seul contre des IA est possible)
+      const aiCapableGames = ['skyjo', 'petits-chevaux', 'yahtzee'];
+      const aiCount = aiCapableGames.includes(room.gameId) ? (room.settings?.aiCount || 0) : 0;
+      if (room.players.length + aiCount < room.minPlayers) return socket.emit('error', `Il faut au moins ${room.minPlayers} joueurs`);
 
       await launchGame(io, room, socket);
     });
@@ -374,7 +381,7 @@ function initSocket(io) {
 
       const inGame = room.status === 'playing' && (room.gameState || room.round);
       if (inGame) {
-        const aiCapable = ['skyjo', 'petits-chevaux'].includes(room.gameId);
+        const aiCapable = ['skyjo', 'petits-chevaux', 'yahtzee'].includes(room.gameId);
         if (replaceByAI && aiCapable) {
           convertPlayerToAI(io, room, targetId);
         } else {
@@ -437,37 +444,7 @@ function initSocket(io) {
         const { catId } = aData;
         if (!yahtzee.SCORABLE.includes(catId)) return;
         if (gs.scores[curId][catId] !== undefined) return socket.emit('error', 'Catégorie déjà utilisée');
-
-        gs.scores[curId][catId] = yahtzee.calcScore(gs.dice, catId);
-
-        // Bonus section haute
-        const bonus = yahtzee.computeBonus(gs.scores[curId]);
-        if (bonus !== undefined) gs.scores[curId].bonus = bonus;
-        gs.scores[curId].total = yahtzee.computeTotal(gs.scores[curId]);
-
-        // Vérifier fin de partie
-        if (yahtzee.isGameOver(gs.scores, gs.playerOrder)) {
-          const totals = gs.playerOrder.map(pid => ({ id: pid, total: gs.scores[pid].total || 0 }));
-          const winner = totals.reduce((a, b) => b.total > a.total ? b : a);
-          gs.winner = winner.id;
-          room.status = 'finished';
-          io.to(code).emit('yahtzee_state', publicYahtzeeState(gs));
-          io.to(code).emit('game_over', { winner: room.players.find(p => p.id === winner.id) || null });
-          const yahtzeeScores = {};
-          gs.playerOrder.forEach(pid => { yahtzeeScores[pid] = gs.scores[pid]?.total || 0; });
-          handleGameOver(room, winner.id, yahtzeeScores);
-          enterPostGame(room);
-          return;
-        }
-
-        // Tour suivant
-        gs.curPlayer = (gs.curPlayer + 1) % gs.playerOrder.length;
-        if (gs.curPlayer === 0) gs.curRound++;
-        gs.dice      = [1,1,1,1,1];
-        gs.kept      = [false,false,false,false,false];
-        gs.rollsLeft = 3;
-        gs.hasRolled = false;
-        io.to(code).emit('yahtzee_state', publicYahtzeeState(gs));
+        applyYahtzeeScore(io, code, room, curId, catId);
       }
     });
 
@@ -770,9 +747,105 @@ async function endMotusRoundChangeOnFind(io, room, finderId) {
 // YAHTZEE
 // ═══════════════════════════════════════════════════════════════════════
 function startYahtzeeGame(io, room) {
+  const aiCount   = Math.min(room.settings?.aiCount || 0, 6 - room.players.length);
+  const aiPlayers = Array.from({ length: aiCount }, (_, i) => ({
+    id: `ai_ytz_${i}`, username: `IA ${i + 1}`, isAI: true,
+  }));
   room.status    = 'playing';
-  room.gameState = yahtzee.initGame(room.players);
+  room.gameState = yahtzee.initGame([...room.players, ...aiPlayers]);
   io.to(room.code).emit('yahtzee_state', publicYahtzeeState(room.gameState));
+  scheduleAIYahtzeeTurn(io, room.code, room);
+}
+
+// Score une catégorie + avance le tour (humain ET IA passent par ici)
+function applyYahtzeeScore(io, code, room, curId, catId) {
+  const gs = room.gameState;
+  gs.scores[curId][catId] = yahtzee.calcScore(gs.dice, catId);
+
+  // Bonus section haute
+  const bonus = yahtzee.computeBonus(gs.scores[curId]);
+  if (bonus !== undefined) gs.scores[curId].bonus = bonus;
+  gs.scores[curId].total = yahtzee.computeTotal(gs.scores[curId]);
+
+  // Vérifier fin de partie
+  if (yahtzee.isGameOver(gs.scores, gs.playerOrder)) {
+    const totals = gs.playerOrder.map(pid => ({ id: pid, total: gs.scores[pid].total || 0 }));
+    const winner = totals.reduce((a, b) => b.total > a.total ? b : a);
+    gs.winner = winner.id;
+    room.status = 'finished';
+    io.to(code).emit('yahtzee_state', publicYahtzeeState(gs));
+    io.to(code).emit('game_over', { winner: gs.players.find(p => p.id === winner.id) || null });
+    const yahtzeeScores = {};
+    gs.playerOrder.forEach(pid => { yahtzeeScores[pid] = gs.scores[pid]?.total || 0; });
+    handleGameOver(room, winner.id, yahtzeeScores);
+    enterPostGame(room);
+    return;
+  }
+
+  // Tour suivant
+  gs.curPlayer = (gs.curPlayer + 1) % gs.playerOrder.length;
+  if (gs.curPlayer === 0) gs.curRound++;
+  gs.dice      = [1,1,1,1,1];
+  gs.kept      = [false,false,false,false,false];
+  gs.rollsLeft = 3;
+  gs.hasRolled = false;
+  io.to(code).emit('yahtzee_state', publicYahtzeeState(gs));
+  scheduleAIYahtzeeTurn(io, code, room);
+}
+
+// ── IA Yahtzee : garde la valeur majoritaire, score la meilleure catégorie ──
+function scheduleAIYahtzeeTurn(io, code, room) {
+  if (room.status !== 'playing') return;
+  const gs = room.gameState;
+  if (!gs || gs.winner) return;
+  const curId = gs.playerOrder[gs.curPlayer];
+  const cur   = (gs.players || []).find(p => p.id === curId);
+  if (!cur?.isAI) return;
+  setTimeout(() => aiPlayYahtzeeStep(io, code, room, curId), 1000);
+}
+
+function aiPlayYahtzeeStep(io, code, room, curId) {
+  if (room.status !== 'playing') return;
+  const gs = room.gameState;
+  if (!gs || gs.playerOrder[gs.curPlayer] !== curId) return;
+
+  // Lancer les dés
+  gs.dice = yahtzee.rollDice(gs.dice, gs.kept);
+  gs.rollsLeft--;
+  gs.hasRolled = true;
+
+  // Garder tous les dés de la valeur la plus fréquente (la plus haute si égalité)
+  const counts = {};
+  gs.dice.forEach(d => { counts[d] = (counts[d] || 0) + 1; });
+  let keepVal = 6, keepCount = 0;
+  Object.entries(counts).forEach(([v, c]) => {
+    if (c > keepCount || (c === keepCount && +v > keepVal)) { keepVal = +v; keepCount = c; }
+  });
+  gs.kept = gs.dice.map(d => d === keepVal);
+  io.to(code).emit('yahtzee_state', publicYahtzeeState(gs));
+
+  // Continuer à relancer sauf si le résultat est déjà très bon ou plus de lancers
+  const previews = yahtzee.allPreviews(gs.dice);
+  const unused   = yahtzee.SCORABLE.filter(c => gs.scores[curId][c] === undefined);
+  const bestNow  = unused.length ? Math.max(...unused.map(c => previews[c])) : 0;
+  const satisfied = keepCount === 5 || bestNow >= 30;
+
+  if (gs.rollsLeft > 0 && !satisfied) {
+    setTimeout(() => aiPlayYahtzeeStep(io, code, room, curId), 900);
+  } else {
+    setTimeout(() => {
+      if (room.status !== 'playing') return;
+      if (gs.playerOrder[gs.curPlayer] !== curId) return;
+      // Meilleure catégorie disponible (la chance sert de roue de secours)
+      let bestCat = unused[0], bestVal = -Infinity;
+      unused.forEach(c => {
+        let v = previews[c];
+        if (c === 'chance') v -= 5;
+        if (v > bestVal) { bestVal = v; bestCat = c; }
+      });
+      applyYahtzeeScore(io, code, room, curId, bestCat);
+    }, 900);
+  }
 }
 
 function publicYahtzeeState(gs) {

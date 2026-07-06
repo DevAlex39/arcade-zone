@@ -45,6 +45,19 @@
             </div>
           </div>
 
+          <!-- Paramètres Yahtzee -->
+          <div class="card lobby-settings" v-if="isHost && room.game_id === 'yahtzee'">
+            <h3 class="settings-title">{{ t('lobby.settings') }}</h3>
+            <div class="setting-row">
+              <label>{{ t('lobby.ai_players') }}</label>
+              <div class="stepper">
+                <button @click="settings.aiCount = Math.max(0, settings.aiCount - 1)">−</button>
+                <span>{{ settings.aiCount }}</span>
+                <button @click="settings.aiCount = Math.min(5, settings.aiCount + 1)">+</button>
+              </div>
+            </div>
+          </div>
+
           <!-- Paramètres Petits Chevaux -->
           <div class="card lobby-settings" v-if="isHost && room.game_id === 'petits-chevaux'">
             <h3 class="settings-title">{{ t('lobby.settings') }}</h3>
