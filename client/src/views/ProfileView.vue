@@ -8,10 +8,31 @@
     <template v-else>
       <!-- En-tête profil -->
       <div class="profile-header">
-        <div class="avatar">{{ authStore.user?.username?.charAt(0).toUpperCase() }}</div>
+        <div class="avatar" :style="avatarStyle">{{ avatarDisplay }}</div>
         <div class="profile-info">
           <h1>{{ authStore.user?.username }}</h1>
           <p class="email">{{ authStore.user?.email }}</p>
+        </div>
+        <button class="btn-avatar-edit" @click="avatarPicker = !avatarPicker">🎨 Avatar</button>
+      </div>
+
+      <!-- Sélecteur d'avatar -->
+      <div class="card avatar-picker" v-if="avatarPicker">
+        <div class="card-header"><span class="card-title">🎨 Personnalise ton avatar</span></div>
+        <p class="picker-label">Emoji</p>
+        <div class="emoji-grid">
+          <button v-for="e in AVATAR_EMOJIS" :key="e" class="emoji-btn"
+            :class="{ active: pickEmoji === e }" @click="pickEmoji = pickEmoji === e ? null : e">{{ e }}</button>
+        </div>
+        <p class="picker-label">Couleur</p>
+        <div class="color-grid">
+          <button v-for="c in AVATAR_COLORS" :key="c" class="color-btn"
+            :class="{ active: pickColor === c }" :style="{ background: c }" @click="pickColor = pickColor === c ? null : c" />
+        </div>
+        <div class="picker-preview">
+          <span>Aperçu :</span>
+          <div class="avatar avatar-sm" :style="previewStyle">{{ pickEmoji || authStore.user?.username?.charAt(0).toUpperCase() }}</div>
+          <button class="btn-save-avatar" :disabled="savingAvatar" @click="saveAvatar">{{ savingAvatar ? '⟳' : 'Enregistrer' }}</button>
         </div>
       </div>
 
@@ -175,6 +196,31 @@ const winRate = computed(() => {
 });
 
 const earnedCount = computed(() => xpStore.badges.filter(b => b.earned).length);
+
+// ── Avatar personnalisable ──
+const AVATAR_EMOJIS = ['😎','🦊','🐸','🐼','🦁','🐙','👻','🤖','🐲','🦄','🍕','🎩','💀','👽','🔥','⚡','🎯','🃏','🌵','🦈'];
+const AVATAR_COLORS = ['#06b6d4','#8b5cf6','#f43f5e','#f59e0b','#22c55e','#3b82f6','#ec4899','#64748b'];
+const avatarPicker = ref(false);
+const pickEmoji    = ref(authStore.user?.avatar_emoji || null);
+const pickColor    = ref(authStore.user?.avatar_color || null);
+const savingAvatar = ref(false);
+
+const avatarDisplay = computed(() => authStore.user?.avatar_emoji || authStore.user?.username?.charAt(0).toUpperCase());
+const avatarStyle   = computed(() => authStore.user?.avatar_color ? { background: authStore.user.avatar_color } : {});
+const previewStyle  = computed(() => pickColor.value ? { background: pickColor.value } : {});
+
+async function saveAvatar() {
+  savingAvatar.value = true;
+  try {
+    const { data } = await axios.post('/api/auth/avatar', { emoji: pickEmoji.value, color: pickColor.value });
+    if (authStore.user) {
+      authStore.user.avatar_emoji = data.avatar_emoji;
+      authStore.user.avatar_color = data.avatar_color;
+    }
+    avatarPicker.value = false;
+  } catch { /* silencieux */ }
+  savingAvatar.value = false;
+}
 
 function pgPct(g) {
   const total = Number(g.total) || 0;
@@ -378,6 +424,23 @@ onMounted(async () => {
 .lb-xp    { font-size: 0.85rem; color: #a78bfa; }
 .lb-wins  { font-size: 0.8rem; }
 .lb-row.me { background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3); }
+
+/* Avatar picker */
+.btn-avatar-edit { margin-left: auto; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #fff; border-radius: 8px; padding: 8px 14px; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: border-color .15s; }
+.btn-avatar-edit:hover { border-color: #8b5cf6; }
+.picker-label { font-size: 0.78rem; color: rgba(255,255,255,0.5); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin: 10px 0 6px; }
+.emoji-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.emoji-btn { font-size: 1.3rem; background: rgba(255,255,255,0.04); border: 2px solid transparent; border-radius: 10px; padding: 6px 8px; cursor: pointer; transition: all .12s; }
+.emoji-btn:hover { transform: scale(1.15); }
+.emoji-btn.active { border-color: #06b6d4; background: rgba(6,182,212,0.12); }
+.color-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.color-btn { width: 34px; height: 34px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; transition: transform .12s; }
+.color-btn:hover { transform: scale(1.15); }
+.color-btn.active { border-color: #fff; }
+.picker-preview { display: flex; align-items: center; gap: 14px; margin-top: 16px; }
+.avatar-sm { width: 48px; height: 48px; font-size: 1.4rem; }
+.btn-save-avatar { margin-left: auto; background: #8b5cf6; border: none; color: #fff; border-radius: 8px; padding: 10px 20px; font-weight: 700; cursor: pointer; }
+.btn-save-avatar:disabled { opacity: .6; }
 
 /* Rival */
 .rival-card { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-color: rgba(251,191,36,0.3); }

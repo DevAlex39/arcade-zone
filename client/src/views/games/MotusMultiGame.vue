@@ -237,6 +237,22 @@ onMounted(() => {
     showResults.value = false;
   });
 
+  // Reconnexion : restaurer mes essais, le clavier et mon statut
+  socket.on('motus_restore', ({ guesses, confirmedLetters: cl, status }) => {
+    revealedRows.value = (guesses || []).map(g => ({ guess: g.guess, result: g.result }));
+    if (cl) confirmedLetters.value = cl;
+    const priority = { correct: 3, present: 2, absent: 1 };
+    const kb = {};
+    (guesses || []).forEach(g => g.result.forEach((s, i) => {
+      const l = g.guess[i];
+      if (!kb[l] || priority[s] > priority[kb[l]]) kb[l] = s;
+    }));
+    kbState.value = kb;
+    if (status === 'found')       { myDone.value = true; myResult.value = 'found'; }
+    else if (status === 'failed') { myDone.value = true; myResult.value = 'failed'; }
+    else prefillRow();
+  });
+
   socket.on('guess_result', ({ result, confirmedLetters: cl, won }) => {
     checking.value = false;
     const guess = currentInput.value.join('');

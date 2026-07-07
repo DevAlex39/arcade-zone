@@ -225,12 +225,22 @@ async function launchGame(io, room, socket) {
 
 function initSocket(io) {
 
-  io.use((socket, next) => {
+  io.use(async (socket, next) => {
     const token    = socket.handshake.auth?.token;
     const username = socket.handshake.auth?.username;
     if (!token && !username) return next(new Error('Identification requise'));
     if (token) {
-      try { socket.user = jwt.verify(token, process.env.JWT_SECRET); next(); }
+      try {
+        socket.user = jwt.verify(token, process.env.JWT_SECRET);
+        // Avatar personnalisé (comptes uniquement)
+        if (!socket.user.isGuest) {
+          try {
+            const [[row]] = await pool.query('SELECT avatar_emoji, avatar_color FROM users WHERE id=?', [socket.user.id]);
+            if (row) { socket.user.avatarEmoji = row.avatar_emoji; socket.user.avatarColor = row.avatar_color; }
+          } catch {}
+        }
+        next();
+      }
       catch { next(new Error('Token invalide')); }
     } else {
       socket.user = { id: `guest_${Date.now()}`, username, role: 'guest', isGuest: true };
@@ -254,7 +264,7 @@ function initSocket(io) {
       if (existing) existing.socketId = socket.id;
       else {
         if (room.players.length >= room.maxPlayers) return socket.emit('error', 'Salle pleine');
-        room.players.push({ id: user.id, username: user.username, socketId: socket.id, ready: false });
+        room.players.push({ id: user.id, username: user.username, socketId: socket.id, ready: false, avatarEmoji: user.avatarEmoji, avatarColor: user.avatarColor });
       }
       io.to(code).emit('room_update', sanitizeRoom(room));
       // Reconnecter en partie
@@ -272,7 +282,7 @@ function initSocket(io) {
         clearDisconnectTimer(code, user.id);
         const existing = room.players.find(p => p.id === user.id);
         if (existing) existing.socketId = socket.id;
-        else room.players.push({ id: user.id, username: user.username, socketId: socket.id, ready: false });
+        else room.players.push({ id: user.id, username: user.username, socketId: socket.id, ready: false, avatarEmoji: user.avatarEmoji, avatarColor: user.avatarColor });
         io.to(code).emit('room_update', sanitizeRoom(room));
         return;
       }
@@ -286,7 +296,7 @@ function initSocket(io) {
         settings: { syncWords: true, comboEnabled: true, livesMax: 20, maxAttempts: 6,
           minLetters: 5, maxLetters: 6, lang: 'fr', changeOnFind: false, category: 'tous',
           pionsPerPlayer: 2, ...settings },
-        players: [{ id: user.id, username: user.username, socketId: socket.id, ready: true }],
+        players: [{ id: user.id, username: user.username, socketId: socket.id, ready: true, avatarEmoji: user.avatarEmoji, avatarColor: user.avatarColor }],
         round:   null,
         gameState: null,
       };
@@ -602,7 +612,7 @@ function initSocket(io) {
       const now = Date.now();
       if (socket._lastReaction && now - socket._lastReaction < 400) return;
       socket._lastReaction = now;
-      io.to(code).emit('reaction', { emoji, username: user.username });
+      io.to(code).emit('reaction', { emoji, username: user.username, avatar: user.avatarEmoji || null });
     });
 
     // ─── Déconnexion ────────────────────────────────────────────────
@@ -1233,6 +1243,15 @@ function resendGameState(socket, room) {
       firstLetter: room.round.word[0], maxAttempts: room.round.maxAttempts,
       players: room.players.map(p => ({ id: p.id, username: p.username, lives: p.lives, combo: p.combo })),
     });
+    // Restaurer la grille personnelle du joueur (essais déjà joués, statut)
+    const ps = room.round.playerStates?.[socket.user?.id];
+    if (ps) {
+      socket.emit('motus_restore', {
+        guesses: ps.guesses,
+        confirmedLetters: ps.confirmedLetters,
+        status: ps.status,
+      });
+    }
   } else if (room.gameId === 'yahtzee' && room.gameState) {
     socket.emit('yahtzee_state', publicYahtzeeState(room.gameState));
   } else if (room.gameId === 'skyjo' && room.gameState) {
@@ -1244,12 +1263,16 @@ function resendGameState(socket, room) {
   } else if (room.gameId === 'quiz' && room.gameState) {
     const gs = room.gameState;
     const q = gs.questions[gs.currentIdx];
+    // Temps restant réel (pas le timer complet) + réponse déjà donnée
+    const elapsed   = gs.questionStart ? Date.now() - gs.questionStart : 0;
+    const remaining = Math.max(1, Math.round((gs.settings.timer * 1000 - elapsed) / 1000));
     socket.emit('quiz_question', {
-      question: quiz.publicQuestion(q, gs.currentIdx, gs.questions.length, gs.settings.timer),
+      question: quiz.publicQuestion(q, gs.currentIdx, gs.questions.length, remaining),
       scores: gs.mode !== 2 ? gs.scores : null,
       lives: gs.lives,
       eliminated: gs.eliminated,
       players: gs.players,
+      restoredAnswer: gs.answers?.[socket.user?.id]?.answer ?? null,
     });
   }
 }
@@ -1267,6 +1290,7 @@ function sanitizeRoom(room) {
     players:     room.players.map(p => ({
       id: p.id, username: p.username, ready: p.ready,
       lives: p.lives, combo: p.combo, eliminated: p.eliminated, online: !!p.socketId,
+      avatar_emoji: p.avatarEmoji || null, avatar_color: p.avatarColor || null,
     })),
   };
 }

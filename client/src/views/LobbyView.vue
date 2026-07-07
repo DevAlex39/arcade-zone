@@ -280,7 +280,7 @@
             <h3 class="settings-title">{{ t('lobby.players') }} ({{ (room.players?.length || 0) + (settings.aiCount || 0) }} / {{ room.max_players }})</h3>
             <transition-group name="pjoin" tag="div" class="player-list">
               <div v-for="(p, pi) in room.players" :key="p.id" class="player-row">
-                <div class="player-avatar" :style="{ background: avatarGradient(pi) }">{{ p.username[0].toUpperCase() }}</div>
+                <div class="player-avatar" :style="{ background: p.avatar_color || avatarGradient(pi) }">{{ p.avatar_emoji || p.username[0].toUpperCase() }}</div>
                 <span class="player-name">{{ p.username }}</span>
                 <span v-if="p.id === room.host_id" class="badge badge-amber">👑 {{ t('lobby.host') }}</span>
                 <span v-else-if="p.online !== false" class="badge badge-green">{{ t('lobby.online') }}</span>
@@ -445,7 +445,22 @@ function connectSocket() {
   });
 
   const goToGame = () => router.push(`/game/${room.value.game_id}?room=${room.value.code}`);
-  socket.on('game_started',   goToGame);
+  socket.on('game_started', () => {
+    // Onglet en arrière-plan → notification système + son + vibration
+    if (document.hidden) {
+      audio.turn();
+      try {
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('Arcade Zone 🎮', {
+            body: 'La partie commence !',
+            icon: '/icons/icon-192.png',
+            tag: 'game-start',
+          });
+        }
+      } catch { /* silencieux */ }
+    }
+    goToGame();
+  });
   socket.on('round_start',    goToGame);
   socket.on('yahtzee_state',  goToGame);
   socket.on('skyjo_state',    goToGame);
@@ -479,7 +494,15 @@ async function copyLink() {
   setTimeout(() => { copied.value = false; }, 2000);
 }
 
-onMounted(loadRoom);
+onMounted(() => {
+  loadRoom();
+  // Demander la permission de notification (pour prévenir du lancement de partie)
+  try {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
+    }
+  } catch { /* silencieux */ }
+});
 onUnmounted(() => socket?.disconnect());
 </script>
 

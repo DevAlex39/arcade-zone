@@ -317,6 +317,8 @@ function connectSocket() {
     if (data.eliminated) eliminated.value = data.eliminated;
     if (data.players)    players.value   = data.players;
     startTimer(data.question.timeLimit);
+    // Reconnexion : réponse déjà envoyée avant le refresh
+    if (data.restoredAnswer) myAnswer.value = data.restoredAnswer;
   });
 
   socket.value.on('quiz_player_answered', ({ playerId }) => {

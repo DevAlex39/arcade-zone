@@ -29,7 +29,7 @@
           <h4>{{ t('menu.players') }} ({{ players.length }})</h4>
           <div class="gm-players">
             <div v-for="p in players" :key="p.id" class="gm-player">
-              <div class="gm-avatar">{{ (p.username || '?')[0].toUpperCase() }}</div>
+              <div class="gm-avatar" :style="p.avatar_color ? { background: p.avatar_color } : {}">{{ p.avatar_emoji || (p.username || '?')[0].toUpperCase() }}</div>
               <span class="gm-pname">{{ p.username }}</span>
               <span v-if="p.id === hostId" class="gm-badge gm-badge-host">{{ t('menu.host') }}</span>
               <span v-else-if="p.online !== false" class="gm-badge gm-badge-on">{{ t('menu.online') }}</span>

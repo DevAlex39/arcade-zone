@@ -220,6 +220,14 @@ async function migrate() {
   // Supprimer les anciennes entrées motus séparées si elles existent encore
   await pool.query(`DELETE FROM games WHERE id IN ('motus-solo','motus-multi')`).catch(() => {});
 
+  // Avatar personnalisable (emoji + couleur)
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_emoji VARCHAR(16) NULL").catch(() =>
+    pool.query("ALTER TABLE users ADD COLUMN avatar_emoji VARCHAR(16) NULL").catch(() => {})
+  );
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_color VARCHAR(20) NULL").catch(() =>
+    pool.query("ALTER TABLE users ADD COLUMN avatar_color VARCHAR(20) NULL").catch(() => {})
+  );
+
   // Colonne image_url
   await pool.query("ALTER TABLE games ADD COLUMN IF NOT EXISTS image_url VARCHAR(255)").catch(() =>
     pool.query("ALTER TABLE games ADD COLUMN image_url VARCHAR(255)").catch(() => {})

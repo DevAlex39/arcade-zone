@@ -16,7 +16,7 @@ function makeToken(user) {
 }
 
 function safeUser(u) {
-  return { id: u.id, username: u.username, email: u.email, first_name: u.first_name, last_name: u.last_name, role: u.role, avatar_url: u.avatar_url };
+  return { id: u.id, username: u.username, email: u.email, first_name: u.first_name, last_name: u.last_name, role: u.role, avatar_url: u.avatar_url, avatar_emoji: u.avatar_emoji || null, avatar_color: u.avatar_color || null };
 }
 
 // ─── Inscription ─────────────────────────────────────────────────────────────
@@ -88,6 +88,22 @@ router.get('/me', async (req, res) => {
     const [rows] = await pool.query('SELECT * FROM users WHERE id=?', [decoded.id]);
     if (!rows.length) return res.status(404).json({ error: 'Utilisateur introuvable' });
     res.json({ user: safeUser(rows[0]) });
+  } catch {
+    res.status(401).json({ error: 'Token invalide' });
+  }
+});
+
+// ─── Avatar personnalisable ──────────────────────────────────────────────────
+router.post('/avatar', async (req, res) => {
+  const header = req.headers.authorization;
+  if (!header?.startsWith('Bearer ')) return res.status(401).json({ error: 'Non authentifié' });
+  try {
+    const decoded = jwt.verify(header.slice(7), process.env.JWT_SECRET);
+    if (decoded.isGuest) return res.status(403).json({ error: 'Réservé aux comptes' });
+    const emoji = (req.body.emoji || '').slice(0, 16) || null;
+    const color = /^#[0-9a-fA-F]{6}$/.test(req.body.color || '') ? req.body.color : null;
+    await pool.query('UPDATE users SET avatar_emoji=?, avatar_color=? WHERE id=?', [emoji, color, decoded.id]);
+    res.json({ ok: true, avatar_emoji: emoji, avatar_color: color });
   } catch {
     res.status(401).json({ error: 'Token invalide' });
   }

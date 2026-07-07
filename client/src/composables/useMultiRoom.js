@@ -70,10 +70,10 @@ export function useMultiRoom(roomCode) {
       platform.showToast('Vous avez été exclu de la partie par l\'hôte', 'error');
       router.push('/');
     });
-    s.on('reaction', ({ emoji, username }) => {
+    s.on('reaction', ({ emoji, username, avatar }) => {
       const id = ++_reactionId;
       // Position horizontale aléatoire pour éviter que tout se superpose
-      reactions.value.push({ id, emoji, username, x: 8 + Math.random() * 80 });
+      reactions.value.push({ id, emoji, username: avatar ? `${avatar} ${username}` : username, x: 8 + Math.random() * 80 });
       audio.blip();
       setTimeout(() => { reactions.value = reactions.value.filter(r => r.id !== id); }, 3600);
     });
