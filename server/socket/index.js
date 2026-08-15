@@ -6,6 +6,7 @@ const skyjo   = require('../games/skyjo');
 const pc      = require('../games/petits-chevaux');
 const quiz    = require('../games/quiz');
 const oj      = require('../games/oser-jouer');
+const fd      = require('../games/fais-deviner');
 const { pool } = require('../config/db');
 const { awardXp, updateChallenge, recordGame } = require('../services/xp');
 
@@ -193,6 +194,12 @@ function removePlayerFromGame(io, room, targetId) {
     }
     broadcastOJ(io, room);
   }
+  else if (room.gameId === 'fais-deviner') {
+    const wasSpeaker = String(fd.speakerId(gs)) === String(targetId);
+    fd.removePlayer(gs, targetId);
+    if (wasSpeaker && gs.phase === 'turn') { clearTimeout(gs.timer); fd.endTurn(gs); }
+    broadcastFD(io, room);
+  }
   else if (room.gameId === 'quiz') {
     gs.playerIds = (gs.playerIds || []).filter(id => id !== targetId);
     gs.eliminated = (gs.eliminated || []).filter(id => id !== targetId);
@@ -232,6 +239,8 @@ async function launchGame(io, room, socket) {
     }
   } else if (room.gameId === 'oser-jouer') {
     await startOserJouerGame(io, room);
+  } else if (room.gameId === 'fais-deviner') {
+    startFaisDevinerGame(io, room);
   }
 }
 
@@ -626,6 +635,45 @@ function initSocket(io) {
         const r = oj.nextRound(gs);
         if (r.error) return socket.emit('error', r.error);
         broadcastOJ(io, room);
+      }
+    });
+
+    // ─── Actions Fais Deviner ───────────────────────────────────────
+    socket.on('fd_action', ({ code, action }) => {
+      const room = rooms.get(code?.toUpperCase());
+      if (!room || room.status !== 'playing' || room.gameId !== 'fais-deviner') return;
+      const gs = room.gameState;
+      if (!gs) return;
+
+      if (action === 'start_turn') {
+        const r = fd.startTurn(gs, user.id);
+        if (r.error) return socket.emit('error', r.error);
+        // Timer serveur : fin de tour automatique
+        clearTimeout(gs.timer);
+        gs.timer = setTimeout(() => {
+          if (room.status !== 'playing' || gs.phase !== 'turn') return;
+          fd.endTurn(gs);
+          broadcastFD(io, room);
+        }, gs.turnSec * 1000 + 300);
+        broadcastFD(io, room);
+      }
+      else if (action === 'found') {
+        const r = fd.found(gs, user.id);
+        if (r.error) return socket.emit('error', r.error);
+        if (r.gameOver) { clearTimeout(gs.timer); return endFaisDevinerGame(io, room, gs); }
+        if (r.roundOver) clearTimeout(gs.timer);
+        broadcastFD(io, room);
+      }
+      else if (action === 'pass') {
+        const r = fd.pass(gs, user.id);
+        if (r.error) return socket.emit('error', r.error);
+        broadcastFD(io, room);
+      }
+      else if (action === 'next_round') {
+        if (room.hostId !== user.id) return;
+        const r = fd.nextRound(gs);
+        if (r.error) return socket.emit('error', r.error);
+        broadcastFD(io, room);
       }
     });
 
@@ -1268,6 +1316,40 @@ function endOserJouerGame(io, room, gs) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// FAIS DEVINER
+// ═══════════════════════════════════════════════════════════════════════
+function startFaisDevinerGame(io, room) {
+  room.status    = 'playing';
+  room.gameState = fd.initGame(room.players, room.settings);
+  broadcastFD(io, room);
+}
+
+// La carte est privée (orateur) → émission individuelle
+function broadcastFD(io, room) {
+  const gs = room.gameState;
+  if (!gs) return;
+  room.players.forEach(p => {
+    if (p.socketId) io.to(p.socketId).emit('fd_state', fd.publicState(gs, p.id));
+  });
+  (room.spectators || []).forEach(s => {
+    if (s.socketId) io.to(s.socketId).emit('fd_state', fd.publicState(gs, s.id));
+  });
+}
+
+function endFaisDevinerGame(io, room, gs) {
+  room.status = 'finished';
+  broadcastFD(io, room);
+  let winner = null, winnerForXp = null;
+  if (gs.winner !== 'tie') {
+    winnerForXp = gs.teams[gs.winner];
+    winner = { id: null, username: gs.winner === 'blue' ? 'Équipe Bleue 🔵' : 'Équipe Rouge 🔴' };
+  }
+  io.to(room.code).emit('game_over', { winner, scores: { blue: fd.totalScore(gs, 'blue'), red: fd.totalScore(gs, 'red') } });
+  handleGameOver(room, winnerForXp, null);
+  enterPostGame(room);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // HELPERS COMMUNS
 // ═══════════════════════════════════════════════════════════════════════
 function resendGameState(socket, room) {
@@ -1294,6 +1376,8 @@ function resendGameState(socket, room) {
     socket.emit('pc_state', publicPCState(room.gameState));
   } else if (room.gameId === 'oser-jouer' && room.gameState) {
     socket.emit('oj_state', oj.publicState(room.gameState, socket.user?.id));
+  } else if (room.gameId === 'fais-deviner' && room.gameState) {
+    socket.emit('fd_state', fd.publicState(room.gameState, socket.user?.id));
   } else if (room.gameId === 'quiz' && room.gameState) {
     const gs = room.gameState;
     const q = gs.questions[gs.currentIdx];

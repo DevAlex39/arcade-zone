@@ -280,6 +280,25 @@
             </div>
           </div>
 
+          <!-- Paramètres Fais Deviner -->
+          <div class="card lobby-settings" v-if="isHost && room.game_id === 'fais-deviner'">
+            <h3 class="settings-title">{{ t('lobby.settings') }}</h3>
+            <div class="setting-row">
+              <label>{{ t('fd.turn_sec') }}</label>
+              <div class="lang-switch">
+                <button v-for="s in [30,45,60]" :key="s" class="lang-btn" :class="{ active: settings.fdTurnSec === s }" @click="settings.fdTurnSec = s">{{ s }}s</button>
+              </div>
+            </div>
+            <div class="setting-row">
+              <label>{{ t('fd.card_count') }}</label>
+              <div class="stepper">
+                <button @click="settings.fdCards = Math.max(10, settings.fdCards - 5)">−</button>
+                <span>{{ settings.fdCards }}</span>
+                <button @click="settings.fdCards = Math.min(60, settings.fdCards + 5)">+</button>
+              </div>
+            </div>
+          </div>
+
           <!-- Liste des joueurs -->
           <div class="card lobby-players">
             <h3 class="settings-title">{{ t('lobby.players') }} ({{ (room.players?.length || 0) + (settings.aiCount || 0) }} / {{ room.max_players }})</h3>
@@ -346,6 +365,7 @@ const settings = ref({
   quizMode: 1, timer: 15, targetScore: 100, questionCount: 20, lives: 5,
   questionTypes: 'both', difficulty: 'mixed', quizCategories: [], quizLang: 'fr',
   ojMode: 'master', ojCategory: 'all', ojTargetScore: 10, quizTeams: false,
+  fdTurnSec: 45, fdCards: 30,
 });
 let socket = null;
 const quizCategories = ref([]);
@@ -474,6 +494,7 @@ function connectSocket() {
   socket.on('pc_state',       goToGame);
   socket.on('quiz_question',  goToGame);
   socket.on('oj_state',       goToGame);
+  socket.on('fd_state',       goToGame);
 
   socket.on('kicked', () => {
     platform.showToast('Vous avez été exclu de la salle par l\'hôte', 'error');

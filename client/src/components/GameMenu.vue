@@ -106,6 +106,9 @@ const rulesList = computed(() => {
     if (s.aiCount) add(t('lobby.ai_players'), s.aiCount);
   } else if (gid === 'skyjo' || gid === 'yahtzee') {
     if (s.aiCount) add(t('lobby.ai_players'), s.aiCount);
+  } else if (gid === 'fais-deviner') {
+    add(t('fd.turn_sec'), `${s.fdTurnSec || 45}s`);
+    add(t('fd.card_count'), s.fdCards || 30);
   } else if (gid === 'oser-jouer') {
     add(t('oj.mode'), s.ojMode === 'vote' ? t('oj.mode_vote') : t('oj.mode_master'));
     add(t('oj.category'), s.ojCategory === 'public' ? t('oj.cat_public') : s.ojCategory === 'trash' ? t('oj.cat_trash') : t('oj.cat_all'));

@@ -174,6 +174,7 @@ const GAMES_SEED = [
   ['escape',         'Escape',              'Jeu d\'évasion textuel — résous les énigmes pour t\'échapper',               '🔐', '#fbbf24', 1, 1, 1, 0, '/solo/escape/',        7],
   ['quiz',           'Quiz Zone',           'Testez vos connaissances — solo ou multi jusqu\'à 8 joueurs',                 '🧠', '#8b5cf6', 1, 8, 1, 1, null,                  8],
   ['oser-jouer',     'Oser Jouer',          'Complétez la phrase avec la carte la plus drôle — 3 à 10 joueurs',            '😈', '#f43f5e', 3, 10, 1, 1, null,                 9],
+  ['fais-deviner',   'Fais Deviner !',      'Times Up entre équipes — 3 manches chrono pour faire deviner un max de mots', '🗣️', '#22c55e', 4, 10, 1, 1, null,                10],
 ];
 
 async function migrate() {
