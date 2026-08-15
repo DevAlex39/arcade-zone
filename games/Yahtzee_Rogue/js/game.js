@@ -498,6 +498,16 @@ async function playCombo(id) {
   else if (res.total >= 2000) spawnComboParticles('legendary');
   G.jokers.forEach(j => { if (j.onCombo) j.onCombo(id, G.dice, j); });
 
+  // Jokers éphémères : décompte des mains, destruction à zéro
+  const consumed = [];
+  G.jokers.forEach(j => {
+    if (j.hands != null) { j.hands--; if (j.hands <= 0) consumed.push(j); }
+  });
+  if (consumed.length) {
+    G.jokers = G.jokers.filter(j => !consumed.includes(j));
+    consumed.forEach(j => toast(t('jokerConsumed', { name: jn(j) }), 'red'));
+  }
+
   renderScore();
   renderSidePanel();
 

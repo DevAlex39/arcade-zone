@@ -228,6 +228,7 @@ function renderSidePanel() {
       div.dataset.jokerIdx  = gIdx;
       div.innerHTML = `
         ${j.modifier ? `<div class="pc-mod" style="color:${j.modifier.color}">${j.modifier.icon}</div>` : ''}
+        ${j.hands != null ? `<div class="pc-hands" title="${t('handsLeftBadge', {n: j.hands})}">⏳${j.hands}</div>` : ''}
         <div class="pc-icon">${jicon(j)}</div>
         <div class="pc-name">${jn(j)}</div>
         <div class="pc-rar">${rarityLabel(j.rarity)}</div>

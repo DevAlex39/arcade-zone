@@ -549,6 +549,8 @@ body::after {
 @keyframes comboPulse { 0%,100%{box-shadow:0 0 0 1px var(--gold), 0 0 0 0 var(--gold-bg)} 50%{box-shadow:0 0 0 1px var(--gold), 0 0 0 6px transparent} }
 .cb-name  { font-size:.78rem; font-weight:800; color:var(--white); }
 .cb-star  { color:var(--gold); margin-left:.25rem; font-size:.7rem; }
+/* Badge jokers éphémères (mains restantes) */
+.pc-hands { position:absolute; top:.3rem; left:.35rem; font-size:.62rem; font-weight:800; color:#ffb74d; background:rgba(0,0,0,.45); border:1px solid rgba(255,183,77,.4); border-radius:6px; padding:0 .28rem; z-index:2; }
 .cb-chips { font-size:.68rem; color:var(--chips-col); font-weight:700; }
 .cb-mult  { font-size:.68rem; color:var(--mult-col);  font-weight:700; }
 .cb-total { font-size:.84rem; color:var(--total-col); font-weight:800; font-family: var(--font-num); }

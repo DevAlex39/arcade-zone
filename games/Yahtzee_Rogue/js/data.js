@@ -138,6 +138,17 @@ const JOKER_POOL = [
     desc:'Chaque dé 1 dans la combo ajoute +15 Chips', desc_en:'Each 1 in the combo adds +15 Chips',
     apply:(id,chips,mult,dice)=> [chips + dice.filter(d=>d===1).length*15, mult] },
 
+  // ── ÉPHÉMÈRES (se consument après N mains jouées) ───────────────
+  { id:'etoile-filante', rarity:'uncommon', name:"L'Étoile Filante", name_en:'The Shooting Star', icon:'☄️', cost:3, hands:4,
+    desc:'+60 Chips sur chaque combo · Se consume après 4 mains', desc_en:'+60 Chips on every combo · Burns out after 4 hands',
+    apply:(id,chips,mult)=> [chips+60, mult] },
+  { id:'feu-de-paille',  rarity:'rare',     name:'Le Feu de Paille', name_en:'The Straw Fire',    icon:'🔥', cost:5, hands:3,
+    desc:'Mult ×2.5 sur toutes les combos · Se consume après 3 mains', desc_en:'Mult ×2.5 on all combos · Burns out after 3 hands',
+    apply:(id,chips,mult)=> [chips, Math.round(mult*2.5)] },
+  { id:'supernova',      rarity:'legendary', name:'La Supernova',    name_en:'The Supernova',     icon:'💥', cost:7, hands:2,
+    desc:'Mult ×4 sur toutes les combos · Se consume après 2 mains', desc_en:'Mult ×4 on all combos · Burns out after 2 hands',
+    apply:(id,chips,mult)=> [chips, mult*4] },
+
   // ── LÉGENDAIRES ─────────────────────────────────────────────────
   { id:'alpha',          rarity:'legendary', name:"L'Alpha",           name_en:'The Alpha',         img:IMG('jokers-legendaires','lalpha.png'),          cost:9,
     desc:'+4 Mult sur absolument toutes les combos', desc_en:'+4 Mult on every combo',
