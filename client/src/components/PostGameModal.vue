@@ -8,6 +8,15 @@
           {{ t('winner_label') }} <strong>{{ gameOver.winner.username }}</strong>
         </p>
 
+        <!-- Classement final de tournoi -->
+        <div v-if="gameOver.tournamentStandings" class="pg-standings">
+          <div v-for="(s, i) in gameOver.tournamentStandings" :key="s.id" class="pg-st-row" :class="{ first: i === 0 }">
+            <span>{{ ['🥇','🥈','🥉'][i] || `#${i + 1}` }}</span>
+            <span class="pg-st-name">{{ s.username }}</span>
+            <span class="pg-st-pts">{{ s.points }} pts</span>
+          </div>
+        </div>
+
         <slot />
 
         <div v-if="isHost" class="pg-actions">
@@ -53,6 +62,11 @@ const isWinner = computed(() => props.gameOver?.winner && String(props.gameOver.
 .pg-primary:hover { filter: brightness(1.1); }
 .pg-ghost { background: transparent; }
 .pg-waiting { display: flex; align-items: center; justify-content: center; gap: .5rem; color: var(--text-2, #aaa); font-size: .88rem; }
+.pg-standings { display: flex; flex-direction: column; gap: .3rem; margin-top: .8rem; }
+.pg-st-row { display: flex; align-items: center; gap: .6rem; padding: .35rem .6rem; background: var(--bg-3, #1e1e38); border: 1px solid var(--border, #333); border-radius: 8px; font-size: .85rem; }
+.pg-st-row.first { border-color: rgba(245,158,11,.5); background: rgba(245,158,11,.08); }
+.pg-st-name { flex: 1; text-align: left; font-weight: 700; }
+.pg-st-pts { font-weight: 800; color: var(--cyan, #06b6d4); }
 .spin { display: inline-block; animation: pgSpin 1.2s linear infinite; }
 @keyframes pgSpin { to { transform: rotate(360deg); } }
 </style>

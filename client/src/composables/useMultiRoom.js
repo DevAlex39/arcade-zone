@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth.js';
 import { usePlatformStore } from '@/stores/platform.js';
 import { useI18n } from '@/composables/useI18n.js';
@@ -16,13 +16,15 @@ import { useGameAudio } from '@/composables/useGameAudio.js';
  */
 export function useMultiRoom(roomCode) {
   const router   = useRouter();
+  const route    = useRoute();
   const auth     = useAuthStore();
   const platform = usePlatformStore();
   const { t }    = useI18n();
 
-  const audio     = useGameAudio();
-  const room      = ref(null);
-  const gameOver  = ref(null);
+  const audio      = useGameAudio();
+  const room       = ref(null);
+  const gameOver   = ref(null);
+  const tournament = ref(null);   // { phase:'interstitial', standings, nextGameId, idx, total }
   const reactions = ref([]);   // réactions emoji flottantes [{ id, emoji, username, x }]
   let socket = null;
   let _reactionId = 0;
@@ -73,6 +75,27 @@ export function useMultiRoom(roomCode) {
       platform.showToast('Vous avez été exclu de la partie par l\'hôte', 'error');
       router.push('/');
     });
+    // ── Tournoi ──
+    s.on('tournament_update', (p) => {
+      // points mis à jour en fin de jeu (l'écran intermédiaire suit)
+      if (tournament.value) tournament.value = { ...tournament.value, ...p };
+    });
+    s.on('tournament_next', (p) => {
+      tournament.value = { ...p, phase: 'interstitial' };
+      gameOver.value = null; // pas de modal post-game entre les jeux d'un tournoi
+      audio.chime();
+    });
+    s.on('tournament_end', (p) => {
+      tournament.value = { ...p, phase: 'end' };
+    });
+    // Navigation vers le jeu courant (tournoi : le jeu change entre les manches)
+    s.on('game_started', ({ gameId } = {}) => {
+      tournament.value = tournament.value ? { ...tournament.value, phase: null } : null;
+      if (gameId && route.params.gameId !== gameId) {
+        router.push(`/game/${gameId}?room=${roomCode}`);
+      }
+    });
+
     s.on('reaction', ({ emoji, username, avatar }) => {
       const id = ++_reactionId;
       // Position horizontale aléatoire pour éviter que tout se superpose
@@ -103,5 +126,10 @@ export function useMultiRoom(roomCode) {
     socket?.emit('kick_player', { code: roomCode, targetId, replaceByAI });
   }
 
-  return { room, gameOver, reactions, isHost, isSpectator, myId, bind, choose, kick, sendReaction, audio };
+  // Tournoi : l'hôte lance le jeu suivant depuis l'écran intermédiaire
+  function launchNext() {
+    socket?.emit('start_game', roomCode);
+  }
+
+  return { room, gameOver, reactions, tournament, isHost, isSpectator, myId, bind, choose, kick, sendReaction, launchNext, audio };
 }

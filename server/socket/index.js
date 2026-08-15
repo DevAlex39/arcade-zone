@@ -12,6 +12,7 @@ const { awardXp, updateChallenge, recordGame } = require('../services/xp');
 
 const rooms           = new Map();
 const disconnectTimers = new Map();
+let _io = null; // référence io pour les helpers hors initSocket (tournois)
 
 // Emojis autorisés pour les réactions en partie
 const REACTION_EMOJIS = ['😂', '🔥', '😱', '👏', '😭', '😈'];
@@ -24,6 +25,15 @@ async function handleGameOver(room, winnerId, gameSpecificScore) {
 
   // winnerId peut être un id unique OU un tableau d'ids (victoire d'équipe)
   const winnerIds  = Array.isArray(winnerId) ? winnerId.map(String) : [String(winnerId)];
+
+  // Tournoi : cumul des points AVANT tout await (3 pts vainqueur, 1 pt participation)
+  if (room.tournament?.active) {
+    const t = room.tournament;
+    room.players.forEach(p => {
+      t.points[p.id] = (t.points[p.id] || 0) + (winnerIds.includes(String(p.id)) ? 3 : 1);
+    });
+    _io?.to(room.code).emit('tournament_update', tournamentPayload(room));
+  }
   const winnerName = players.find(p => winnerIds.includes(String(p.id)))?.username || null;
 
   for (const player of realPlayers) {
@@ -62,7 +72,6 @@ function clearDisconnectTimer(code, userId) {
 // Fin de partie : la room reste vivante en statut "postgame" pour permettre
 // à l'hôte de relancer, retourner au lobby, ou à chacun de quitter.
 function enterPostGame(room) {
-  room.status    = 'postgame';
   room.gameState = null;
   room.round     = null;
   // Reset des états de partie portés par les joueurs (Motus)
@@ -77,6 +86,34 @@ function enterPostGame(room) {
     }
     room.spectators = [];
   }
+
+  // ── Tournoi : enchaîner sur le jeu suivant ou clôturer ──
+  const t = room.tournament;
+  if (t?.active) {
+    t.idx++;
+    if (t.idx < t.games.length) {
+      // Jeu suivant : retour en attente, l'hôte lance depuis l'écran intermédiaire
+      room.gameId = t.games[t.idx];
+      room.status = 'waiting';
+      _io?.to(room.code).emit('tournament_next', tournamentPayload(room));
+      _io?.to(room.code).emit('room_update', sanitizeRoom(room));
+      return;
+    }
+    // Fin du tournoi : champion = meilleur cumul
+    t.active = false;
+    room.gameId = 'tournoi';
+    const payload  = tournamentPayload(room);
+    const top      = payload.standings[0]?.points ?? 0;
+    const champs   = payload.standings.filter(s => s.points === top);
+    const champion = champs.length === 1
+      ? (room.players.find(p => String(p.id) === String(champs[0].id)) || champs[0])
+      : { id: null, username: champs.map(c => c.username).join(' & ') };
+    _io?.to(room.code).emit('tournament_end', payload);
+    _io?.to(room.code).emit('game_over', { winner: champion, tournamentStandings: payload.standings });
+    _io?.to(room.code).emit('room_update', sanitizeRoom(room));
+  }
+
+  room.status = 'postgame';
 }
 
 // Retire un joueur de la room : transfert d'hôte au suivant, suppression si vide.
@@ -218,8 +255,31 @@ function removePlayerFromGame(io, room, targetId) {
   }
 }
 
+// ═══ TOURNOI ═══
+const TOURNAMENT_GAMES = ['quiz', 'motus', 'skyjo', 'petits-chevaux', 'yahtzee', 'oser-jouer', 'fais-deviner'];
+
+function tournamentPayload(room) {
+  const t = room.tournament;
+  const standings = room.players
+    .map(p => ({ id: p.id, username: p.username, points: t.points[p.id] || 0 }))
+    .sort((a, b) => b.points - a.points);
+  return {
+    games: t.games, idx: t.idx, total: t.games.length,
+    nextGameId: t.games[t.idx] || null,
+    standings,
+  };
+}
+
 // Lance (ou relance) la partie selon le jeu de la room.
 async function launchGame(io, room, socket) {
+  // Room tournoi : initialiser la séquence et basculer sur le premier jeu
+  if (room.gameId === 'tournoi') {
+    const seq = (room.settings?.tournamentGames || []).filter(g => TOURNAMENT_GAMES.includes(g));
+    if (seq.length < 2) { socket?.emit('error', 'Choisissez au moins 2 jeux pour le tournoi'); return; }
+    room.tournament = { games: seq, idx: 0, points: {}, active: true };
+    room.gameId = seq[0];
+    io.to(room.code).emit('tournament_next', tournamentPayload(room));
+  }
   // Signal robuste pour rediriger TOUS les clients du lobby vers le jeu
   io.to(room.code).emit('game_started', { gameId: room.gameId });
   if (room.gameId === 'motus') {
@@ -245,6 +305,7 @@ async function launchGame(io, room, socket) {
 }
 
 function initSocket(io) {
+  _io = io;
 
   io.use(async (socket, next) => {
     const token    = socket.handshake.auth?.token;

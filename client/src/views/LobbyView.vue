@@ -280,6 +280,23 @@
             </div>
           </div>
 
+          <!-- Paramètres Tournoi -->
+          <div class="card lobby-settings" v-if="isHost && room.game_id === 'tournoi'">
+            <h3 class="settings-title">{{ t('lobby.settings') }}</h3>
+            <div class="setting-block">
+              <label class="setting-label">🏆 {{ t('tn.pick_games') }}</label>
+              <div class="cat-grid">
+                <button v-for="g in tournamentGamesList" :key="g.id" class="cat-chip"
+                  :class="{ active: settings.tournamentGames.includes(g.id) }"
+                  @click="toggleTournamentGame(g.id)">
+                  <span v-if="settings.tournamentGames.includes(g.id)" class="tn-order">{{ settings.tournamentGames.indexOf(g.id) + 1 }}</span>
+                  {{ g.icon }} {{ g.name }}
+                </button>
+              </div>
+              <p class="text-muted" style="font-size:.72rem; margin-top:.4rem;">{{ t('tn.pick_hint') }}</p>
+            </div>
+          </div>
+
           <!-- Paramètres Fais Deviner -->
           <div class="card lobby-settings" v-if="isHost && room.game_id === 'fais-deviner'">
             <h3 class="settings-title">{{ t('lobby.settings') }}</h3>
@@ -366,7 +383,17 @@ const settings = ref({
   questionTypes: 'both', difficulty: 'mixed', quizCategories: [], quizLang: 'fr',
   ojMode: 'master', ojCategory: 'all', ojTargetScore: 10, quizTeams: false,
   fdTurnSec: 45, fdCards: 30,
+  tournamentGames: ['quiz', 'motus', 'skyjo'],
 });
+
+// Tournoi : jeux multi sélectionnables (dans l'ordre de clic)
+const tournamentGamesList = computed(() =>
+  platform.games.filter(g => g.has_multiplayer && g.id !== 'tournoi' && g.is_active)
+);
+function toggleTournamentGame(id) {
+  const cur = settings.value.tournamentGames || [];
+  settings.value.tournamentGames = cur.includes(id) ? cur.filter(g => g !== id) : [...cur, id];
+}
 let socket = null;
 const quizCategories = ref([]);
 
@@ -471,8 +498,8 @@ function connectSocket() {
     if (data.status === 'playing') goToGame();
   });
 
-  const goToGame = () => router.push(`/game/${room.value.game_id}?room=${room.value.code}`);
-  socket.on('game_started', () => {
+  const goToGame = (gameId) => router.push(`/game/${gameId || room.value.game_id}?room=${room.value.code}`);
+  socket.on('game_started', ({ gameId } = {}) => {
     // Onglet en arrière-plan → notification système + son + vibration
     if (document.hidden) {
       audio.turn();
@@ -486,15 +513,15 @@ function connectSocket() {
         }
       } catch { /* silencieux */ }
     }
-    goToGame();
+    goToGame(gameId);
   });
-  socket.on('round_start',    goToGame);
-  socket.on('yahtzee_state',  goToGame);
-  socket.on('skyjo_state',    goToGame);
-  socket.on('pc_state',       goToGame);
-  socket.on('quiz_question',  goToGame);
-  socket.on('oj_state',       goToGame);
-  socket.on('fd_state',       goToGame);
+  socket.on('round_start',    () => goToGame());
+  socket.on('yahtzee_state',  () => goToGame());
+  socket.on('skyjo_state',    () => goToGame());
+  socket.on('pc_state',       () => goToGame());
+  socket.on('quiz_question',  () => goToGame());
+  socket.on('oj_state',       () => goToGame());
+  socket.on('fd_state',       () => goToGame());
 
   socket.on('kicked', () => {
     platform.showToast('Vous avez été exclu de la salle par l\'hôte', 'error');
@@ -579,6 +606,8 @@ onUnmounted(() => socket?.disconnect());
 .lang-btn { padding: .25rem .55rem; background: transparent; border: none; cursor: pointer; font-size: .75rem; font-weight: 700; color: var(--text-2); transition: all .12s; }
 .lang-btn:hover { background: var(--bg-4); color: var(--text); }
 .lang-btn.active { background: var(--bg-4); color: var(--cyan); }
+
+.tn-order { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: var(--cyan); color: #04131a; font-size: .62rem; font-weight: 800; margin-right: .25rem; }
 
 .badge-beta { display: inline-block; background: color-mix(in srgb, var(--amber) 15%, transparent); border: 1px solid color-mix(in srgb, var(--amber) 40%, transparent); color: var(--amber); border-radius: 4px; padding: 0 .35rem; font-size: .65rem; font-weight: 700; letter-spacing: .04em; vertical-align: middle; margin-left: .3rem; }
 

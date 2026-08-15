@@ -4,6 +4,27 @@
     👁️ Spectateur — vous entrerez dans la prochaine partie
   </div>
 
+  <!-- Écran intermédiaire de tournoi -->
+  <Teleport to="body">
+    <div v-if="mr.tournament?.value?.phase === 'interstitial'" class="tn-overlay">
+      <div class="tn-modal">
+        <div class="tn-head">🏆 Tournoi — {{ mr.tournament.value.idx + 1 }}/{{ mr.tournament.value.total }}</div>
+        <div class="tn-standings">
+          <div v-for="(s, i) in mr.tournament.value.standings" :key="s.id" class="tn-row" :class="{ first: i === 0 }">
+            <span class="tn-rank">{{ ['🥇','🥈','🥉'][i] || `#${i + 1}` }}</span>
+            <span class="tn-name">{{ s.username }}</span>
+            <span class="tn-pts">{{ s.points }} pts</span>
+          </div>
+        </div>
+        <div class="tn-next">
+          Prochain jeu : <strong>{{ gameLabel(mr.tournament.value.nextGameId) }}</strong>
+        </div>
+        <button v-if="mr.isHost.value" class="tn-btn" @click="mr.launchNext()">▶️ Lancer {{ gameLabel(mr.tournament.value.nextGameId) }}</button>
+        <p v-else class="tn-wait"><span class="spin">⟳</span> L'hôte lance le jeu suivant…</p>
+      </div>
+    </div>
+  </Teleport>
+
   <!-- Barre de réactions : pilule flottante en bas de l'écran -->
   <div class="rx-bar">
     <button v-for="e in EMOJIS" :key="e" class="rx-btn" @click="send(e)">{{ e }}</button>
@@ -25,16 +46,41 @@
 </template>
 
 <script setup>
+import { usePlatformStore } from '@/stores/platform.js';
+
 const props = defineProps({ mr: Object }); // objet retourné par useMultiRoom
+const platform = usePlatformStore();
 
 const EMOJIS = ['😂', '🔥', '😱', '👏', '😭', '😈'];
 
 function send(emoji) {
   props.mr.sendReaction(emoji);
 }
+
+function gameLabel(id) {
+  const g = platform.games.find(x => x.id === id);
+  return g ? `${g.icon} ${g.name}` : id;
+}
 </script>
 
 <style scoped>
+/* Tournoi — écran intermédiaire */
+.tn-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.75); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 900; }
+.tn-modal { background: var(--bg-2, #16162a); border: 1px solid rgba(245,158,11,.4); border-radius: 18px; padding: 1.8rem 2.2rem; max-width: 420px; width: calc(100% - 2rem); text-align: center; box-shadow: 0 24px 80px rgba(0,0,0,.6); }
+.tn-head { font-weight: 900; font-size: 1.15rem; color: #f59e0b; margin-bottom: 1rem; }
+.tn-standings { display: flex; flex-direction: column; gap: .35rem; margin-bottom: 1rem; }
+.tn-row { display: flex; align-items: center; gap: .6rem; padding: .4rem .7rem; background: var(--bg-3, #1e1e38); border: 1px solid var(--border, #333); border-radius: 9px; font-size: .88rem; }
+.tn-row.first { border-color: rgba(245,158,11,.5); background: rgba(245,158,11,.08); }
+.tn-rank { min-width: 30px; font-weight: 800; }
+.tn-name { flex: 1; font-weight: 700; text-align: left; }
+.tn-pts { font-weight: 800; color: var(--cyan, #06b6d4); }
+.tn-next { font-size: .9rem; color: var(--text-2, #aaa); margin-bottom: 1rem; }
+.tn-btn { background: #f59e0b; border: none; color: #1a1000; font-weight: 800; font-size: .95rem; padding: .75rem 1.5rem; border-radius: 11px; cursor: pointer; transition: transform .12s; }
+.tn-btn:hover { transform: translateY(-2px); }
+.tn-wait { display: flex; align-items: center; justify-content: center; gap: .5rem; color: var(--text-2, #aaa); font-size: .85rem; }
+.spin { display: inline-block; animation: tnSpin 1.2s linear infinite; }
+@keyframes tnSpin { to { transform: rotate(360deg); } }
+
 .spec-chip {
   position: fixed; top: 60px; left: 50%; transform: translateX(-50%);
   z-index: 480; padding: .35rem .9rem; border-radius: 999px;

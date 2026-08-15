@@ -67,6 +67,10 @@ const T = {
   'quiz.team_red':    { fr: '🔴 Rouges', en: '🔴 Red' },
   'quiz.team_tie':    { fr: '🤝 Égalité entre les équipes !', en: '🤝 The teams are tied!' },
   'quiz.team_wins':   { fr: 'L\'équipe {team} gagne !', en: 'Team {team} wins!' },
+  // Tournoi
+  'tn.pick_games': { fr: 'Jeux du tournoi (dans l\'ordre de sélection)', en: 'Tournament games (in selection order)' },
+  'tn.pick_hint':  { fr: 'Cliquez pour ajouter/retirer — 2 jeux minimum. Vainqueur d\'un jeu : 3 pts, participation : 1 pt.', en: 'Click to add/remove — 2 games minimum. Game winner: 3 pts, participation: 1 pt.' },
+
   // Fais Deviner
   'fd.turn_sec':     { fr: 'Durée d\'un tour', en: 'Turn duration' },
   'fd.card_count':   { fr: 'Nombre de cartes', en: 'Card count' },
