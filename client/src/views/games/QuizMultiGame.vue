@@ -10,6 +10,21 @@
       </div>
     </div>
 
+    <!-- Bandeau équipes -->
+    <div v-if="teams" class="teams-strip">
+      <div class="team-chip team-blue" :class="{ leading: (teamScores?.blue ?? 0) > (teamScores?.red ?? 0) }">
+        <span class="tc-name">{{ t('quiz.team_blue') }}</span>
+        <span class="tc-members">{{ teamMembers('blue') }}</span>
+        <span class="tc-score">{{ teamScores?.blue ?? 0 }}</span>
+      </div>
+      <span class="teams-vs">VS</span>
+      <div class="team-chip team-red" :class="{ leading: (teamScores?.red ?? 0) > (teamScores?.blue ?? 0) }">
+        <span class="tc-name">{{ t('quiz.team_red') }}</span>
+        <span class="tc-members">{{ teamMembers('red') }}</span>
+        <span class="tc-score">{{ teamScores?.red ?? 0 }}</span>
+      </div>
+    </div>
+
     <!-- ── PHASE QUESTION ── -->
     <div v-if="phase === 'question'" class="question-phase">
 
@@ -141,6 +156,10 @@
       <div class="winner-burst">🏆</div>
       <div class="winner-title">{{ t('victory') }}</div>
       <div class="winner-name">{{ winner?.username }}</div>
+      <div v-if="teamResult" class="team-final">
+        <span v-if="teamResult.winner === 'tie'">{{ t('quiz.team_tie') }}</span>
+        <span v-else>🔵 {{ teamResult.scores.blue }} — {{ teamResult.scores.red }} 🔴</span>
+      </div>
 
       <div class="final-rankings">
         <div v-for="(entry, i) in rankings" :key="entry.id"
@@ -194,6 +213,16 @@ const mr    = useMultiRoom(props.roomCode);
 const socket   = ref(null);
 const myId     = computed(() => auth.user?.id?.toString() || auth.user?.id);
 const isAdmin  = computed(() => auth.user?.role === 'admin');
+
+// Mode équipes
+const teams      = ref(null);
+const teamScores = ref(null);
+const teamResult = ref(null);
+function teamMembers(team) {
+  return (teams.value?.[team] || [])
+    .map(id => players.value.find(p => String(p.id) === String(id))?.username || '?')
+    .join(', ');
+}
 const flaggedEn = ref(false);
 
 async function flagEnglish() {
@@ -316,6 +345,8 @@ function connectSocket() {
     if (data.lives)      lives.value     = data.lives;
     if (data.eliminated) eliminated.value = data.eliminated;
     if (data.players)    players.value   = data.players;
+    if (data.teams)      teams.value     = data.teams;
+    if (data.teamScores) teamScores.value = data.teamScores;
     startTimer(data.question.timeLimit);
     // Reconnexion : réponse déjà envoyée avant le refresh
     if (data.restoredAnswer) myAnswer.value = data.restoredAnswer;
@@ -331,6 +362,7 @@ function connectSocket() {
     scores.value    = data.scores;
     lives.value     = data.lives;
     eliminated.value = data.eliminated;
+    if (data.teamScores) teamScores.value = data.teamScores;
     clearInterval(timerInterval);
 
     const myResult = data.results[myId.value];
@@ -345,6 +377,7 @@ function connectSocket() {
     rankings.value = data.rankings;
     winner.value   = data.winner;
     gameMode.value = data.mode;
+    teamResult.value = data.teamResult || null;
 
     if (data.mode === 2) {
       // Animation de révélation progressive
@@ -385,6 +418,18 @@ onUnmounted(() => { socket.value?.disconnect(); clearInterval(timerInterval); })
 </script>
 
 <style scoped>
+/* Mode équipes */
+.teams-strip { display: flex; align-items: center; justify-content: center; gap: .8rem; padding: .6rem 1rem; }
+.team-chip { display: flex; align-items: center; gap: .55rem; padding: .4rem .8rem; border-radius: 12px; border: 2px solid transparent; background: var(--bg-3, #1e1e38); font-size: .82rem; }
+.team-blue { border-color: rgba(59,130,246,.45); }
+.team-red  { border-color: rgba(244,63,94,.45); }
+.team-chip.leading { box-shadow: 0 0 12px rgba(255,255,255,.08); transform: scale(1.04); }
+.tc-name { font-weight: 800; }
+.tc-members { font-size: .68rem; color: var(--text-3, #888); max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tc-score { font-weight: 900; font-size: 1.05rem; color: var(--cyan, #06b6d4); }
+.teams-vs { font-weight: 900; font-size: .75rem; color: var(--text-3, #888); }
+.team-final { font-size: 1.1rem; font-weight: 800; margin-top: .3rem; }
+
 .btn-flag-en { background: rgba(59,130,246,.1); border: 1px solid rgba(59,130,246,.4); color: #60a5fa; border-radius: 6px; font-size: .68rem; font-weight: 700; padding: .15rem .5rem; cursor: pointer; transition: all .15s; }
 .btn-flag-en:hover:not(:disabled) { background: rgba(59,130,246,.2); }
 .btn-flag-en:disabled { opacity: .65; cursor: default; }

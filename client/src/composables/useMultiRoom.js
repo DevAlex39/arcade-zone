@@ -29,6 +29,9 @@ export function useMultiRoom(roomCode) {
   let _lastSent   = 0;
 
   const myId   = computed(() => auth.user?.id);
+  const isSpectator = computed(() =>
+    (room.value?.spectators || []).some(s => String(s.id) === String(auth.user?.id))
+  );
   const isHost = computed(() => {
     if (!room.value || !auth.user) return false;
     if (auth.user.isGuest) return room.value.host_name === auth.user.username;
@@ -100,5 +103,5 @@ export function useMultiRoom(roomCode) {
     socket?.emit('kick_player', { code: roomCode, targetId, replaceByAI });
   }
 
-  return { room, gameOver, reactions, isHost, myId, bind, choose, kick, sendReaction, audio };
+  return { room, gameOver, reactions, isHost, isSpectator, myId, bind, choose, kick, sendReaction, audio };
 }

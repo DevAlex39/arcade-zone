@@ -25,6 +25,12 @@
         </div>
       </div>
 
+      <!-- Manche finale : double enjeu -->
+      <div v-if="state.finalRound" class="final-banner">
+        <span class="fb-title">{{ t('oj.final_round') }}</span>
+        <span class="fb-hint">{{ t('oj.final_hint', { names: leadersNames }) }}</span>
+      </div>
+
       <!-- Phrase à trous -->
       <div class="prompt-card">
         <div class="prompt-text" v-html="promptDisplay"></div>
@@ -166,6 +172,10 @@ const submitterIds = computed(() => {
 });
 const submittersCount = computed(() => submitterIds.value.length);
 
+const leadersNames = computed(() =>
+  (state.value?.leaders || []).map(id => playerName(id)).join(', ')
+);
+
 const canAdvance = computed(() => {
   if (!state.value) return false;
   return state.value.mode === 'master' ? iAmMaster.value : mr.isHost.value;
@@ -274,6 +284,11 @@ onUnmounted(() => socket?.disconnect());
 .score-chip.winner { border-color: #4ade80; background: rgba(74,222,128,.1); transform: scale(1.05); }
 .sc-name { font-weight: 700; }
 .sc-pts { font-weight: 800; color: var(--cyan); }
+
+.final-banner { margin: .5rem 1rem 0; padding: .6rem 1rem; border-radius: 12px; text-align: center; background: rgba(244,63,94,.12); border: 1px solid rgba(244,63,94,.5); display: flex; flex-direction: column; gap: .15rem; animation: finalPulse 1.4s ease-in-out infinite; }
+.fb-title { font-weight: 900; letter-spacing: .08em; color: #f43f5e; font-size: .95rem; }
+.fb-hint { font-size: .78rem; color: var(--text-2); }
+@keyframes finalPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(244,63,94,.35); } 50% { box-shadow: 0 0 0 6px transparent; } }
 
 .prompt-card { margin: .5rem 1rem; background: var(--bg-2); border: 1px solid var(--border); border-radius: 14px; padding: 1.3rem 1.5rem; text-align: center; }
 .prompt-text { font-size: 1.25rem; font-weight: 700; line-height: 1.6; }

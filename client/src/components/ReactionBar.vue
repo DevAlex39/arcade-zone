@@ -1,4 +1,9 @@
 <template>
+  <!-- Badge spectateur -->
+  <div v-if="mr.isSpectator?.value" class="spec-chip">
+    👁️ Spectateur — vous entrerez dans la prochaine partie
+  </div>
+
   <!-- Barre de réactions : pilule flottante en bas de l'écran -->
   <div class="rx-bar">
     <button v-for="e in EMOJIS" :key="e" class="rx-btn" @click="send(e)">{{ e }}</button>
@@ -30,6 +35,14 @@ function send(emoji) {
 </script>
 
 <style scoped>
+.spec-chip {
+  position: fixed; top: 60px; left: 50%; transform: translateX(-50%);
+  z-index: 480; padding: .35rem .9rem; border-radius: 999px;
+  background: rgba(139,92,246,.16); border: 1px solid rgba(139,92,246,.5);
+  color: #c4b5fd; font-size: .76rem; font-weight: 700; white-space: nowrap;
+  backdrop-filter: blur(10px);
+}
+
 .rx-bar {
   position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
   z-index: 480;

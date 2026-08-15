@@ -178,6 +178,11 @@
               </div>
             </div>
 
+            <div class="setting-row" v-if="settings.quizMode !== 3">
+              <span class="toggle-label">👥 {{ t('quiz.teams') }}</span>
+              <button class="toggle" :class="{ on: settings.quizTeams }" @click="settings.quizTeams = !settings.quizTeams"><span class="toggle-thumb" /></button>
+            </div>
+
             <div class="setting-row">
               <label>{{ t('quiz.timer') }}</label>
               <div class="lang-switch">
@@ -340,7 +345,7 @@ const settings = ref({
   pionsPerPlayer: 2, rejouerSur6: true, allowOvertake: false, corridorSimplifie: false,
   quizMode: 1, timer: 15, targetScore: 100, questionCount: 20, lives: 5,
   questionTypes: 'both', difficulty: 'mixed', quizCategories: [], quizLang: 'fr',
-  ojMode: 'master', ojCategory: 'all', ojTargetScore: 10,
+  ojMode: 'master', ojCategory: 'all', ojTargetScore: 10, quizTeams: false,
 });
 let socket = null;
 const quizCategories = ref([]);
@@ -442,6 +447,8 @@ function connectSocket() {
       });
     }
     room.value = { ...room.value, ...data };
+    // Partie déjà en cours → rejoindre en spectateur
+    if (data.status === 'playing') goToGame();
   });
 
   const goToGame = () => router.push(`/game/${room.value.game_id}?room=${room.value.code}`);

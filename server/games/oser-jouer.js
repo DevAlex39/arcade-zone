@@ -75,6 +75,9 @@ function startRound(gs) {
   gs.submitOrder = [];
   gs.votes       = {};
   gs.roundWinners = [];
+  // Manche finale : un joueur est à 1 point de la victoire → ses adversaires marquent DOUBLE
+  gs.leaders    = gs.playerIds.filter(id => (gs.scores[id] || 0) >= gs.targetScore - 1).map(String);
+  gs.finalRound = gs.leaders.length > 0;
   if (gs.promptPile.length === 0) {
     // Recycler tous les prompts si épuisés
     const deck = getDeck(gs.category);
@@ -121,13 +124,18 @@ function submitCards(gs, pid, cardIds) {
   return { ok: true, allDone };
 }
 
+// Points d'une victoire de manche : double pour les poursuivants en manche finale
+function roundPoints(gs, pid) {
+  return (gs.finalRound && !gs.leaders.includes(String(pid))) ? 2 : 1;
+}
+
 // Mode master : le maître choisit la meilleure soumission
 function judgePick(gs, pid, winnerPid) {
   if (gs.phase !== 'judge') return { error: 'Phase invalide' };
   if (String(pid) !== String(masterId(gs))) return { error: 'Seul le Maître du jeu choisit' };
   if (!gs.submissions[winnerPid]) return { error: 'Soumission inconnue' };
   gs.roundWinners = [winnerPid];
-  gs.scores[winnerPid]++;
+  gs.scores[winnerPid] += roundPoints(gs, winnerPid);
   return finishRound(gs);
 }
 
@@ -148,7 +156,7 @@ function castVote(gs, pid, targetPid) {
   Object.values(gs.votes).forEach(t => { counts[t] = (counts[t] || 0) + 1; });
   const max = Math.max(...Object.values(counts));
   gs.roundWinners = Object.keys(counts).filter(t => counts[t] === max);
-  gs.roundWinners.forEach(w => { gs.scores[w]++; });
+  gs.roundWinners.forEach(w => { gs.scores[w] += roundPoints(gs, w); });
   const r = finishRound(gs);
   return { ...r, allDone: true };
 }
@@ -206,6 +214,8 @@ function publicState(gs, forPid) {
     roundIdx:    gs.roundIdx,
     phase:       gs.phase,
     prompt:      gs.prompt,
+    finalRound:  gs.finalRound || false,
+    leaders:     gs.leaders || [],
     masterId:    masterId(gs),
     myHand:      gs.hands[forPid] || [],
     submittedIds: Object.keys(gs.submissions),

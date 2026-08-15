@@ -21,11 +21,13 @@ async function handleGameOver(room, winnerId, gameSpecificScore) {
   const players = room.players || [];
   const realPlayers = players.filter(p => p.id && !String(p.id).startsWith('guest') && !String(p.id).startsWith('AI_'));
 
-  const winnerName = players.find(p => String(p.id) === String(winnerId))?.username || null;
+  // winnerId peut être un id unique OU un tableau d'ids (victoire d'équipe)
+  const winnerIds  = Array.isArray(winnerId) ? winnerId.map(String) : [String(winnerId)];
+  const winnerName = players.find(p => winnerIds.includes(String(p.id)))?.username || null;
 
   for (const player of realPlayers) {
     const uid = player.id;
-    const isWinner = String(uid) === String(winnerId);
+    const isWinner = winnerIds.includes(String(uid));
     const result = isWinner ? 'win' : 'loss';
     const score = gameSpecificScore?.[uid] ?? null;
     // Adversaires (pour la stat « adversaire le plus battu » du profil)
@@ -64,6 +66,16 @@ function enterPostGame(room) {
   room.round     = null;
   // Reset des états de partie portés par les joueurs (Motus)
   room.players.forEach(p => { delete p.lives; delete p.combo; delete p.eliminated; });
+  // Les spectateurs deviennent joueurs pour la prochaine partie
+  if (room.spectators?.length) {
+    for (const s of room.spectators) {
+      if (room.players.length >= room.maxPlayers) break;
+      if (!room.players.some(p => p.id === s.id)) {
+        room.players.push({ id: s.id, username: s.username, socketId: s.socketId, ready: false, avatarEmoji: s.avatarEmoji, avatarColor: s.avatarColor });
+      }
+    }
+    room.spectators = [];
+  }
 }
 
 // Retire un joueur de la room : transfert d'hôte au suivant, suppression si vide.
@@ -257,7 +269,18 @@ function initSocket(io) {
       if (!rooms.has(code)) return socket.emit('error', 'Room introuvable');
       const room = rooms.get(code);
       const existing = room.players.find(p => p.id === user.id);
-      if (room.status !== 'waiting' && !existing) return socket.emit('error', 'Partie déjà commencée');
+      if (room.status !== 'waiting' && !existing) {
+        // Partie en cours → rejoindre en SPECTATEUR (intégré à la prochaine partie)
+        socket.join(code);
+        socket.currentRoom = code;
+        room.spectators = room.spectators || [];
+        const spec = room.spectators.find(s => s.id === user.id);
+        if (spec) spec.socketId = socket.id;
+        else room.spectators.push({ id: user.id, username: user.username, socketId: socket.id, avatarEmoji: user.avatarEmoji, avatarColor: user.avatarColor });
+        io.to(code).emit('room_update', sanitizeRoom(room));
+        if (room.status === 'playing') resendGameState(socket, room);
+        return;
+      }
       socket.join(code);
       socket.currentRoom = code;
       clearDisconnectTimer(code, user.id);
@@ -350,6 +373,11 @@ function initSocket(io) {
       if (!room) return;
       socket.leave(code);
       if (socket.currentRoom === code) socket.currentRoom = null;
+      if (room.spectators?.some(s => s.id === user.id)) {
+        room.spectators = room.spectators.filter(s => s.id !== user.id);
+        io.to(code).emit('room_update', sanitizeRoom(room));
+        return;
+      }
       removePlayerFromRoom(io, room, user.id);
     });
 
@@ -620,6 +648,12 @@ function initSocket(io) {
       const code = socket.currentRoom;
       if (!code || !rooms.has(code)) return;
       const room  = rooms.get(code);
+      // Spectateur déconnecté → retrait immédiat
+      if (room.spectators?.some(s => s.id === user.id && s.socketId === socket.id)) {
+        room.spectators = room.spectators.filter(s => s.id !== user.id);
+        io.to(code).emit('room_update', sanitizeRoom(room));
+        return;
+      }
       const p = room.players.find(pl => pl.id === user.id);
       if (!p) return;
       p.socketId = null;
@@ -1287,6 +1321,7 @@ function sanitizeRoom(room) {
     max_players: room.maxPlayers,
     min_players: room.minPlayers || 2,
     settings:    room.settings,
+    spectators:  (room.spectators || []).map(s => ({ id: s.id, username: s.username })),
     players:     room.players.map(p => ({
       id: p.id, username: p.username, ready: p.ready,
       lives: p.lives, combo: p.combo, eliminated: p.eliminated, online: !!p.socketId,
@@ -1342,7 +1377,21 @@ async function startQuizGame(io, room) {
   const settings = { mode, timer, targetScore, questionCount: rows.length, lives };
   room.status    = 'playing';
   room.gameState = quiz.initGame(room.players, settings, rows);
+
+  // Mode équipes (Bleus/Rouges, répartition alternée) — modes points uniquement
+  const gs = room.gameState;
+  if (s.quizTeams && mode !== 3 && room.players.length >= 2) {
+    gs.teams = { blue: [], red: [] };
+    room.players.forEach((p, i) => gs.teams[i % 2 === 0 ? 'blue' : 'red'].push(p.id));
+  }
+
   sendQuizQuestion(io, room.code, room);
+}
+
+function quizTeamScores(gs) {
+  if (!gs.teams) return null;
+  const sum = ids => ids.reduce((s, id) => s + (gs.scores[id] || 0), 0);
+  return { blue: sum(gs.teams.blue), red: sum(gs.teams.red) };
 }
 
 function sendQuizQuestion(io, code, room) {
@@ -1360,6 +1409,8 @@ function sendQuizQuestion(io, code, room) {
     lives:    gs.lives,
     eliminated: gs.eliminated,
     players:  gs.players,
+    teams:      gs.teams || null,
+    teamScores: quizTeamScores(gs),
   });
 
   // Timer serveur
@@ -1399,6 +1450,7 @@ function resolveQuizQuestion(io, code, room, gs) {
     scores: gs.scores,
     lives:  gs.lives,
     eliminated: gs.eliminated,
+    teamScores: quizTeamScores(gs),
   });
 
   // Vérifier fin de partie
@@ -1407,10 +1459,17 @@ function resolveQuizQuestion(io, code, room, gs) {
 
     const stillAlive = gs.playerIds.filter(id => !gs.eliminated.includes(id));
 
-    // Mode 1 : quelqu'un a atteint le score cible ?
+    // Mode 1 : quelqu'un (ou une équipe) a atteint le score cible ?
     if (gs.mode === 1) {
-      const winner = gs.playerIds.find(id => gs.scores[id] >= gs.settings.targetScore);
-      if (winner) { endQuizGame(io, code, room, gs); return; }
+      if (gs.teams) {
+        const ts = quizTeamScores(gs);
+        if (ts.blue >= gs.settings.targetScore || ts.red >= gs.settings.targetScore) {
+          endQuizGame(io, code, room, gs); return;
+        }
+      } else {
+        const winner = gs.playerIds.find(id => gs.scores[id] >= gs.settings.targetScore);
+        if (winner) { endQuizGame(io, code, room, gs); return; }
+      }
     }
 
     // Mode 3 : plus qu'un seul joueur en vie ?
@@ -1457,14 +1516,27 @@ function endQuizGame(io, code, room, gs) {
       return b.score - a.score;
     });
 
-  const winner = rankings[0] ? room.players.find(p => p.id === rankings[0].id) || rankings[0] : null;
+  let winner = rankings[0] ? room.players.find(p => p.id === rankings[0].id) || rankings[0] : null;
+  let teamResult = null;
+  let winnerForXp = winner?.id ?? null;
 
-  io.to(code).emit('quiz_end', { rankings, mode: gs.mode, winner });
+  // Victoire d'équipe : tous les membres de l'équipe gagnante sont vainqueurs
+  if (gs.teams) {
+    const ts = quizTeamScores(gs);
+    const winTeam = ts.blue === ts.red ? 'tie' : (ts.blue > ts.red ? 'blue' : 'red');
+    teamResult = { winner: winTeam, scores: ts, teams: gs.teams };
+    if (winTeam !== 'tie') {
+      winnerForXp = gs.teams[winTeam];
+      winner = { id: null, username: winTeam === 'blue' ? 'Équipe Bleue 🔵' : 'Équipe Rouge 🔴' };
+    }
+  }
+
+  io.to(code).emit('quiz_end', { rankings, mode: gs.mode, winner, teamResult });
   io.to(code).emit('game_over', { winner });
 
   const quizScores = {};
   rankings.forEach(r => { quizScores[r.id] = r.score; });
-  handleGameOver(room, winner?.id ?? null, quizScores);
+  handleGameOver(room, winnerForXp, quizScores);
 
   // Tracking défi quiz_correct (multi)
   const realPlayers = (room.players || []).filter(p => p.id && !String(p.id).startsWith('guest') && !String(p.id).startsWith('AI_'));

@@ -62,6 +62,13 @@ const T = {
   'oj.next_round':    { fr: 'Manche suivante →',          en: 'Next round →' },
   'oj.waiting_next':  { fr: 'En attente de la prochaine manche…', en: 'Waiting for the next round…' },
   'oj.hand':          { fr: '🃏 Votre main',              en: '🃏 Your hand' },
+  'quiz.teams':       { fr: 'Mode équipes (Bleus vs Rouges)', en: 'Team mode (Blue vs Red)' },
+  'quiz.team_blue':   { fr: '🔵 Bleus', en: '🔵 Blue' },
+  'quiz.team_red':    { fr: '🔴 Rouges', en: '🔴 Red' },
+  'quiz.team_tie':    { fr: '🤝 Égalité entre les équipes !', en: '🤝 The teams are tied!' },
+  'quiz.team_wins':   { fr: 'L\'équipe {team} gagne !', en: 'Team {team} wins!' },
+  'oj.final_round':   { fr: '🚨 MANCHE FINALE', en: '🚨 FINAL ROUND' },
+  'oj.final_hint':    { fr: '{names} à 1 point de la victoire — tous les autres marquent DOUBLE !', en: '{names} one point from victory — everyone else scores DOUBLE!' },
 
   // Lobby
   'lobby.room_code':     { fr: 'Code de la salle',    en: 'Room Code' },
